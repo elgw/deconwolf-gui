@@ -474,6 +474,39 @@ GtkWidget * dw_frame()
     return frame;
 }
 
+void update_cmd(int ready)
+{
+    GtkTextView * cmd = (GtkTextView*) config.cmd;
+    GtkTextIter iter;
+    GtkTextBuffer *buffer = gtk_text_buffer_new(NULL);
+    gtk_text_buffer_get_iter_at_offset(buffer, &iter, 0);
+    if(ready == 0)
+    {
+        gtk_text_buffer_insert(buffer, &iter, "# not ready", -1);
+        gtk_text_view_set_buffer(cmd, buffer);
+        return;
+    }
+    gtk_text_buffer_insert(buffer, &iter, "mkdir PSFBW", -1);
+    gtk_text_buffer_insert(buffer, &iter, "dw_psfbw --lambda 123", -1);
+    gtk_text_view_set_buffer (cmd,
+                              buffer);
+    return;
+}
+
+void update_status()
+{
+    int ready = 0;
+    // TODO update conf and status text
+    // Both are gtk_text_view
+    GtkTextView * status = (GtkTextView*) config.status;
+    GtkTextIter iter;
+    GtkTextBuffer *buffer = gtk_text_buffer_new(NULL);
+    gtk_text_buffer_get_iter_at_offset(buffer, &iter, 0);
+    gtk_text_buffer_insert(buffer, &iter, "Hello world\n", -1);
+    gtk_text_view_set_buffer(status, buffer);
+
+    update_cmd(ready);
+}
 
 gboolean
 tab_change_cb(GtkNotebook *notebook,
@@ -484,7 +517,7 @@ tab_change_cb(GtkNotebook *notebook,
 
     if(page_num == 4)
     {
-        printf("Todo: update status and cmd\n");
+        update_status();
     }
     return TRUE;
 }
