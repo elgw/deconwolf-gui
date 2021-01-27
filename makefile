@@ -1,9 +1,9 @@
-cflags=`pkg-config --cflags gtk+-3.0`
+cflags=`pkg-config --cflags gtk+-3.0` -Wall -g
 ldflags=`pkg-config --libs gtk+-3.0`
 cc=gcc
 
 dw_gui: resources
-	$(cc) $(cflags)  resources.c dw_app.c dw_app_window.c dw_gui.c $(ldflags) -o dw_gu
+	$(cc) $(cflags)  resources.c dw_app.c dw_app_window.c dw_gui.c $(ldflags) -o dw_gui
 
 resources:
 	glib-compile-resources --target=resources.c --generate-source gresources.xml

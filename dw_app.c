@@ -59,7 +59,7 @@ DwApp *
 dw_app_new (void)
 {
   return g_object_new (DW_APP_TYPE,
-                       "application-id", "org.gtk.exampleapp",
+                       "application-id", "org.bicrolabs.dw_gui",
                        "flags", G_APPLICATION_HANDLES_OPEN,
                        NULL);
 }

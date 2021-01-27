@@ -2,7 +2,9 @@
 #define __DWAPPWIN_H
 
 #include <gtk/gtk.h>
+#include <ctype.h>
 #include "dw_app.h"
+
 //#include "resources.c"
 
 #define DW_APP_WINDOW_TYPE (dw_app_window_get_type ())
