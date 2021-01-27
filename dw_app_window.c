@@ -250,7 +250,7 @@ char * get_channel_name(char *fname0)
                         NA_COLUMN, 1.45,
                         NI_COLUMN, 1.512,
                         DX_COLUMN, 130.0,
-                        DZ_COLUMN, (float) 300.0
+                        DZ_COLUMN, (float) 300.0,
                         -1);
 
 
@@ -528,7 +528,9 @@ dw_app_window_new (DwApp *app)
 
     GtkWidget * file_tree = create_file_tree();
     GtkWidget * channel_tree = create_channel_tree();
+    //GtkWidget * channel_tree = gtk_label_new("testing");
     GtkWidget * scope_tree = create_microscope_tree();
+    //GtkWidget * scope_tree = gtk_label_new("Bug free, but boring, scope_tree replacement");
 
     /* Set up Drag and Drop */
     enum
