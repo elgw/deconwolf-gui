@@ -2,29 +2,61 @@
 
 #include "dw_app.h"
 #include "dw_app_window.h"
-
-
-
+#include "dw_app_get_new_scope.c"
+#include <assert.h>
 
 typedef struct {
+    DwAppWindow * window; // main window
     GtkWidget * file_tree;
     GtkWidget * channel_tree;
     GtkWidget * scope_tree;
     GtkWidget * cmd;
     GtkWidget * status;
 
+
 } gconf;
+
+// Columns for the scopes
+enum
+    {
+     sNAME_COLUMN,
+     sNA_COLUMN,
+     sNI_COLUMN,
+     sDX_COLUMN,
+     sDZ_COLUMN,
+     sSN_COLUMNS
+    };
+
+// Columns for the channels
+enum
+    {
+     cALIAS_COLUMN,
+     cNAME_COLUMN,
+     cEMISSION_COLUMN,
+     cNITER_COLUMN,
+     cN_COLUMNS
+    };
+
+// Columns for files
+enum
+    {
+     fFILE_COLUMN,
+     fCHANNEL_COLUMN,
+     fN_COLUMNS
+    };
 
 gconf config;
 
 // File
 typedef struct {
     char * name;
+    char * channel;
 } dwfile;
 
 // Channel
 typedef struct {
     char * name;
+    char * alias;
     float lambda;
     int niter;
 } dwchannel;
@@ -44,18 +76,15 @@ typedef struct {
     int tilesize;
 } dwconf;
 
-    GtkWidget * create_file_tree()
+
+// GtkTreeView
+GtkWidget * create_file_tree()
     {
 
     /* Create tree-view for files */
-        enum
-        {
-         FILE_COLUMN,
-         CHANNEL_COLUMN,
-         N_COLUMNS
-        };
 
-    GtkTreeStore * file_store = gtk_tree_store_new (N_COLUMNS,       /* Total number of columns */
+
+    GtkTreeStore * file_store = gtk_tree_store_new (fN_COLUMNS,       /* Total number of columns */
                                                     G_TYPE_STRING,   /* File name */
                                                     G_TYPE_STRING);   /* Channel */
 
@@ -71,7 +100,7 @@ GtkCellRenderer * renderer = gtk_cell_renderer_text_new ();
    /* Create a column, associating the "text" attribute of the
     * cell_renderer to the first column of the model */
    GtkTreeViewColumn * column = gtk_tree_view_column_new_with_attributes ("File", renderer,
-                                                      "text", FILE_COLUMN,
+                                                      "text", fFILE_COLUMN,
                                                       NULL);
 
    /* Add the column to the view. */
@@ -80,7 +109,7 @@ GtkCellRenderer * renderer = gtk_cell_renderer_text_new ();
    renderer = gtk_cell_renderer_text_new ();
    column = gtk_tree_view_column_new_with_attributes ("Channel",
                                                       renderer,
-                                                      "text", CHANNEL_COLUMN,
+                                                      "text", fCHANNEL_COLUMN,
                                                       NULL);
    gtk_tree_view_append_column (GTK_TREE_VIEW (file_tree), column);
 
@@ -150,16 +179,9 @@ char * get_channel_name(char *fname0)
     {
 
     /* Create tree-view for files */
-    enum
-    {
-     ALIAS_COLUMN,
-     CHANNEL_COLUMN,
-     EMISSION_COLUMN,
-     NITER_COLUMN,
-     N_COLUMNS
-    };
 
-    GtkTreeStore * channel_store = gtk_tree_store_new (N_COLUMNS,       /* Total number of columns */
+
+    GtkTreeStore * channel_store = gtk_tree_store_new (cN_COLUMNS,       /* Total number of columns */
                                                        G_TYPE_STRING,
                                                        G_TYPE_STRING,
                                                        G_TYPE_FLOAT,
@@ -169,17 +191,17 @@ char * get_channel_name(char *fname0)
 
     gtk_tree_store_append (channel_store, &iter1, NULL);  /* Acquire a top-level iterator */
     gtk_tree_store_set (channel_store, &iter1,
-                        ALIAS_COLUMN, "DAPI",
-                        CHANNEL_COLUMN, "4′,6-diamidino-2-phenylindole",
-                        NITER_COLUMN, 50,
-                        EMISSION_COLUMN, 466.0,
+                        cALIAS_COLUMN, "DAPI",
+                        cNAME_COLUMN, "4′,6-diamidino-2-phenylindole",
+                        cNITER_COLUMN, 50,
+                        cEMISSION_COLUMN, 466.0,
                         -1);
     gtk_tree_store_append (channel_store, &iter1, NULL);  /* Acquire a top-level iterator */
     gtk_tree_store_set (channel_store, &iter1,
-                        ALIAS_COLUMN, "A594",
-                        CHANNEL_COLUMN, "Alexa Fluor 594",
-                        EMISSION_COLUMN, 617.0,
-                        NITER_COLUMN, 100,
+                        cALIAS_COLUMN, "A594",
+                        cNAME_COLUMN, "Alexa Fluor 594",
+                        cEMISSION_COLUMN, 617.0,
+                        cNITER_COLUMN, 100,
                         -1);
 
     GtkWidget * channel_tree = gtk_tree_view_new_with_model (GTK_TREE_MODEL (channel_store));
@@ -193,27 +215,27 @@ char * get_channel_name(char *fname0)
    /* Create a column, associating the "text" attribute of the
     * cell_renderer to the first column of the model */
    GtkTreeViewColumn * column = gtk_tree_view_column_new_with_attributes ("Alias", renderer,
-                                                      "text", ALIAS_COLUMN,
+                                                      "text", cALIAS_COLUMN,
                                                       NULL);
    gtk_tree_view_append_column (GTK_TREE_VIEW (channel_tree), column);
 
 
    column = gtk_tree_view_column_new_with_attributes ("Emission [nm]",
                                                       renderer,
-                                                      "text", EMISSION_COLUMN,
+                                                      "text", cEMISSION_COLUMN,
                                                       NULL);
    gtk_tree_view_append_column (GTK_TREE_VIEW (channel_tree), column);
 
    column = gtk_tree_view_column_new_with_attributes ("Iterations",
                                                       renderer,
-                                                      "text", NITER_COLUMN,
+                                                      "text", cNITER_COLUMN,
                                                       NULL);
    gtk_tree_view_append_column (GTK_TREE_VIEW (channel_tree), column);
 
 
    column = gtk_tree_view_column_new_with_attributes ("Name",
                                                       renderer,
-                                                      "text", CHANNEL_COLUMN,
+                                                      "text", cNAME_COLUMN,
                                                       NULL);
    gtk_tree_view_append_column (GTK_TREE_VIEW (channel_tree), column);
 
@@ -221,21 +243,21 @@ char * get_channel_name(char *fname0)
    return channel_tree;
    }
 
-    GtkWidget * create_microscope_tree()
+gboolean
+new_scope_cb (GtkWidget *widget,
+               gpointer   user_data)
+{
+    dw_app_get_new_scope((GtkWindow*) config.window);
+    return TRUE;
+}
+
+    GtkWidget * create_microscope_tab()
     {
 
     /* Create tree-view for files */
-    enum
-    {
-     NAME_COLUMN,
-     NA_COLUMN,
-     NI_COLUMN,
-     DX_COLUMN,
-     DZ_COLUMN,
-     SN_COLUMNS
-    };
 
-    GtkTreeStore * scope_store = gtk_tree_store_new (SN_COLUMNS,       /* Total number of columns */
+
+    GtkTreeStore * scope_store = gtk_tree_store_new (sSN_COLUMNS,       /* Total number of columns */
                                                        G_TYPE_STRING,
                                                        G_TYPE_FLOAT,// na
                                                        G_TYPE_FLOAT, // ni
@@ -246,15 +268,31 @@ char * get_channel_name(char *fname0)
 
     gtk_tree_store_append (scope_store, &iter1, NULL);  /* Acquire a top-level iterator */
     gtk_tree_store_set (scope_store, &iter1,
-                        NAME_COLUMN, "Bicroscope1 100X",
-                        NA_COLUMN, 1.45,
-                        NI_COLUMN, 1.512,
-                        DX_COLUMN, 130.0,
-                        DZ_COLUMN, (float) 300.0,
+                        sNAME_COLUMN, "Bicroscope 1, 100X",
+                        sNA_COLUMN, 1.45,
+                        sNI_COLUMN, 1.515,
+                        sDX_COLUMN, 130.0,
+                        sDZ_COLUMN, (float) 300.0,
+                        -1);
+    gtk_tree_store_append (scope_store, &iter1, NULL);
+    gtk_tree_store_set (scope_store, &iter1,
+                        sNAME_COLUMN, "Bicroscope 1, 60X",
+                        sNA_COLUMN, 1.40,
+                        sNI_COLUMN, 1.515,
+                        sDX_COLUMN, 216.0,
+                        sDZ_COLUMN, (float) 300.0,
+                        -1);
+    gtk_tree_store_append (scope_store, &iter1, NULL);
+    gtk_tree_store_set (scope_store, &iter1,
+                        sNAME_COLUMN, "Bicroscope 2, 100X",
+                        sNA_COLUMN, 1.40,
+                        sNI_COLUMN, 1.512,
+                        sDX_COLUMN, 65.0,
+                        sDZ_COLUMN, (float) 250.0,
                         -1);
 
-
     GtkWidget * scope_tree = gtk_tree_view_new_with_model (GTK_TREE_MODEL (scope_store));
+    config.scope_tree = scope_tree;
     GtkCellRenderer * renderer = gtk_cell_renderer_text_new ();
     g_object_set (G_OBJECT (renderer),
                  "foreground", "black",
@@ -264,38 +302,65 @@ char * get_channel_name(char *fname0)
    /* Create a column, associating the "text" attribute of the
     * cell_renderer to the first column of the model */
    GtkTreeViewColumn * column = gtk_tree_view_column_new_with_attributes ("Name", renderer,
-                                                      "text", NAME_COLUMN,
+                                                      "text", sNAME_COLUMN,
                                                       NULL);
    gtk_tree_view_append_column (GTK_TREE_VIEW (scope_tree), column);
 
 
    column = gtk_tree_view_column_new_with_attributes ("NA",
                                                       renderer,
-                                                      "text", NA_COLUMN,
+                                                      "text", sNA_COLUMN,
                                                       NULL);
    gtk_tree_view_append_column (GTK_TREE_VIEW (scope_tree), column);
 
    column = gtk_tree_view_column_new_with_attributes ("ni",
                                                       renderer,
-                                                      "text", NI_COLUMN,
+                                                      "text", sNI_COLUMN,
                                                       NULL);
    gtk_tree_view_append_column (GTK_TREE_VIEW (scope_tree), column);
 
 
    column = gtk_tree_view_column_new_with_attributes ("dx [nm]",
                                                       renderer,
-                                                      "text", DX_COLUMN,
+                                                      "text", sDX_COLUMN,
                                                       NULL);
    gtk_tree_view_append_column (GTK_TREE_VIEW (scope_tree), column);
 
 
    column = gtk_tree_view_column_new_with_attributes ("dz [nm]",
                                                       renderer,
-                                                      "text", DZ_COLUMN,
+                                                      "text", sDZ_COLUMN,
                                                       NULL);
    gtk_tree_view_append_column (GTK_TREE_VIEW (scope_tree), column);
 
-   return scope_tree;
+   GtkWidget * ButtonNew = gtk_button_new_from_icon_name("list-add",
+                                                         GTK_ICON_SIZE_SMALL_TOOLBAR);
+   //gtk_button_set_label(ButtonNew, "Add");
+
+   g_signal_connect (ButtonNew, "clicked", G_CALLBACK (new_scope_cb), NULL);
+
+
+   GtkWidget * A = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+   GtkWidget * A1 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
+   gtk_box_pack_start ((GtkBox*) A1,
+                       ButtonNew,
+                       FALSE,
+                       TRUE,
+                       5);
+
+   gtk_box_pack_start ((GtkBox*) A,
+                       A1,
+                       FALSE,
+                       TRUE,
+                       5);
+
+   gtk_box_pack_end ((GtkBox*) A,
+                     scope_tree,
+                     TRUE,
+                     TRUE,
+                     5);
+
+   return A;
    }
 
 
@@ -333,19 +398,12 @@ void file_tree_append(const char * file)
         goto done;
     }
 
-    enum
-    {
-     FILE_COLUMN,
-     CHANNEL_COLUMN,
-     N_COLUMNS
-    };
 
     char * cname = get_channel_name(fname);
     gtk_tree_store_append (filetm, &iter1, NULL);  /* Acquire a top-level iterator */
     gtk_tree_store_set (filetm, &iter1,
-                        FILE_COLUMN, fname,
-                        CHANNEL_COLUMN, cname,
-
+                        fFILE_COLUMN, fname,
+                        fCHANNEL_COLUMN, cname,
                         -1);
     free(cname);
  done:
@@ -474,22 +532,245 @@ GtkWidget * dw_frame()
     return frame;
 }
 
+dwchannel ** dwchannel_get(int * nchannels)
+{
+    // Get a list of all the channels.
+    // 1, Count the number of channels
+    // 2, Allocate the list
+    // 3, Populate the list
+    // Get Model
+
+    GtkTreeModel * model =
+        gtk_tree_view_get_model ( (GtkTreeView*) config.channel_tree);
+
+    GtkTreeIter iter;
+
+    gboolean valid = gtk_tree_model_get_iter_first (model, &iter);
+    if(valid == FALSE)
+    {
+        return NULL;
+    }
+    // Figure out how many rows there are
+    gint nchan = gtk_tree_model_iter_n_children(GTK_TREE_MODEL(model), NULL);
+
+    printf("There are %d channels\n", nchan); fflush(stdout);
+    if(nchan < 1)
+    {
+        nchannels[0] = 0;
+        return NULL;
+    }
+    nchannels[0] = nchan;
+
+    dwchannel ** clist = malloc( nchan * sizeof(dwchannel*));
+
+    // Get all files and add to list.
+    gint pos = 0;
+    while (valid)
+    {
+        assert(pos < nchan);
+        gchar *alias;
+        gchar *name;
+        gint niter;
+        gfloat lambda;
+
+        // Make sure you terminate calls to gtk_tree_model_get() with a “-1” value
+        gtk_tree_model_get (model, &iter,
+                            cALIAS_COLUMN, &alias,
+                            cNAME_COLUMN, &name,
+                            cNITER_COLUMN, &niter,
+                            cEMISSION_COLUMN, &lambda,
+                            -1);
+        clist[pos] = malloc(sizeof(dwchannel));
+        clist[pos]->name = strdup(name);
+        clist[pos]->alias = strdup(alias);
+        clist[pos]->lambda = (float) lambda;
+        clist[pos]->niter = (int) niter;
+        printf("%s %s %f %d\n",
+               clist[pos]->name, clist[pos]->alias,
+               clist[pos]->lambda, clist[pos]->niter);
+        g_free(alias);
+        g_free(name);
+
+        pos++;
+
+        valid = gtk_tree_model_iter_next (model,
+                                          &iter);
+
+    }
+
+    return clist;
+}
+
+dwfile ** dwfile_get(int * nfiles)
+{
+    // Get an array with all files
+
+    GtkTreeModel * model =
+        gtk_tree_view_get_model ( (GtkTreeView*) config.file_tree);
+
+    GtkTreeIter iter;
+
+    gboolean valid = gtk_tree_model_get_iter_first (model, &iter);
+    if(valid == FALSE)
+    {
+        return NULL;
+    }
+    // Figure out how many rows there are
+    gint nfiles_list = gtk_tree_model_iter_n_children(GTK_TREE_MODEL(model), NULL);
+
+    printf("There are %d files\n", nfiles_list); fflush(stdout);
+    if(nfiles_list < 1)
+    {
+        nfiles[0] = 0;
+        return NULL;
+    }
+    nfiles[0] = nfiles_list;
+
+    dwfile ** flist = malloc( nfiles_list * sizeof(dwfile*));
+
+    // Get all files and add to list.
+    gint pos = 0;
+    while (valid)
+    {
+        assert(pos < nfiles_list);
+        gchar *file;
+        gchar *channel;
+
+        // Make sure you terminate calls to gtk_tree_model_get() with a “-1” value
+        gtk_tree_model_get (model, &iter,
+                            fFILE_COLUMN, &file,
+                            fCHANNEL_COLUMN, &channel,
+                            -1);
+        flist[pos] = malloc(sizeof(dwfile));
+        flist[pos]->name = strdup(file);
+        flist[pos]->channel = strdup(channel);
+        printf("%s %s\n", flist[pos]->name, flist[pos]->channel);
+
+        g_free(file);
+        g_free(channel);
+
+
+        pos++;
+
+        valid = gtk_tree_model_iter_next (model,
+                                          &iter);
+
+    }
+
+    return flist;
+}
+
+dwscope * dwscope_get()
+{
+    // Get the scope from the list of scopes
+    GtkTreeView * view = (GtkTreeView*) config.scope_tree;
+    GtkTreeModel * model = gtk_tree_view_get_model( (GtkTreeView*) view);
+    GtkTreeIter iter;
+    GtkTreeSelection * selection = gtk_tree_view_get_selection( (GtkTreeView*) view);
+
+    if(gtk_tree_selection_get_selected(selection, &model, &iter))
+    {
+        dwscope * scope = malloc(sizeof(dwscope));
+        scope->name = NULL;
+
+        gchar *name;
+        gfloat NA, ni, xy_nm, z_nm;
+
+        // Make sure you terminate calls to gtk_tree_model_get() with a “-1” value
+        gtk_tree_model_get (model, &iter,
+                            sNAME_COLUMN, &name,
+                            sNA_COLUMN, &NA,
+                            sNI_COLUMN, &ni,
+                            sNA_COLUMN, &xy_nm,
+                            sNA_COLUMN, &z_nm,
+                            -1);
+
+        scope->name = strdup(name);
+        g_free(name);
+        scope->NA = NA;
+        scope->ni = ni;
+        scope->xy_nm = xy_nm;
+        scope->z_nm = z_nm;
+        return scope;
+    } else {
+        printf("Failed: Could not get the scope\n");
+        return NULL;
+    }
+}
+
 void update_cmd(int ready)
 {
-    GtkTextView * cmd = (GtkTextView*) config.cmd;
-    GtkTextIter iter;
-    GtkTextBuffer *buffer = gtk_text_buffer_new(NULL);
-    gtk_text_buffer_get_iter_at_offset(buffer, &iter, 0);
-    if(ready == 0)
+
+    // https://developer.gnome.org/glib/stable/glib-Hash-Tables.html
+    // Todo: use a g_hash_table for the channels
+
+    // Get Model
+    GtkTreeModel * model =
+        gtk_tree_view_get_model ( (GtkTreeView*) config.file_tree);
+    // Get selection
+
+    GtkTreeIter iter;
+    gint row_count = 0;
+    gboolean valid = gtk_tree_model_get_iter_first (model, &iter);
+
+    // Get all files and add to list.
+    while (valid)
     {
-        gtk_text_buffer_insert(buffer, &iter, "# not ready", -1);
+        gchar *file_data;
+        gchar *chan_data;
+
+        // Make sure you terminate calls to gtk_tree_model_get() with a “-1” value
+        gtk_tree_model_get (model, &iter,
+                            0, &file_data,
+                            1, &chan_data,
+                            -1);
+
+        // Do something with the data
+        g_print ("Row %d: (%s,%s)\n",
+                 row_count, file_data, chan_data);
+        g_free (file_data);
+        g_free(chan_data);
+
+        valid = gtk_tree_model_iter_next (model,
+                                          &iter);
+        row_count++;
+    }
+
+
+    // Get all channels and add to list
+
+    // Get scope
+    dwscope * scope = dwscope_get();
+    int nchan = 0;
+    dwchannel ** channels = dwchannel_get(&nchan);
+    int nfiles = 0;
+    dwfile ** files = dwfile_get(&nfiles);
+
+    GtkTextView * cmd = (GtkTextView*) config.cmd;
+    GtkTextIter titer;
+    GtkTextBuffer *buffer = gtk_text_buffer_new(NULL);
+    gtk_text_buffer_get_iter_at_offset(buffer, &titer, 0);
+
+    if(scope == NULL)
+    {
+        gtk_text_buffer_insert(buffer, &titer, "Please select a microscope!", -1);
         gtk_text_view_set_buffer(cmd, buffer);
         return;
     }
-    gtk_text_buffer_insert(buffer, &iter, "mkdir PSFBW", -1);
-    gtk_text_buffer_insert(buffer, &iter, "dw_psfbw --lambda 123", -1);
+
+    char * buff = malloc(1024);
+    sprintf(buff, "# Microscope: %s\n", scope->name);
+    gtk_text_buffer_insert(buffer, &titer, buff, -1);
+    sprintf(buff, "# %d channels available\n", nchan);
+    gtk_text_buffer_insert(buffer, &titer, buff, -1);
+    sprintf(buff, "# %d files available\n", nfiles);
+    gtk_text_buffer_insert(buffer, &titer, buff, -1);
+    // TODO
+    gtk_text_buffer_insert(buffer, &titer, "mkdir PSFBW\n", -1);
+    gtk_text_buffer_insert(buffer, &titer, "dw_psfbw --lambda 123\n", -1);
     gtk_text_view_set_buffer (cmd,
                               buffer);
+    free(scope);
     return;
 }
 
@@ -505,7 +786,7 @@ void update_status()
     gtk_text_buffer_insert(buffer, &iter, "Hello world\n", -1);
     gtk_text_view_set_buffer(status, buffer);
 
-    update_cmd(ready);
+    update_cmd(1);
 }
 
 gboolean
@@ -520,6 +801,29 @@ tab_change_cb(GtkNotebook *notebook,
         update_status();
     }
     return TRUE;
+}
+
+gboolean file_tree_keypress (GtkWidget *tree_view, GdkEventKey *event, gpointer data) {
+    if (event->keyval == GDK_KEY_Delete){
+
+        // Get Model
+        GtkTreeModel * model =
+            gtk_tree_view_get_model ( (GtkTreeView*) tree_view);
+        // Get selection
+        GtkTreeSelection * selection = gtk_tree_view_get_selection ( (GtkTreeView*) tree_view);
+
+        GtkTreeIter iter;
+
+        // Remove the first selected item
+        // Note: has to be modified to handle multiple selected
+        if(gtk_tree_selection_get_selected (selection, &model, &iter))
+        {
+         gtk_tree_store_remove(GTK_TREE_STORE(model), &iter);
+        }
+
+        return TRUE;
+    }
+    return FALSE;
 }
 
 DwAppWindow *
@@ -560,10 +864,12 @@ dw_app_window_new (DwApp *app)
     GtkWidget *image = gtk_image_new_from_resource("/images/wolf1.png");
 
     GtkWidget * file_tree = create_file_tree();
+    g_signal_connect (G_OBJECT (file_tree), "key_press_event", G_CALLBACK (file_tree_keypress), NULL);
+
     GtkWidget * channel_tree = create_channel_tree();
     //GtkWidget * channel_tree = gtk_label_new("testing");
-    GtkWidget * scope_tree = create_microscope_tree();
-    //GtkWidget * scope_tree = gtk_label_new("Bug free, but boring, scope_tree replacement");
+    GtkWidget * scope_tab = create_microscope_tab();
+    //GtkWidget * scope_tab = gtk_label_new("Bug free, but boring, scope_tab replacement");
 
     /* Set up Drag and Drop */
     enum
@@ -598,13 +904,13 @@ dw_app_window_new (DwApp *app)
 
     gtk_container_add (GTK_CONTAINER (frame_files), file_tree_scroller);
     gtk_container_add (GTK_CONTAINER (frame_channels), channel_tree);
-    gtk_container_add (GTK_CONTAINER (frame_scope), scope_tree);
+    gtk_container_add (GTK_CONTAINER (frame_scope), scope_tab);
 
     gtk_container_add (GTK_CONTAINER (window), notebook);
 
     config.file_tree = file_tree;
     config.channel_tree = channel_tree;
-    config.scope_tree = scope_tree;
+    config.window = window;
 
 
     return window;

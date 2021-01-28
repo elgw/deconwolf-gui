@@ -8,15 +8,25 @@ make
 make install
 ```
 ## TODO
- - [ ] Parser for channel name
- - [ ] Make file list scrollable
- - [ ] Microscope tab
- - [ ] Deconwolf tab
+ - [ ] Parse lists to generate command list
  - [ ] Run/Progress monitor
- - [ ] [GkeyFile](https://developer.gnome.org/glib/stable/glib-Key-value-file-parser.html#g-key-file-new) for settings.
+
+ ## Future:
+ - [ ] Group files by folder
+ - [ ] Add channels
+ - [ ] Add microscope (see `gtk-3-icon-browser` for possible icons)
  - [ ] Menus
  - [ ] About dialog
+ - [ ] [GkeyFile](https://developer.gnome.org/glib/stable/glib-Key-value-file-parser.html#g-key-file-new) for settings.
+ - [ ] Select multiple files to delete
  - [ ] Use a svg file for icon.
+
+ ## LOG
+ - [x] Delete items from lists
+ - [x] Parser for channel name
+ - [x] Make file list scrollable
+ - [x] Microscope tab
+ - [x] Deconwolf tab
  - [X] Use GResource to include image data in binary.
  - [x] Drag and drop. Note that drag and drop from the 'Desktop' on Gnome might crash the whole system.
  - [x] A tree-view for file list
