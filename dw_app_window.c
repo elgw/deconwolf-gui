@@ -3,6 +3,8 @@
 #include "dw_app.h"
 #include "dw_app_window.h"
 #include "dw_app_get_new_scope.c"
+#include <libgen.h>
+#include <locale.h>
 #include <assert.h>
 
 typedef struct {
@@ -133,6 +135,14 @@ int is_tif_file_name(char * fname)
     g_regex_unref (regex);
 
     return match;
+}
+
+char * get_psfname(char * dir, char * channel)
+{
+    int len = strlen(dir) + strlen(channel);
+    char * name = malloc(len+20);
+    sprintf(name, "%s/PSFBW/%s.tif", dir, channel);
+    return name;
 }
 
 char * get_channel_name(char *fname0)
@@ -333,28 +343,26 @@ new_scope_cb (GtkWidget *widget,
                                                       NULL);
    gtk_tree_view_append_column (GTK_TREE_VIEW (scope_tree), column);
 
+   // TODO: put in action bar
    GtkWidget * ButtonNew = gtk_button_new_from_icon_name("list-add",
                                                          GTK_ICON_SIZE_SMALL_TOOLBAR);
+   GtkWidget * Bar = gtk_action_bar_new();
+   gtk_action_bar_pack_start ((GtkActionBar*) Bar, ButtonNew);
+
    //gtk_button_set_label(ButtonNew, "Add");
 
    g_signal_connect (ButtonNew, "clicked", G_CALLBACK (new_scope_cb), NULL);
 
 
    GtkWidget * A = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
-   GtkWidget * A1 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
-   gtk_box_pack_start ((GtkBox*) A1,
-                       ButtonNew,
+
+   gtk_box_pack_end ((GtkBox*) A,
+                       Bar,
                        FALSE,
                        TRUE,
                        5);
 
    gtk_box_pack_start ((GtkBox*) A,
-                       A1,
-                       FALSE,
-                       TRUE,
-                       5);
-
-   gtk_box_pack_end ((GtkBox*) A,
                      scope_tree,
                      TRUE,
                      TRUE,
@@ -433,8 +441,8 @@ drag_data_cb(GtkWidget *wgt, GdkDragContext *context, int x, int y,
 
   //  printf("%d data items\n", gtk_selection_data_get_length (seldata));
   const guchar * data = gtk_selection_data_get_data(seldata);
-  printf("---\n%s---\n", data);
-  fflush(stdout);
+  //printf("---\n%s---\n", data);
+  //fflush(stdout);
 
   /* Append to file tree, need to split the data first */
   if(strlen( (char *) data) > 0)
@@ -494,43 +502,59 @@ dw_app_window_class_init (DwAppWindowClass *class)
 
 GtkWidget * dw_frame()
 {
-    //    return gtk_frame_new(NULL);
+     return gtk_frame_new(NULL);
+}
 
-    GtkWidget * status = gtk_text_view_new();
+GtkWidget * run_frame()
+{
+
     GtkWidget * cmd = gtk_text_view_new();
+    gtk_text_view_set_monospace( (GtkTextView *) cmd , TRUE);
 
     config.cmd = cmd;
-    config.status = status;
 
-    g_object_set(G_OBJECT(status), "editable", FALSE, NULL);
     g_object_set(G_OBJECT(cmd), "editable", FALSE, NULL);
 
-    GtkWidget * fcmd = gtk_frame_new("Commands");
-    gtk_container_add(GTK_CONTAINER(fcmd), cmd);
+    GtkWidget * cmd_scroll = gtk_scrolled_window_new (NULL, NULL);
 
-    GtkWidget * fstatus = gtk_frame_new("Status");
-    gtk_container_add(GTK_CONTAINER(fstatus), status);
+    gtk_container_add (GTK_CONTAINER (cmd_scroll),
+                       cmd);
 
-    GtkWidget * box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
-    gtk_box_pack_start ((GtkBox*) box,
-                        fstatus,
-                        TRUE,
-                        TRUE,
-                        5);
+    GtkWidget * fcmd_scroll = gtk_frame_new("Commands");
+    gtk_container_add(GTK_CONTAINER(fcmd_scroll), cmd_scroll);
 
-    gtk_box_pack_end ((GtkBox*) box,
-                        fcmd,
-                        TRUE,
-                        TRUE,
-                        5);
 
     GtkWidget * frame = gtk_frame_new(NULL);
-    gtk_container_add(GTK_CONTAINER (frame), box);
-    gtk_widget_show (status);
-    gtk_widget_show (cmd);
+    gtk_container_add(GTK_CONTAINER (frame), fcmd_scroll);
 
-    return frame;
-}
+    GtkWidget * ButtonRun = gtk_button_new_from_icon_name("system-run",
+                                                          GTK_ICON_SIZE_SMALL_TOOLBAR);
+    GtkWidget * ButtonSaveAs = gtk_button_new_from_icon_name("document-save-as",
+                                                          GTK_ICON_SIZE_SMALL_TOOLBAR);
+    GtkWidget * Bar = gtk_action_bar_new();
+    gtk_action_bar_pack_end ((GtkActionBar*) Bar, ButtonRun);
+    gtk_action_bar_pack_end ((GtkActionBar*) Bar, ButtonSaveAs);
+
+    // g_signal_connect (ButtonNew, "clicked", G_CALLBACK (new_scope_cb), NULL);
+
+    GtkWidget * A = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+
+    gtk_box_pack_end ((GtkBox*) A,
+                      Bar,
+                      FALSE,
+                      TRUE,
+                      5);
+
+    gtk_box_pack_start ((GtkBox*) A,
+                        frame,
+                        TRUE,
+                        TRUE,
+                        5);
+
+    gtk_widget_show (cmd);
+    return A;
+
+    }
 
 dwchannel ** dwchannel_get(int * nchannels)
 {
@@ -553,7 +577,7 @@ dwchannel ** dwchannel_get(int * nchannels)
     // Figure out how many rows there are
     gint nchan = gtk_tree_model_iter_n_children(GTK_TREE_MODEL(model), NULL);
 
-    printf("There are %d channels\n", nchan); fflush(stdout);
+    //printf("There are %d channels\n", nchan); fflush(stdout);
     if(nchan < 1)
     {
         nchannels[0] = 0;
@@ -585,9 +609,11 @@ dwchannel ** dwchannel_get(int * nchannels)
         clist[pos]->alias = strdup(alias);
         clist[pos]->lambda = (float) lambda;
         clist[pos]->niter = (int) niter;
+        if(0){
         printf("%s %s %f %d\n",
                clist[pos]->name, clist[pos]->alias,
                clist[pos]->lambda, clist[pos]->niter);
+        }
         g_free(alias);
         g_free(name);
 
@@ -618,7 +644,7 @@ dwfile ** dwfile_get(int * nfiles)
     // Figure out how many rows there are
     gint nfiles_list = gtk_tree_model_iter_n_children(GTK_TREE_MODEL(model), NULL);
 
-    printf("There are %d files\n", nfiles_list); fflush(stdout);
+    // printf("There are %d files\n", nfiles_list); fflush(stdout);
     if(nfiles_list < 1)
     {
         nfiles[0] = 0;
@@ -644,11 +670,10 @@ dwfile ** dwfile_get(int * nfiles)
         flist[pos] = malloc(sizeof(dwfile));
         flist[pos]->name = strdup(file);
         flist[pos]->channel = strdup(channel);
-        printf("%s %s\n", flist[pos]->name, flist[pos]->channel);
+        //        printf("%s %s\n", flist[pos]->name, flist[pos]->channel);
 
         g_free(file);
         g_free(channel);
-
 
         pos++;
 
@@ -681,8 +706,8 @@ dwscope * dwscope_get()
                             sNAME_COLUMN, &name,
                             sNA_COLUMN, &NA,
                             sNI_COLUMN, &ni,
-                            sNA_COLUMN, &xy_nm,
-                            sNA_COLUMN, &z_nm,
+                            sDX_COLUMN, &xy_nm,
+                            sDZ_COLUMN, &z_nm,
                             -1);
 
         scope->name = strdup(name);
@@ -693,13 +718,29 @@ dwscope * dwscope_get()
         scope->z_nm = z_nm;
         return scope;
     } else {
-        printf("Failed: Could not get the scope\n");
         return NULL;
     }
 }
 
+dwchannel * getchan(dwchannel ** channels, char * alias, int nchan)
+    {
+        for(int kk = 0; kk<nchan; kk++)
+     {
+      if(strcmp(alias, channels[kk]->alias) == 0)
+      {
+       return channels[kk];
+      }
+     }
+     return NULL;
+    }
+
 void update_cmd(int ready)
 {
+
+    // Make sure that the radix symbol is '.'
+    // Does GTK change this from "C"?
+    setlocale(LC_ALL,"C");
+
 
     // https://developer.gnome.org/glib/stable/glib-Hash-Tables.html
     // Todo: use a g_hash_table for the channels
@@ -726,8 +767,8 @@ void update_cmd(int ready)
                             -1);
 
         // Do something with the data
-        g_print ("Row %d: (%s,%s)\n",
-                 row_count, file_data, chan_data);
+        //g_print ("Row %d: (%s,%s)\n",
+        //         row_count, file_data, chan_data);
         g_free (file_data);
         g_free(chan_data);
 
@@ -753,38 +794,59 @@ void update_cmd(int ready)
 
     if(scope == NULL)
     {
-        gtk_text_buffer_insert(buffer, &titer, "Please select a microscope!", -1);
+        gtk_text_buffer_insert(buffer, &titer, "# Please select a microscope!", -1);
         gtk_text_view_set_buffer(cmd, buffer);
         return;
     }
 
-    char * buff = malloc(1024);
+    char * buff = malloc(1024*1024);
     sprintf(buff, "# Microscope: %s\n", scope->name);
     gtk_text_buffer_insert(buffer, &titer, buff, -1);
     sprintf(buff, "# %d channels available\n", nchan);
     gtk_text_buffer_insert(buffer, &titer, buff, -1);
     sprintf(buff, "# %d files available\n", nfiles);
     gtk_text_buffer_insert(buffer, &titer, buff, -1);
-    // TODO
-    gtk_text_buffer_insert(buffer, &titer, "mkdir PSFBW\n", -1);
-    gtk_text_buffer_insert(buffer, &titer, "dw_psfbw --lambda 123\n", -1);
+
+    int nthreads = 8;
+    int tilesize = 2048;
+    // Generate PSFs -- only for used channels
+    for(int kk = 0 ; kk < nfiles; kk++)
+    {
+        dwchannel * ch = getchan(channels, files[kk]->channel, nchan);
+        if(ch != NULL)
+        {
+            char * fdir = strdup(files[kk]->name);
+            fdir = dirname(fdir);
+            char * psf = get_psfname(fdir, files[kk]->channel);
+            sprintf(buff, "mkdir %s/PSFBW/\n", fdir);
+            gtk_text_buffer_insert(buffer, &titer, buff, -1);
+            sprintf(buff, "dw_bw --lambda %f --NA %f --ni %f --threads %d --resxy %f --resz %f %s\n",
+                    ch->lambda, scope->NA, scope->ni, nthreads, scope->xy_nm, scope->z_nm,
+                    psf);
+            //        printf("%s", buff);
+            gtk_text_buffer_insert(buffer, &titer, buff, -1);
+            sprintf(buff, "dw --tilesize %d --iter %d --threads %d %s %s\n",
+                    tilesize, ch->niter, nthreads,
+                    files[kk]->name, psf);
+            gtk_text_buffer_insert(buffer, &titer, buff, -1);
+
+            free(fdir);
+            free(psf);
+        } else {
+            sprintf(buff, "# Missing channel for: %s\n", files[kk]->name);
+            gtk_text_buffer_insert(buffer, &titer, buff, -1);
+        }
+    }
+
     gtk_text_view_set_buffer (cmd,
                               buffer);
     free(scope);
+    free(buff);
     return;
 }
 
 void update_status()
 {
-    int ready = 0;
-    // TODO update conf and status text
-    // Both are gtk_text_view
-    GtkTextView * status = (GtkTextView*) config.status;
-    GtkTextIter iter;
-    GtkTextBuffer *buffer = gtk_text_buffer_new(NULL);
-    gtk_text_buffer_get_iter_at_offset(buffer, &iter, 0);
-    gtk_text_buffer_insert(buffer, &iter, "Hello world\n", -1);
-    gtk_text_view_set_buffer(status, buffer);
 
     update_cmd(1);
 }
@@ -796,7 +858,7 @@ tab_change_cb(GtkNotebook *notebook,
               gpointer     user_data)
 {
 
-    if(page_num == 4)
+    if(page_num == 5)
     {
         update_status();
     }
@@ -834,9 +896,8 @@ dw_app_window_new (DwApp *app)
     GtkWidget * frame_files = gtk_frame_new (NULL);
     GtkWidget * frame_channels = gtk_frame_new (NULL);
     GtkWidget * frame_scope = gtk_frame_new (NULL);
+    GtkWidget * frame_run = run_frame();
     GtkWidget * frame_dw = dw_frame();
-
-
 
     gtk_frame_set_shadow_type (GTK_FRAME (frame_drop), GTK_SHADOW_IN);
     gtk_frame_set_shadow_type (GTK_FRAME (frame_files), GTK_SHADOW_IN);
@@ -857,6 +918,9 @@ dw_app_window_new (DwApp *app)
 
     gtk_notebook_append_page ((GtkNotebook*) notebook,
                               frame_dw, gtk_label_new("Deconwolf"));
+
+    gtk_notebook_append_page ((GtkNotebook*) notebook,
+                              frame_run, gtk_label_new("Run"));
 
     g_signal_connect(notebook, "switch-page",
                      G_CALLBACK(tab_change_cb), NULL);

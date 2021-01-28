@@ -9,12 +9,13 @@ make install
 ```
 ## TODO
  - [ ] Parse lists to generate command list
+ - [ ] Monospace font in command list.
  - [ ] Run/Progress monitor
 
  ## Future:
  - [ ] Group files by folder
  - [ ] Add channels
- - [ ] Add microscope (see `gtk-3-icon-browser` for possible icons)
+ - [ ] Add microscope window
  - [ ] Menus
  - [ ] About dialog
  - [ ] [GkeyFile](https://developer.gnome.org/glib/stable/glib-Key-value-file-parser.html#g-key-file-new) for settings.
@@ -22,6 +23,8 @@ make install
  - [ ] Use a svg file for icon.
 
  ## LOG
+ - [x] Add microscope icon, found one using `gtk-3-icon-browser`
+ - [x] Set radix character to be '.'
  - [x] Delete items from lists
  - [x] Parser for channel name
  - [x] Make file list scrollable
