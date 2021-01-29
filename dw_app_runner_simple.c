@@ -1,4 +1,7 @@
-gboolean saveandrun(GtkWindow * parent_window, char ** savename)
+gboolean save_cmd(GtkWindow * parent_window, char ** savename)
+/* Save the command-queue to disk. Returns true on success and sets savename
+to the filename that was used.
+ */
 {
 
     gboolean saved = FALSE;

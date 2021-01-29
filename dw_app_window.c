@@ -57,29 +57,6 @@ typedef struct {
     char * channel;
 } dwfile;
 
-// Channel
-typedef struct {
-    char * name;
-    char * alias;
-    float lambda;
-    int niter;
-} dwchannel;
-
-// Microscope
-typedef struct {
-    char * name;
-    float NA;
-    float ni;
-    float xy_nm;
-    float z_nm;
-} dwscope;
-
-// deconwolf
-typedef struct {
-    int nthreads;
-    int tilesize;
-    gboolean overwrite;
-} dwconf;
 
 
 // GtkTreeView
@@ -95,6 +72,7 @@ GtkWidget * create_file_tree()
 
 
     GtkWidget * file_tree = gtk_tree_view_new_with_model (GTK_TREE_MODEL (file_store));
+    config.file_tree = file_tree;
 
 GtkCellRenderer * renderer = gtk_cell_renderer_text_new ();
     g_object_set (G_OBJECT (renderer),
@@ -116,6 +94,7 @@ GtkCellRenderer * renderer = gtk_cell_renderer_text_new ();
                                                       renderer,
                                                       "text", fCHANNEL_COLUMN,
                                                       NULL);
+
    gtk_tree_view_append_column (GTK_TREE_VIEW (file_tree), column);
 
    return file_tree;
@@ -188,42 +167,48 @@ char * get_channel_name(char *fname0)
     return ret;
 }
 
+gboolean add_channel(char * alias, char * name, float emission, int iter)
+{
+    GtkTreeStore * channel_store = (GtkTreeStore*) gtk_tree_view_get_model((GtkTreeView*) config.channel_tree);
+    GtkTreeIter iter1;  /* Parent iter */
+
+    gtk_tree_store_append (channel_store, &iter1, NULL);  /* Acquire a top-level iterator */
+    gtk_tree_store_set (channel_store, &iter1,
+                        cALIAS_COLUMN, alias,
+                        cNAME_COLUMN, name,
+                        cNITER_COLUMN, iter,
+                        cEMISSION_COLUMN, emission,
+                        -1);
+    return TRUE;
+}
+
+gboolean
+new_channel_cb(GtkWidget *widget,
+               gpointer user_data)
+{
+    add_channel("WLF", "Wolfram-X", 70.0, 100);
+    return TRUE;
+}
+
+
     GtkWidget * create_channel_tree()
     {
-
     /* Create tree-view for files */
-
-
     GtkTreeStore * channel_store = gtk_tree_store_new (cN_COLUMNS,       /* Total number of columns */
                                                        G_TYPE_STRING,
                                                        G_TYPE_STRING,
                                                        G_TYPE_FLOAT,
                                                     G_TYPE_INT);
 
-    GtkTreeIter iter1;  /* Parent iter */
-
-    gtk_tree_store_append (channel_store, &iter1, NULL);  /* Acquire a top-level iterator */
-    gtk_tree_store_set (channel_store, &iter1,
-                        cALIAS_COLUMN, "DAPI",
-                        cNAME_COLUMN, "4′,6-diamidino-2-phenylindole",
-                        cNITER_COLUMN, 50,
-                        cEMISSION_COLUMN, 466.0,
-                        -1);
-    gtk_tree_store_append (channel_store, &iter1, NULL);  /* Acquire a top-level iterator */
-    gtk_tree_store_set (channel_store, &iter1,
-                        cALIAS_COLUMN, "A594",
-                        cNAME_COLUMN, "Alexa Fluor 594",
-                        cEMISSION_COLUMN, 617.0,
-                        cNITER_COLUMN, 100,
-                        -1);
-
     GtkWidget * channel_tree = gtk_tree_view_new_with_model (GTK_TREE_MODEL (channel_store));
+    config.channel_tree = channel_tree;
+
     GtkCellRenderer * renderer = gtk_cell_renderer_text_new ();
     g_object_set (G_OBJECT (renderer),
                  "foreground", "black",
                  NULL);
 
-    g_object_set(G_OBJECT (renderer), "editable", TRUE, NULL);
+    g_object_set(G_OBJECT (renderer), "editable", FALSE, NULL);
 
    /* Create a column, associating the "text" attribute of the
     * cell_renderer to the first column of the model */
@@ -253,23 +238,78 @@ char * get_channel_name(char *fname0)
    gtk_tree_view_append_column (GTK_TREE_VIEW (channel_tree), column);
 
 
-   return channel_tree;
+   GtkWidget * btnNew = gtk_button_new_from_icon_name("list-add",
+                                                      GTK_ICON_SIZE_SMALL_TOOLBAR);
+   gtk_widget_set_tooltip_text(btnNew, "Add another channel");
+
+   GtkWidget * btnDel = gtk_button_new_from_icon_name("list-remove",
+                                                      GTK_ICON_SIZE_SMALL_TOOLBAR);
+   gtk_widget_set_tooltip_text(btnDel, "Remove selected channel");
+   GtkWidget * btnEdit = gtk_button_new_from_icon_name("preferences-other",
+                                                      GTK_ICON_SIZE_SMALL_TOOLBAR);
+   gtk_widget_set_tooltip_text(btnEdit, "Edit selected channel");
+
+
+   g_signal_connect(btnNew, "clicked", G_CALLBACK (new_channel_cb), NULL);
+   g_signal_connect(btnDel, "clicked", G_CALLBACK (del_channel_cb), NULL);
+
+   GtkWidget * Bar = gtk_action_bar_new();
+   gtk_action_bar_pack_start((GtkActionBar*) Bar, btnNew);
+   gtk_action_bar_pack_start((GtkActionBar*) Bar, btnDel);
+   gtk_action_bar_pack_start((GtkActionBar*) Bar, btnEdit);
+
+
+   GtkWidget * boxV = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+   gtk_box_pack_end((GtkBox*) boxV,
+                    Bar,
+                    FALSE, TRUE, 5);
+   gtk_box_pack_start((GtkBox*) boxV,
+                    channel_tree,
+                    FALSE, TRUE, 5);
+
+   return boxV;
    }
+
+
+
+
+gboolean add_scope(char * name, float na, float ni, float dx, float dz)
+/* Add another microscope to the list of microscopes */
+{
+    GtkTreeStore * scope_store = (GtkTreeStore*) gtk_tree_view_get_model((GtkTreeView*) config.scope_tree);
+    GtkTreeIter iter1;  /* Parent iter */
+    gtk_tree_store_append (scope_store, &iter1, NULL);  /* Acquire a top-level iterator */
+    gtk_tree_store_set (scope_store, &iter1,
+                        sNAME_COLUMN, name,
+                        sNA_COLUMN, na,
+                        sNI_COLUMN, ni,
+                        sDX_COLUMN, dx,
+                        sDZ_COLUMN, dz,
+                        -1);
+    return TRUE;
+}
+
+
 
 gboolean
 new_scope_cb (GtkWidget *widget,
                gpointer   user_data)
 {
-    dw_app_get_new_scope((GtkWindow*) config.window);
+    //    add_scope("Magic-scope1", 3.14, 1.4, 45, 45);
+
+    dwscope * scope = dw_app_get_new_scope((GtkWindow*) config.window, NULL);
+    if(scope != NULL)
+    {
+        add_scope(scope->name, scope->NA, scope->ni, scope->xy_nm, scope->z_nm);
+        free(scope);
+    }
+
     return TRUE;
 }
 
     GtkWidget * create_microscope_tab()
     {
-
-    /* Create tree-view for files */
-
-
+    /* Create tree-view for microscopes */
     GtkTreeStore * scope_store = gtk_tree_store_new (sSN_COLUMNS,       /* Total number of columns */
                                                        G_TYPE_STRING,
                                                        G_TYPE_FLOAT,// na
@@ -277,40 +317,14 @@ new_scope_cb (GtkWidget *widget,
                                                        G_TYPE_FLOAT, // dx
                                                      G_TYPE_FLOAT); // dz
 
-    GtkTreeIter iter1;  /* Parent iter */
-
-    gtk_tree_store_append (scope_store, &iter1, NULL);  /* Acquire a top-level iterator */
-    gtk_tree_store_set (scope_store, &iter1,
-                        sNAME_COLUMN, "Bicroscope 1, 100X",
-                        sNA_COLUMN, 1.45,
-                        sNI_COLUMN, 1.515,
-                        sDX_COLUMN, 130.0,
-                        sDZ_COLUMN, (float) 300.0,
-                        -1);
-    gtk_tree_store_append (scope_store, &iter1, NULL);
-    gtk_tree_store_set (scope_store, &iter1,
-                        sNAME_COLUMN, "Bicroscope 1, 60X",
-                        sNA_COLUMN, 1.40,
-                        sNI_COLUMN, 1.515,
-                        sDX_COLUMN, 216.0,
-                        sDZ_COLUMN, (float) 300.0,
-                        -1);
-    gtk_tree_store_append (scope_store, &iter1, NULL);
-    gtk_tree_store_set (scope_store, &iter1,
-                        sNAME_COLUMN, "Bicroscope 2, 100X",
-                        sNA_COLUMN, 1.40,
-                        sNI_COLUMN, 1.512,
-                        sDX_COLUMN, 65.0,
-                        sDZ_COLUMN, (float) 250.0,
-                        -1);
-
     GtkWidget * scope_tree = gtk_tree_view_new_with_model (GTK_TREE_MODEL (scope_store));
     config.scope_tree = scope_tree;
+
     GtkCellRenderer * renderer = gtk_cell_renderer_text_new ();
     g_object_set (G_OBJECT (renderer),
                  "foreground", "black",
                  NULL);
-    g_object_set(G_OBJECT (renderer), "editable", TRUE, NULL);
+    g_object_set(G_OBJECT (renderer), "editable", FALSE, NULL);
 
    /* Create a column, associating the "text" attribute of the
     * cell_renderer to the first column of the model */
@@ -346,16 +360,25 @@ new_scope_cb (GtkWidget *widget,
                                                       NULL);
    gtk_tree_view_append_column (GTK_TREE_VIEW (scope_tree), column);
 
-   // TODO: put in action bar
-   GtkWidget * ButtonNew = gtk_button_new_from_icon_name("list-add",
+   GtkWidget * btnNew = gtk_button_new_from_icon_name("list-add",
                                                          GTK_ICON_SIZE_SMALL_TOOLBAR);
+   gtk_widget_set_tooltip_text(btnNew, "Add another microscope");
+   GtkWidget * btnDel = gtk_button_new_from_icon_name("list-remove",
+                                                      GTK_ICON_SIZE_SMALL_TOOLBAR);
+   gtk_widget_set_tooltip_text(btnDel, "Remove selected microscope");
+   GtkWidget * btnEdit = gtk_button_new_from_icon_name("preferences-other",
+                                                       GTK_ICON_SIZE_SMALL_TOOLBAR);
+   gtk_widget_set_tooltip_text(btnEdit, "Edit selected microscope");
+
    GtkWidget * Bar = gtk_action_bar_new();
-   gtk_action_bar_pack_start ((GtkActionBar*) Bar, ButtonNew);
+   gtk_action_bar_pack_start ((GtkActionBar*) Bar, btnNew);
+   gtk_action_bar_pack_start ((GtkActionBar*) Bar, btnDel);
+   gtk_action_bar_pack_start ((GtkActionBar*) Bar, btnEdit);
 
-   //gtk_button_set_label(ButtonNew, "Add");
-
-   g_signal_connect (ButtonNew, "clicked", G_CALLBACK (new_scope_cb), NULL);
-
+   g_signal_connect (btnNew, "clicked", G_CALLBACK (new_scope_cb), NULL);
+   g_signal_connect (btnDel, "clicked", G_CALLBACK (del_scope_cb), NULL);
+   g_signal_connect (btnEdit, "clicked", G_CALLBACK (edit_scope_cb), NULL);
+   // TODO: Add the missing callbacks
 
    GtkWidget * A = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
 
@@ -530,6 +553,18 @@ void runscript(char * name)
     g_assert(ret == TRUE); // TODO error handling is not implemented.
 }
 
+
+gboolean save_dw_cb(GtkWidget * widget, gpointer user_data)
+{
+    char * filename = NULL;
+    if(save_cmd((GtkWindow*) config.window, &filename))
+    {
+        free(filename);
+    }
+    return TRUE;
+}
+
+
 gboolean run_dw_cb(GtkWidget * widget, gpointer user_data)
 {
     // Run deconwolf
@@ -538,7 +573,7 @@ gboolean run_dw_cb(GtkWidget * widget, gpointer user_data)
     //    to execute it
 
     char * filename = NULL;
-    if(saveandrun((GtkWindow*) config.window, &filename)) // in dw_app_runner_simple.c
+    if(save_cmd((GtkWindow*) config.window, &filename)) // in dw_app_runner_simple.c
     { // If we got a filename
         // Get text from
         // config.cmd
@@ -606,15 +641,21 @@ GtkWidget * run_frame()
     GtkWidget * frame = gtk_frame_new(NULL);
     gtk_container_add(GTK_CONTAINER (frame), fcmd_scroll);
 
-    GtkWidget * ButtonRun = gtk_button_new_from_icon_name("system-run",
+    GtkWidget * ButtonRun = gtk_button_new_from_icon_name("media-playback-start",
                                                           GTK_ICON_SIZE_SMALL_TOOLBAR);
+
+    gtk_widget_set_tooltip_text(ButtonRun, "Save the script and run it");
+
     GtkWidget * ButtonSaveAs = gtk_button_new_from_icon_name("document-save-as",
                                                           GTK_ICON_SIZE_SMALL_TOOLBAR);
+    gtk_widget_set_tooltip_text(ButtonSaveAs, "Save the script to disk");
+
     GtkWidget * Bar = gtk_action_bar_new();
     gtk_action_bar_pack_end ((GtkActionBar*) Bar, ButtonRun);
     gtk_action_bar_pack_end ((GtkActionBar*) Bar, ButtonSaveAs);
 
     g_signal_connect (ButtonRun, "clicked", G_CALLBACK (run_dw_cb), NULL);
+    g_signal_connect (ButtonRun, "clicked", G_CALLBACK (save_dw_cb), NULL);
 
     GtkWidget * A = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
 
@@ -676,13 +717,13 @@ dwchannel ** dwchannel_get(int * nchannels)
         gint niter;
         gfloat lambda;
 
-        // Make sure you terminate calls to gtk_tree_model_get() with a “-1” value
         gtk_tree_model_get (model, &iter,
                             cALIAS_COLUMN, &alias,
                             cNAME_COLUMN, &name,
                             cNITER_COLUMN, &niter,
                             cEMISSION_COLUMN, &lambda,
                             -1);
+
         clist[pos] = malloc(sizeof(dwchannel));
         clist[pos]->name = strdup(name);
         clist[pos]->alias = strdup(alias);
@@ -936,7 +977,6 @@ tab_change_cb(GtkNotebook *notebook,
               guint        page_num,
               gpointer     user_data)
 {
-
     if(page_num == 5)
     {
         update_status();
@@ -944,28 +984,142 @@ tab_change_cb(GtkNotebook *notebook,
     return TRUE;
 }
 
+
+
+
+void del_selected_file()
+{
+    GtkTreeModel * model =
+        gtk_tree_view_get_model ( (GtkTreeView*) config.file_tree);
+    GtkTreeSelection * selection = gtk_tree_view_get_selection ( (GtkTreeView*) config.file_tree);
+    GtkTreeIter iter;
+
+    // Remove the first selected item
+    // Note: has to be modified to handle multiple selected
+    if(gtk_tree_selection_get_selected (selection, &model, &iter))
+    {
+        gtk_tree_store_remove(GTK_TREE_STORE(model), &iter);
+    }
+}
+
+void del_selected_scope()
+{
+    GtkTreeModel * model =
+        gtk_tree_view_get_model ( (GtkTreeView*) config.scope_tree);
+    GtkTreeSelection * selection = gtk_tree_view_get_selection ( (GtkTreeView*) config.scope_tree);
+    GtkTreeIter iter;
+
+    // Remove the first selected item
+    // Note: has to be modified to handle multiple selected
+    if(gtk_tree_selection_get_selected (selection, &model, &iter))
+    {
+        gtk_tree_store_remove(GTK_TREE_STORE(model), &iter);
+    }
+}
+
+void edit_selected_scope()
+{
+    printf("edit_selected_scope()\n");
+    GtkTreeModel * model =
+        gtk_tree_view_get_model ( (GtkTreeView*) config.scope_tree);
+    GtkTreeSelection * selection = gtk_tree_view_get_selection ( (GtkTreeView*) config.scope_tree);
+    GtkTreeIter iter;
+
+    // Remove the first selected item
+    // Note: has to be modified to handle multiple selected
+    if(gtk_tree_selection_get_selected (selection, &model, &iter))
+    {
+        // Get what we need from the mode
+        gchar * sname;
+        gfloat sNA;
+        gfloat sNI;
+        gfloat sDX;
+        gfloat sDZ;
+
+        gtk_tree_model_get(model, &iter,
+                           sNAME_COLUMN, &sname,
+                           sNA_COLUMN, &sNA,
+                           sNI_COLUMN, &sNI,
+                           sDX_COLUMN, &sDX,
+                           sDZ_COLUMN, &sDZ,
+                           -1);
+        dwscope * current_scope = malloc(sizeof(dwscope));
+        current_scope->name = strdup(sname);
+        current_scope->NA = sNA;
+        current_scope->ni = sNI;
+        current_scope->xy_nm = sDX;
+        current_scope->z_nm = sDZ;
+        dwscope * scope = dw_app_get_new_scope((GtkWindow*) config.window, current_scope);
+        if(scope != NULL)
+        {
+            gtk_tree_store_set(model, &iter,
+                               sNAME_COLUMN, scope->name,
+                               sNA_COLUMN, scope->NA,
+                               sNI_COLUMN, scope->ni,
+                               sDX_COLUMN, scope->xy_nm,
+                               sDZ_COLUMN, scope->z_nm,
+                               -1);
+
+            free(scope);
+        }
+        free(current_scope);
+    }
+
+}
+
+
+
+void del_selected_channel()
+{
+    GtkTreeModel * model =
+        gtk_tree_view_get_model ( (GtkTreeView*) config.channel_tree);
+    GtkTreeSelection * selection = gtk_tree_view_get_selection ( (GtkTreeView*) config.channel_tree);
+    GtkTreeIter iter;
+
+    // Remove the first selected item
+    // Note: has to be modified to handle multiple selected
+    if(gtk_tree_selection_get_selected (selection, &model, &iter))
+    {
+        gtk_tree_store_remove(GTK_TREE_STORE(model), &iter);
+    }
+}
+
+gboolean edit_scope_cb(GtkWidget * w, gpointer p)
+{
+    edit_selected_scope();
+    return TRUE;
+}
+
+gboolean del_channel_cb(GtkWidget * w, gpointer p)
+{
+    del_selected_channel();
+    return TRUE;
+}
+gboolean del_scope_cb(GtkWidget * w, gpointer p)
+{
+    del_selected_scope();
+    return TRUE;
+}
+
 gboolean file_tree_keypress (GtkWidget *tree_view, GdkEventKey *event, gpointer data) {
     if (event->keyval == GDK_KEY_Delete){
-
-        // Get Model
-        GtkTreeModel * model =
-            gtk_tree_view_get_model ( (GtkTreeView*) tree_view);
-        // Get selection
-        GtkTreeSelection * selection = gtk_tree_view_get_selection ( (GtkTreeView*) tree_view);
-
-        GtkTreeIter iter;
-
-        // Remove the first selected item
-        // Note: has to be modified to handle multiple selected
-        if(gtk_tree_selection_get_selected (selection, &model, &iter))
-        {
-         gtk_tree_store_remove(GTK_TREE_STORE(model), &iter);
-        }
-
-        return TRUE;
+        del_selected_file();
     }
     return FALSE;
 }
+gboolean channel_tree_keypress (GtkWidget *tree_view, GdkEventKey *event, gpointer data) {
+    if (event->keyval == GDK_KEY_Delete){
+        del_selected_channel();
+    }
+    return FALSE;
+}
+gboolean microscope_tree_keypress (GtkWidget *tree_view, GdkEventKey *event, gpointer data) {
+    if (event->keyval == GDK_KEY_Delete){
+        del_selected_scope();
+    }
+    return FALSE;
+}
+
 
 DwAppWindow *
 dw_app_window_new (DwApp *app)
@@ -1007,11 +1161,20 @@ dw_app_window_new (DwApp *app)
     GtkWidget *image = gtk_image_new_from_resource("/images/wolf1.png");
 
     GtkWidget * file_tree = create_file_tree();
-    g_signal_connect (G_OBJECT (file_tree), "key_press_event", G_CALLBACK (file_tree_keypress), NULL);
+    g_signal_connect (G_OBJECT (file_tree), "key_press_event",
+                      G_CALLBACK (file_tree_keypress), NULL);
+
+    GtkWidget * file_tree_scroller = gtk_scrolled_window_new (NULL, NULL);
+    gtk_container_add (GTK_CONTAINER (file_tree_scroller),
+                       file_tree);
 
     GtkWidget * channel_tree = create_channel_tree();
+    g_signal_connect (G_OBJECT (config.channel_tree), "key_press_event",
+                      G_CALLBACK (channel_tree_keypress), NULL);
     //GtkWidget * channel_tree = gtk_label_new("testing");
     GtkWidget * scope_tab = create_microscope_tab();
+    g_signal_connect (G_OBJECT (config.scope_tree), "key_press_event",
+                      G_CALLBACK (microscope_tree_keypress), NULL);
     //GtkWidget * scope_tab = gtk_label_new("Bug free, but boring, scope_tab replacement");
 
     /* Set up Drag and Drop */
@@ -1035,26 +1198,26 @@ dw_app_window_new (DwApp *app)
 
     /* Create the window */
     DwAppWindow * window = g_object_new (DW_APP_WINDOW_TYPE, "application", app, NULL);
-    gtk_window_set_title (GTK_WINDOW (window), "BiCroLab deconwolf");
+    config.window = window;
+    gtk_window_set_title (GTK_WINDOW (window), "BiCroLab deconwolf GUI, 2021");
 
-    GtkWidget * file_tree_scroller = gtk_scrolled_window_new (NULL, NULL);
 
-    gtk_container_add (GTK_CONTAINER (file_tree_scroller),
-                       file_tree);
 
     /* Pack components */
     gtk_container_add (GTK_CONTAINER (frame_drop), image);
-
     gtk_container_add (GTK_CONTAINER (frame_files), file_tree_scroller);
     gtk_container_add (GTK_CONTAINER (frame_channels), channel_tree);
     gtk_container_add (GTK_CONTAINER (frame_scope), scope_tab);
-
     gtk_container_add (GTK_CONTAINER (window), notebook);
 
-    config.file_tree = file_tree;
-    config.channel_tree = channel_tree;
-    config.window = window;
-
+    /* Until we read and write configuration files, add some defaults */
+    add_channel("DAPI", "4′,6-diamidino-2-phenylindole", 466.0, 50);
+    add_channel("A594", "Alexa Fluor 594", 617.0, 100);
+    add_channel("CY5", "Alexa Fluor 647", 664.0, 100);
+    add_channel("TMR", "Tetramethylrhodamine", 562.0, 100);
+    add_scope("Bicroscope-1, 100X", 1.45, 1.515, 130, 250);
+    add_scope("Bicroscope-1, 60X", 1.40, 1.515, 216, 350);
+    add_scope("Bicroscope-2, 100X", 1.40, 1.515, 65, 250);
 
     return window;
 
