@@ -3,6 +3,7 @@
 #include "dw_app.h"
 #include "dw_app_window.h"
 #include "dw_app_get_new_scope.c"
+#include "dw_app_runner.c"
 #include <libgen.h>
 #include <locale.h>
 #include <assert.h>
@@ -505,6 +506,13 @@ GtkWidget * dw_frame()
      return gtk_frame_new(NULL);
 }
 
+gboolean run_dw_cb(GtkWidget * widget, gpointer user_data)
+{
+    // Run deconwolf
+    dw_app_runner((GtkWindow*) config.window, "pause 1");
+    return TRUE;
+}
+
 GtkWidget * run_frame()
 {
 
@@ -535,7 +543,7 @@ GtkWidget * run_frame()
     gtk_action_bar_pack_end ((GtkActionBar*) Bar, ButtonRun);
     gtk_action_bar_pack_end ((GtkActionBar*) Bar, ButtonSaveAs);
 
-    // g_signal_connect (ButtonNew, "clicked", G_CALLBACK (new_scope_cb), NULL);
+    g_signal_connect (ButtonRun, "clicked", G_CALLBACK (run_dw_cb), NULL);
 
     GtkWidget * A = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
 
