@@ -4,9 +4,12 @@
 #include "dw_app_window.h"
 #include "dw_app_get_new_scope.c"
 #include "dw_app_runner.c"
+#include "dw_app_runner_simple.c"
 #include <libgen.h>
 #include <locale.h>
 #include <assert.h>
+#include <glib.h>
+#include <glib/gstdio.h>
 
 typedef struct {
     DwAppWindow * window; // main window
@@ -15,8 +18,6 @@ typedef struct {
     GtkWidget * scope_tree;
     GtkWidget * cmd;
     GtkWidget * status;
-
-
 } gconf;
 
 // Columns for the scopes
@@ -77,6 +78,7 @@ typedef struct {
 typedef struct {
     int nthreads;
     int tilesize;
+    gboolean overwrite;
 } dwconf;
 
 
@@ -506,12 +508,81 @@ GtkWidget * dw_frame()
      return gtk_frame_new(NULL);
 }
 
-gboolean run_dw_cb(GtkWidget * widget, gpointer user_data)
+gboolean run_dw_cb_not_ready(GtkWidget * widget, gpointer user_data)
 {
     // Run deconwolf
     dw_app_runner((GtkWindow*) config.window, "pause 1");
     return TRUE;
 }
+
+void runscript(char * name)
+{
+    GAppInfo *appinfo = NULL;
+    gboolean ret = FALSE;
+
+    appinfo = g_app_info_create_from_commandline(name,
+                                                 NULL,
+                                                 G_APP_INFO_CREATE_NEEDS_TERMINAL,
+                                                 NULL);
+    g_assert(appinfo != NULL); // TODO error handling is not implemented.
+
+    ret = g_app_info_launch(appinfo, NULL, NULL, NULL);
+    g_assert(ret == TRUE); // TODO error handling is not implemented.
+}
+
+gboolean run_dw_cb(GtkWidget * widget, gpointer user_data)
+{
+    // Run deconwolf
+    // 1/ Save the script to a file
+    // 2/ Use g_app_info_create_from_commandline
+    //    to execute it
+
+    char * filename = NULL;
+    if(saveandrun((GtkWindow*) config.window, &filename)) // in dw_app_runner_simple.c
+    { // If we got a filename
+        // Get text from
+        // config.cmd
+        // and save to that file.
+
+        GtkTextIter start, end;
+        GtkTextBuffer * buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (config.cmd));
+        gtk_text_buffer_get_start_iter (buffer, &start);
+        gtk_text_buffer_get_end_iter (buffer, &end);
+        gchar * text = gtk_text_buffer_get_text (buffer, &start, &end, FALSE);
+        gtk_text_buffer_set_modified (buffer, FALSE);
+
+
+        /* set the contents of the file to the text from the buffer */
+        gboolean result;
+        GError * err = NULL;
+        if (filename != NULL)
+        {
+            result = g_file_set_contents (filename, text, -1, &err);
+
+        }
+
+        if (result == FALSE)
+        {
+            /* error saving file, show message to user */
+            //error_message (err->message);
+            g_error_free (err);
+
+        } else {
+            int chmod_ok = g_chmod(filename, S_IXUSR | S_IWUSR | S_IRUSR );
+            g_assert(chmod_ok == 0);
+        }
+
+        g_free (text);
+
+
+        // Run it
+        printf("To run: %s\n", filename);
+        runscript(filename);
+        free(filename);
+    }
+        return TRUE;
+}
+
 
 GtkWidget * run_frame()
 {
