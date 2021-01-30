@@ -676,7 +676,7 @@ GtkWidget * run_frame()
 
     }
 
-dwchannel ** dwchannel_get(int * nchannels)
+DwChannel ** dw_channel_get(int * nchannels)
 {
     // Get a list of all the channels.
     // 1, Count the number of channels
@@ -705,7 +705,7 @@ dwchannel ** dwchannel_get(int * nchannels)
     }
     nchannels[0] = nchan;
 
-    dwchannel ** clist = malloc( nchan * sizeof(dwchannel*));
+    DwChannel ** clist = malloc( nchan * sizeof(DwChannel*));
 
     // Get all files and add to list.
     gint pos = 0;
@@ -724,7 +724,7 @@ dwchannel ** dwchannel_get(int * nchannels)
                             cEMISSION_COLUMN, &lambda,
                             -1);
 
-        clist[pos] = malloc(sizeof(dwchannel));
+        clist[pos] = malloc(sizeof(DwChannel));
         clist[pos]->name = strdup(name);
         clist[pos]->alias = strdup(alias);
         clist[pos]->lambda = (float) lambda;
@@ -842,7 +842,7 @@ dwscope * dwscope_get()
     }
 }
 
-dwchannel * getchan(dwchannel ** channels, char * alias, int nchan)
+DwChannel * getchan(DwChannel ** channels, char * alias, int nchan)
     {
         for(int kk = 0; kk<nchan; kk++)
      {
@@ -903,7 +903,7 @@ void update_cmd(int ready)
     // Get scope
     dwscope * scope = dwscope_get();
     int nchan = 0;
-    dwchannel ** channels = dwchannel_get(&nchan);
+    DwChannel ** channels = dw_channel_get(&nchan);
     int nfiles = 0;
     dwfile ** files = dwfile_get(&nfiles);
 
@@ -932,7 +932,7 @@ void update_cmd(int ready)
     // Generate PSFs -- only for used channels
     for(int kk = 0 ; kk < nfiles; kk++)
     {
-        dwchannel * ch = getchan(channels, files[kk]->channel, nchan);
+        DwChannel * ch = getchan(channels, files[kk]->channel, nchan);
         if(ch != NULL)
         {
             char * fdir = strdup(files[kk]->name);
@@ -1052,7 +1052,7 @@ void edit_selected_scope()
         dwscope * scope = dw_app_get_new_scope((GtkWindow*) config.window, current_scope);
         if(scope != NULL)
         {
-            gtk_tree_store_set(model, &iter,
+            gtk_tree_store_set((GtkTreeStore*) model, &iter,
                                sNAME_COLUMN, scope->name,
                                sNA_COLUMN, scope->NA,
                                sNI_COLUMN, scope->ni,

@@ -35,7 +35,7 @@ typedef struct {
     char * alias;
     float lambda;
     int niter;
-} dwchannel;
+} DwChannel;
 
 // Microscope
 typedef struct {
