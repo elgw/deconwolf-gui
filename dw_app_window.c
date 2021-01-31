@@ -3,6 +3,7 @@
 #include "dw_app.h"
 #include "dw_app_window.h"
 #include "dw_app_get_new_scope.c"
+#include "dw_app_get_new_channel.c"
 #include "dw_app_runner.c"
 #include "dw_app_runner_simple.c"
 #include <libgen.h>
