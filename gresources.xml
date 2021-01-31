@@ -5,5 +5,8 @@
   </gresource>
     <gresource prefix="/images/">
     <file>Compound_Microscope_(cropped).jpeg</file>
-  </gresource>
+    </gresource>
+        <gresource prefix="/images/">
+    <file>FluorescentCells.jpg</file>
+    </gresource>
 </gresources>

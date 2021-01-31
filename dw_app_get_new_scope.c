@@ -1,8 +1,8 @@
 #include <gtk/gtk.h>
 
 // Function to open a dialog box with a message
-dwscope *
-dw_app_get_new_scope(GtkWindow *parent, dwscope * old_scope)
+DwScope *
+dw_app_get_new_scope(GtkWindow *parent, DwScope * old_scope)
 {
  GtkWidget *dialog, *content_area;
  GtkDialogFlags flags;
@@ -70,7 +70,7 @@ gtk_box_pack_start((GtkBox*) hbox, grid, FALSE, TRUE, 5);
  gtk_widget_show_all(content_area);
 
  int result = gtk_dialog_run (GTK_DIALOG (dialog));
- dwscope * scope = NULL;
+ DwScope * scope = NULL;
  switch (result)
  {
  case GTK_RESPONSE_ACCEPT:

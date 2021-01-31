@@ -11,6 +11,8 @@
 #include <glib.h>
 #include <glib/gstdio.h>
 
+#define dw_config_dir "~/.config/deconwolf/"
+
 typedef struct {
     DwAppWindow * window; // main window
     GtkWidget * file_tree;
@@ -57,6 +59,22 @@ typedef struct {
     char * channel;
 } dwfile;
 
+
+void dw_channel_free(DwChannel * chan)
+{
+    if(chan->name != NULL)
+        free(chan->name);
+    if(chan->alias != NULL)
+        free(chan->alias);
+}
+
+DwChannel * dw_channel_new()
+{
+    DwChannel * chan = malloc(sizeof(DwChannel));
+    chan->name = NULL;
+    chan->alias = NULL;
+    return chan;
+}
 
 
 // GtkTreeView
@@ -245,18 +263,24 @@ new_channel_cb(GtkWidget *widget,
    GtkWidget * btnDel = gtk_button_new_from_icon_name("list-remove",
                                                       GTK_ICON_SIZE_SMALL_TOOLBAR);
    gtk_widget_set_tooltip_text(btnDel, "Remove selected channel");
+
    GtkWidget * btnEdit = gtk_button_new_from_icon_name("preferences-other",
                                                       GTK_ICON_SIZE_SMALL_TOOLBAR);
    gtk_widget_set_tooltip_text(btnEdit, "Edit selected channel");
 
+   GtkWidget * btnSave = gtk_button_new_from_icon_name("document-save",
+                                                       GTK_ICON_SIZE_SMALL_TOOLBAR);
+   gtk_widget_set_tooltip_text(btnSave, "Save current list as default");
 
    g_signal_connect(btnNew, "clicked", G_CALLBACK (new_channel_cb), NULL);
    g_signal_connect(btnDel, "clicked", G_CALLBACK (del_channel_cb), NULL);
+   g_signal_connect(btnSave, "clicked", G_CALLBACK (save_channel_cb), NULL);
 
    GtkWidget * Bar = gtk_action_bar_new();
    gtk_action_bar_pack_start((GtkActionBar*) Bar, btnNew);
    gtk_action_bar_pack_start((GtkActionBar*) Bar, btnDel);
    gtk_action_bar_pack_start((GtkActionBar*) Bar, btnEdit);
+   gtk_action_bar_pack_start((GtkActionBar*) Bar, btnSave);
 
 
    GtkWidget * boxV = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
@@ -297,7 +321,7 @@ new_scope_cb (GtkWidget *widget,
 {
     //    add_scope("Magic-scope1", 3.14, 1.4, 45, 45);
 
-    dwscope * scope = dw_app_get_new_scope((GtkWindow*) config.window, NULL);
+    DwScope * scope = dw_app_get_new_scope((GtkWindow*) config.window, NULL);
     if(scope != NULL)
     {
         add_scope(scope->name, scope->NA, scope->ni, scope->xy_nm, scope->z_nm);
@@ -676,7 +700,7 @@ GtkWidget * run_frame()
 
     }
 
-DwChannel ** dw_channel_get(int * nchannels)
+DwChannel ** dw_channels_get_from_gui()
 {
     // Get a list of all the channels.
     // 1, Count the number of channels
@@ -700,12 +724,11 @@ DwChannel ** dw_channel_get(int * nchannels)
     //printf("There are %d channels\n", nchan); fflush(stdout);
     if(nchan < 1)
     {
-        nchannels[0] = 0;
         return NULL;
     }
-    nchannels[0] = nchan;
 
-    DwChannel ** clist = malloc( nchan * sizeof(DwChannel*));
+    DwChannel ** clist = malloc( (nchan+1) * sizeof(DwChannel*));
+    clist[nchan] = NULL; // A null terminates the list
 
     // Get all files and add to list.
     gint pos = 0;
@@ -805,7 +828,7 @@ dwfile ** dwfile_get(int * nfiles)
     return flist;
 }
 
-dwscope * dwscope_get()
+DwScope * dwscope_get()
 {
     // Get the scope from the list of scopes
     GtkTreeView * view = (GtkTreeView*) config.scope_tree;
@@ -815,7 +838,7 @@ dwscope * dwscope_get()
 
     if(gtk_tree_selection_get_selected(selection, &model, &iter))
     {
-        dwscope * scope = malloc(sizeof(dwscope));
+        DwScope * scope = malloc(sizeof(DwScope));
         scope->name = NULL;
 
         gchar *name;
@@ -842,14 +865,16 @@ dwscope * dwscope_get()
     }
 }
 
-DwChannel * getchan(DwChannel ** channels, char * alias, int nchan)
+DwChannel * dw_channels_get_by_alias(DwChannel ** channels, char * alias)
     {
-        for(int kk = 0; kk<nchan; kk++)
+        int pos = 0;
+        while(channels[pos] != NULL)
      {
-      if(strcmp(alias, channels[kk]->alias) == 0)
+      if(strcmp(alias, channels[pos]->alias) == 0)
       {
-       return channels[kk];
+       return channels[pos];
       }
+      pos++;
      }
      return NULL;
     }
@@ -901,9 +926,9 @@ void update_cmd(int ready)
     // Get all channels and add to list
 
     // Get scope
-    dwscope * scope = dwscope_get();
-    int nchan = 0;
-    DwChannel ** channels = dw_channel_get(&nchan);
+    DwScope * scope = dwscope_get();
+
+    DwChannel ** channels = dw_channels_get_from_gui();
     int nfiles = 0;
     dwfile ** files = dwfile_get(&nfiles);
 
@@ -922,8 +947,8 @@ void update_cmd(int ready)
     char * buff = malloc(1024*1024);
     sprintf(buff, "# Microscope: %s\n", scope->name);
     gtk_text_buffer_insert(buffer, &titer, buff, -1);
-    sprintf(buff, "# %d channels available\n", nchan);
-    gtk_text_buffer_insert(buffer, &titer, buff, -1);
+    //sprintf(buff, "# %d channels available\n", nchan);
+    //gtk_text_buffer_insert(buffer, &titer, buff, -1);
     sprintf(buff, "# %d files available\n", nfiles);
     gtk_text_buffer_insert(buffer, &titer, buff, -1);
 
@@ -932,7 +957,7 @@ void update_cmd(int ready)
     // Generate PSFs -- only for used channels
     for(int kk = 0 ; kk < nfiles; kk++)
     {
-        DwChannel * ch = getchan(channels, files[kk]->channel, nchan);
+        DwChannel * ch = dw_channels_get_by_alias(channels, files[kk]->channel);
         if(ch != NULL)
         {
             char * fdir = strdup(files[kk]->name);
@@ -1043,13 +1068,13 @@ void edit_selected_scope()
                            sDX_COLUMN, &sDX,
                            sDZ_COLUMN, &sDZ,
                            -1);
-        dwscope * current_scope = malloc(sizeof(dwscope));
+        DwScope * current_scope = malloc(sizeof(DwScope));
         current_scope->name = strdup(sname);
         current_scope->NA = sNA;
         current_scope->ni = sNI;
         current_scope->xy_nm = sDX;
         current_scope->z_nm = sDZ;
-        dwscope * scope = dw_app_get_new_scope((GtkWindow*) config.window, current_scope);
+        DwScope * scope = dw_app_get_new_scope((GtkWindow*) config.window, current_scope);
         if(scope != NULL)
         {
             gtk_tree_store_set((GtkTreeStore*) model, &iter,
@@ -1087,6 +1112,130 @@ void del_selected_channel()
 gboolean edit_scope_cb(GtkWidget * w, gpointer p)
 {
     edit_selected_scope();
+    return TRUE;
+}
+
+void dw_chan_to_key_file(DwChannel * chan, GKeyFile * kf)
+{
+    char * alias = chan->alias;
+    if(alias == NULL)
+    {
+        printf("unable to save channel -- no alias\n");
+        return;
+    }
+    g_key_file_set_string (kf, alias, "Name", chan->name);
+    g_key_file_set_double(kf, alias, "lambda", (double) chan->lambda);
+    g_key_file_set_integer(kf, alias, "iter", chan->niter);
+    return;
+}
+
+void dw_channels_to_disk(DwChannel ** channels, char * file)
+{
+    printf("Saving channels to %s\n", file);
+    GKeyFile * key_file = g_key_file_new();
+    int pos = 0;
+    while(channels[pos] != NULL)
+    {
+        dw_chan_to_key_file(channels[pos], key_file);
+        pos++;
+    }
+    GError * error = NULL;
+    if (!g_key_file_save_to_file (key_file, file, &error))
+    {
+        g_warning ("Error saving key file: %s", error->message);
+        g_error_free(error);
+    }
+    g_key_file_free(key_file);
+
+}
+
+void dw_channels_free(DwChannel ** channels)
+{
+    int pos = 0;
+    while(channels[pos] != NULL)
+    {
+        dw_channel_free(channels[pos]);
+        pos++;
+    }
+    free(channels);
+}
+
+DwChannel ** dw_channels_from_disk(char * fname)
+{
+    GError * error = NULL;
+    GKeyFile * key_file = g_key_file_new ();
+
+    if (!g_key_file_load_from_file (key_file, fname, G_KEY_FILE_NONE, &error))
+    {
+        if (!g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
+            g_warning ("Error loading key file: %s", error->message);
+        g_error_free(error);
+        g_key_file_free(key_file);
+        return NULL;
+    }
+
+    gsize length;
+    gchar ** groups =
+        g_key_file_get_groups (key_file,
+                               &length);
+    if(length == 0)
+    {
+        printf("Can't parse anything from %s\n", fname);
+        g_key_file_free(key_file);
+        g_error_free(error);
+        return NULL;
+    }
+
+    DwChannel ** channels = malloc((length+1)*sizeof(DwChannel*));
+    channels[length] = NULL; // End of array
+
+    for(int kk = 0; kk<length; kk++)
+    {
+        channels[kk] = dw_channel_new();
+        DwChannel * chan = channels[kk];
+        gchar * group = groups[kk]; // I.e. Alias
+        chan->alias = strdup(group);
+
+        // Read name
+        gchar *val = g_key_file_get_string (key_file, group, "Name", &error);
+        if (val == NULL)
+        {
+            val = g_strdup ("Give me a name");
+        }
+        chan->name = strdup(val);
+        free(val);
+        gint niter = g_key_file_get_integer(key_file, group, "iter", &error);
+                chan->niter = niter;
+
+        gdouble lambda = g_key_file_get_double(key_file, group, "lambda", &error);
+        chan->lambda = lambda;
+    }
+    g_assert(channels[length] == NULL);
+    g_strfreev(groups);
+    g_key_file_free(key_file);
+    return channels;
+}
+
+gboolean save_channel_cb(GtkWidget * w, gpointer p)
+{
+    // Save list of channels to ini file.
+
+    // First, figure out where:
+    char * cfile = malloc(1024);
+    sprintf(cfile, "%s/deconwolf/", g_get_user_config_dir());
+    if(g_mkdir_with_parents(cfile, S_IXUSR | S_IWUSR | S_IRUSR) == -1)
+        {
+            printf("Unable to access %s\n", cfile);
+            free(cfile);
+            return FALSE;
+        }
+
+    // Grab information from gui and save
+    sprintf(cfile, "%s/deconwolf/dw_gui_channels", g_get_user_config_dir());
+    DwChannel ** channels = dw_channels_get_from_gui();
+    dw_channels_to_disk(channels, cfile);
+    dw_channels_free(channels);
+    free(cfile);
     return TRUE;
 }
 
@@ -1210,11 +1359,27 @@ dw_app_window_new (DwApp *app)
     gtk_container_add (GTK_CONTAINER (frame_scope), scope_tab);
     gtk_container_add (GTK_CONTAINER (window), notebook);
 
+    char * cfile = malloc(1024*sizeof(char));
+    sprintf(cfile, "%s/deconwolf/dw_gui_channels", g_get_user_config_dir());
+    DwChannel ** channels = dw_channels_from_disk(cfile);
+    free(cfile);
+    int pos = 0;
+    if(channels != NULL)
+    {
+    while(channels[pos] != NULL)
+    {
+        DwChannel * chan = channels[pos++];
+        add_channel(chan->alias, chan->name, chan->lambda, chan->niter);
+    }
+    dw_channels_free(channels);
+    } else {
     /* Until we read and write configuration files, add some defaults */
     add_channel("DAPI", "4′,6-diamidino-2-phenylindole", 466.0, 50);
     add_channel("A594", "Alexa Fluor 594", 617.0, 100);
     add_channel("CY5", "Alexa Fluor 647", 664.0, 100);
     add_channel("TMR", "Tetramethylrhodamine", 562.0, 100);
+    }
+
     add_scope("Bicroscope-1, 100X", 1.45, 1.515, 130, 250);
     add_scope("Bicroscope-1, 60X", 1.40, 1.515, 216, 350);
     add_scope("Bicroscope-2, 100X", 1.40, 1.515, 65, 250);
