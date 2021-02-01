@@ -19,6 +19,11 @@ typedef struct {
     GtkWidget * scope_tree;
     GtkWidget * cmd;
     GtkWidget * status;
+    GtkNotebook * notebook; // There is just one notebook
+
+    GtkAdjustment * dwc_nthreads;
+    GtkAdjustment * dwc_tilesize;
+    GtkSwitch * dwc_overwrite;
 } gconf;
 
 // Columns for files
@@ -38,9 +43,120 @@ typedef struct {
 } dwfile;
 
 
+char * get_configuration_file(char * name)
+/* Return the name for the configuration file */
+{
+char * cfile = malloc(1024);
+sprintf(cfile, "%s/%s/", g_get_user_config_dir(), name);
+if(g_mkdir_with_parents(cfile, S_IXUSR | S_IWUSR | S_IRUSR) == -1)
+ {
+     printf("Unable to access %s\n", cfile);
+     free(cfile);
+     return FALSE;
+ }
+
+// Grab information from gui and save
+sprintf(cfile, "%s/deconwolf/dw_gui_deconwolf", g_get_user_config_dir());
+return cfile;
+}
+
+DwConf * parse_dw_conf()
+{
+    DwConf *conf = dw_conf_new();
+    conf->nthreads = (int) round(gtk_adjustment_get_value(config.dwc_nthreads));
+    conf->tilesize = (int) round(gtk_adjustment_get_value(config.dwc_tilesize));
+    conf->overwrite = gtk_switch_get_state(config.dwc_overwrite);
+    return conf;
+}
+
+gboolean
+save_dw_settings_cb (GtkWidget *widget,
+                gpointer   user_data)
+{
+
+    DwConf * conf = parse_dw_conf();
+    char * cfile = get_configuration_file("deconwolf");
+    dw_conf_save_to_file(conf, cfile);
+    free(cfile);
+
+    return TRUE;
+}
+
+gboolean
+next_page_cb (GtkWidget *widget,
+                     gpointer   user_data)
+{
+    gtk_notebook_next_page (config.notebook);
+    return TRUE;
+}
+
+
+
 GtkWidget * create_deconwolf_tab()
 {
-    return gtk_frame_new(NULL);
+
+    char * cfile = get_configuration_file("deconwolf");
+    DwConf * dwconf = dw_conf_new_from_file(cfile);
+    free(cfile);
+
+    GtkAdjustment * adjThreads =
+        gtk_adjustment_new (dwconf->nthreads, 1, 1024, 1, 1, 1);
+    config.dwc_nthreads = adjThreads;
+
+    GtkAdjustment * adjTile =
+        gtk_adjustment_new (dwconf->tilesize, 100, 1024*1024, 1, 10, 1);
+    config.dwc_tilesize = adjTile;
+
+    GtkWidget * lOverwrite = gtk_label_new("Overwrite existing files?");
+    GtkWidget * lThreads = gtk_label_new("Number of threads to use.");
+    GtkWidget * lTile = gtk_label_new("Max side length of a tile [pixels]");
+    GtkWidget * vOverwrite = gtk_switch_new();
+    gtk_switch_set_state((GtkSwitch*) vOverwrite, dwconf->overwrite);
+    config.dwc_overwrite = (GtkSwitch*) vOverwrite;
+
+    GtkWidget * vThreads = gtk_spin_button_new(adjThreads, 1, 0);
+    GtkWidget * vTile = gtk_spin_button_new(adjTile, 10, 0);
+    GtkWidget * grid = gtk_grid_new();
+    gtk_grid_set_row_spacing ((GtkGrid*) grid , 5);
+    gtk_grid_set_column_spacing ((GtkGrid*) grid , 5);
+
+    gtk_grid_attach((GtkGrid*) grid, lThreads, 1, 1, 1, 2);
+    gtk_grid_attach((GtkGrid*) grid, vThreads, 2, 1, 2, 1);
+    gtk_grid_attach((GtkGrid*) grid, lOverwrite, 1, 3, 1, 2);
+    gtk_grid_attach((GtkGrid*) grid, vOverwrite, 2, 3, 1, 1);
+    gtk_grid_attach((GtkGrid*) grid, lTile, 1, 5, 1, 2);
+    gtk_grid_attach((GtkGrid*) grid, vTile, 2, 5, 2, 1);
+
+    GtkWidget * btnSave = gtk_button_new_from_icon_name("document-save",
+                                                        GTK_ICON_SIZE_SMALL_TOOLBAR);
+
+    GtkWidget * btnNext = gtk_button_new_from_icon_name("go-next",
+                                                        GTK_ICON_SIZE_SMALL_TOOLBAR);
+    gtk_widget_set_tooltip_text(btnNext, "Next page");
+    g_signal_connect (btnNext, "clicked", G_CALLBACK (next_page_cb), NULL);
+
+    gtk_widget_set_tooltip_text(btnSave, "Set as defaults.");
+    g_signal_connect (btnSave, "clicked", G_CALLBACK (save_dw_settings_cb), NULL);
+
+    GtkWidget * Bar = gtk_action_bar_new();
+    gtk_action_bar_pack_start ((GtkActionBar*) Bar, btnSave);
+    gtk_action_bar_pack_end ((GtkActionBar*) Bar, btnNext);
+    GtkWidget * A = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+
+    gtk_box_pack_end ((GtkBox*) A,
+                      Bar,
+                      FALSE,
+                      TRUE,
+                      5);
+
+    gtk_box_pack_start ((GtkBox*) A,
+                        grid,
+                        TRUE,
+                        TRUE,
+                        5);
+    free(dwconf);
+    return A;
+
 }
 
 GtkWidget * create_file_tree()
@@ -79,8 +195,16 @@ GtkWidget * create_file_tree()
                                                         GTK_ICON_SIZE_SMALL_TOOLBAR);
     gtk_widget_set_tooltip_text(btnClear, "Clear the list of files");
     g_signal_connect(btnClear, "clicked", G_CALLBACK (clear_files_cb), NULL);
+
+    GtkWidget * btnNext = gtk_button_new_from_icon_name("go-next",
+                                                        GTK_ICON_SIZE_SMALL_TOOLBAR);
+    gtk_widget_set_tooltip_text(btnNext, "Next page");
+    g_signal_connect (btnNext, "clicked", G_CALLBACK (next_page_cb), NULL);
+
+
     GtkWidget * Bar = gtk_action_bar_new();
     gtk_action_bar_pack_start((GtkActionBar*) Bar, btnClear);
+    gtk_action_bar_pack_end ((GtkActionBar*) Bar, btnNext);
 
     GtkWidget * boxV = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
     gtk_box_pack_end((GtkBox*) boxV,
@@ -252,6 +376,10 @@ GtkWidget * create_channel_tree()
     GtkWidget * btnSave = gtk_button_new_from_icon_name("document-save",
                                                         GTK_ICON_SIZE_SMALL_TOOLBAR);
     gtk_widget_set_tooltip_text(btnSave, "Save current list as default");
+    GtkWidget * btnNext = gtk_button_new_from_icon_name("go-next",
+                                                        GTK_ICON_SIZE_SMALL_TOOLBAR);
+    gtk_widget_set_tooltip_text(btnNext, "Next page");
+    g_signal_connect (btnNext, "clicked", G_CALLBACK (next_page_cb), NULL);
 
     g_signal_connect(btnNew, "clicked", G_CALLBACK (new_channel_cb), NULL);
     g_signal_connect(btnDel, "clicked", G_CALLBACK (del_channel_cb), NULL);
@@ -263,7 +391,7 @@ GtkWidget * create_channel_tree()
     gtk_action_bar_pack_start((GtkActionBar*) Bar, btnDel);
     gtk_action_bar_pack_start((GtkActionBar*) Bar, btnEdit);
     gtk_action_bar_pack_start((GtkActionBar*) Bar, btnSave);
-
+    gtk_action_bar_pack_end ((GtkActionBar*) Bar, btnNext);
 
     GtkWidget * boxV = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
     gtk_box_pack_end((GtkBox*) boxV,
@@ -320,17 +448,7 @@ save_scopes_cb (GtkWidget *widget,
     // Save list of channels to ini file.
 
     // First, figure out where:
-    char * cfile = malloc(1024);
-    sprintf(cfile, "%s/deconwolf/", g_get_user_config_dir());
-    if(g_mkdir_with_parents(cfile, S_IXUSR | S_IWUSR | S_IRUSR) == -1)
-    {
-        printf("Unable to access %s\n", cfile);
-        free(cfile);
-        return FALSE;
-    }
-
-    // Grab information from gui and save
-    sprintf(cfile, "%s/deconwolf/dw_gui_microscopes", g_get_user_config_dir());
+    char * cfile = get_configuration_file("dw_gui_microscopes");
     DwScope ** scopes = dw_scopes_get_from_gtk_tree_view((GtkTreeView*) config.scope_tree);
     dw_scopes_to_disk(scopes, cfile);
     dw_scopes_free(scopes);
@@ -403,12 +521,17 @@ GtkWidget * create_microscope_tab()
     GtkWidget * btnSave = gtk_button_new_from_icon_name("document-save",
                                                         GTK_ICON_SIZE_SMALL_TOOLBAR);
     gtk_widget_set_tooltip_text(btnSave, "Save current list as default");
+    GtkWidget * btnNext = gtk_button_new_from_icon_name("go-next",
+                                                        GTK_ICON_SIZE_SMALL_TOOLBAR);
+    gtk_widget_set_tooltip_text(btnNext, "Next page");
+    g_signal_connect (btnNext, "clicked", G_CALLBACK (next_page_cb), NULL);
 
     GtkWidget * Bar = gtk_action_bar_new();
     gtk_action_bar_pack_start ((GtkActionBar*) Bar, btnNew);
     gtk_action_bar_pack_start ((GtkActionBar*) Bar, btnDel);
     gtk_action_bar_pack_start ((GtkActionBar*) Bar, btnEdit);
     gtk_action_bar_pack_start ((GtkActionBar*) Bar, btnSave);
+    gtk_action_bar_pack_end ((GtkActionBar*) Bar, btnNext);
 
     g_signal_connect (btnNew, "clicked", G_CALLBACK (new_scope_cb), NULL);
     g_signal_connect (btnDel, "clicked", G_CALLBACK (del_scope_cb), NULL);
@@ -855,6 +978,7 @@ void update_cmd(int ready)
  DwChannel ** channels = dw_channels_get_from_gtk_tree_view((GtkTreeView*) config.channel_tree);
  int nfiles = 0;
  dwfile ** files = dwfile_get(&nfiles);
+ DwConf * dwconf = parse_dw_conf();
 
  GtkTextView * cmd = (GtkTextView*) config.cmd;
  GtkTextIter titer;
@@ -876,8 +1000,16 @@ void update_cmd(int ready)
  sprintf(buff, "# %d files available\n", nfiles);
  gtk_text_buffer_insert(buffer, &titer, buff, -1);
 
- int nthreads = 8;
- int tilesize = 2048;
+ int nthreads = dwconf->nthreads;
+ int tilesize = dwconf->tilesize;
+
+ char * ostring = malloc(100);
+ ostring[0] = '\0';
+ if(dwconf->overwrite)
+ {
+     sprintf(ostring, " --overwrite ");
+ }
+
  // Generate PSFs -- only for used channels
  for(int kk = 0 ; kk < nfiles; kk++)
  {
@@ -889,12 +1021,14 @@ void update_cmd(int ready)
          char * psf = get_psfname(fdir, files[kk]->channel);
          sprintf(buff, "mkdir %s/PSFBW/\n", fdir);
          gtk_text_buffer_insert(buffer, &titer, buff, -1);
-         sprintf(buff, "dw_bw --lambda %f --NA %f --ni %f --threads %d --resxy %f --resz %f %s\n",
+         sprintf(buff, "dw_bw %s--lambda %f --NA %f --ni %f --threads %d --resxy %f --resz %f %s\n",
+                 ostring,
                  ch->lambda, scope->NA, scope->ni, nthreads, scope->xy_nm, scope->z_nm,
                  psf);
          //        printf("%s", buff);
          gtk_text_buffer_insert(buffer, &titer, buff, -1);
-         sprintf(buff, "dw --tilesize %d --iter %d --threads %d %s %s\n",
+         sprintf(buff, "dw %s --tilesize %d --iter %d --threads %d %s %s\n",
+                 ostring,
                  tilesize, ch->niter, nthreads,
                  files[kk]->name, psf);
          gtk_text_buffer_insert(buffer, &titer, buff, -1);
@@ -911,6 +1045,8 @@ void update_cmd(int ready)
                            buffer);
  free(scope);
  free(buff);
+ free(dwconf);
+ free(ostring);
  return;
 }
 
@@ -1088,17 +1224,7 @@ gboolean save_channels_cb(GtkWidget * w, gpointer p)
  // Save list of channels to ini file.
 
  // First, figure out where:
- char * cfile = malloc(1024);
- sprintf(cfile, "%s/deconwolf/", g_get_user_config_dir());
- if(g_mkdir_with_parents(cfile, S_IXUSR | S_IWUSR | S_IRUSR) == -1)
- {
-     printf("Unable to access %s\n", cfile);
-     free(cfile);
-     return FALSE;
- }
-
- // Grab information from gui and save
- sprintf(cfile, "%s/deconwolf/dw_gui_channels", g_get_user_config_dir());
+    char * cfile = get_configuration_file("dw_gui_channels");
  DwChannel ** channels = dw_channels_get_from_gtk_tree_view((GtkTreeView*) config.channel_tree);
  dw_channels_to_disk(channels, cfile);
  dw_channels_free(channels);
@@ -1168,6 +1294,7 @@ dw_app_window_new (DwApp *app)
  gtk_frame_set_shadow_type (GTK_FRAME (frame_channels), GTK_SHADOW_IN);
 
  GtkWidget * notebook = gtk_notebook_new();
+ config.notebook = (GtkNotebook*) notebook;
  gtk_notebook_append_page ((GtkNotebook*) notebook,
                            frame_drop, gtk_label_new("Drop area"));
 

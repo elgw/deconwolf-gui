@@ -3,9 +3,12 @@
 
 #include <gtk/gtk.h>
 #include <ctype.h>
+#include <math.h>
 #include "dw_app.h"
 #include "dw_channel.h"
 #include "dw_scope.h"
+#include "dw_conf.h"
+
 
 #define DW_APP_WINDOW_TYPE (dw_app_window_get_type ())
 G_DECLARE_FINAL_TYPE (DwAppWindow, dw_app_window, DW, APP_WINDOW, GtkApplicationWindow)

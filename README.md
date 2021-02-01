@@ -12,14 +12,20 @@ sudo make install
 ```
 
 ## Usage notes:
- - Channels and microscopes are stored as ini files in the folder `XDG_CONFIG_HOME/deconwolf/`, on Ubuntu that would be `~/.config/deconwolf/`.
+ - Usage should be quite straight forward:
+   - Drag and drop some `tif` files on the wolf.
+   - Make sure that there is a configuration for each channel.
+   - Select microscope in the list, or add a new one if your favorite is missing.
+   - Choose how many threads to use etc.
+   - Finally, save and launch.
+ - Channels and microscopes are stored as ini files in the folder `XDG_CONFIG_HOME/deconwolf/`, on Ubuntu that would be `~/.config/deconwolf/`. Remember to hit the save button if you add or change anything that you want to make persistent.
 
 ## TODO
-
  - [ ] Change regexp for channel identification
- - [ ] Set number of threads and tilesize (dw)
+ - [ ] Add to batch.
+ - [ ] One-file simple mode?
 
- ## Future:
+### Future:
  - [ ] Always use the C locale?
  - [ ] Group files by folder
  - [ ] Menus
@@ -28,12 +34,13 @@ sudo make install
  - [ ] Use a svg file for system icon.
  - [ ] Refactor alot.
 
- ## Done
+### Done
+ - [x] Set number of threads and tilesize (dw)
  - [x] Save and load microscopes.
  - [x] [GkeyFile](https://developer.gnome.org/glib/stable/glib-Key-value-file-parser.html#g-key-file-new) for settings.
  - [x] Parse lists to generate command list
  - [x] Monospace font in command list.
- - [x] Add microscope icon, found one using `gtk-3-icon-browser`
+ - [x] Add microscope icon, found one using `gtk3-icon-browser`
  - [x] Set radix character to be '.' in the command window
  - [x] Delete items from lists
  - [x] Parser for channel name
