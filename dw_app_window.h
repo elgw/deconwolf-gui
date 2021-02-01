@@ -6,29 +6,18 @@
 #include "dw_app.h"
 
 
-//#include "resources.c"
 
 #define DW_APP_WINDOW_TYPE (dw_app_window_get_type ())
 G_DECLARE_FINAL_TYPE (DwAppWindow, dw_app_window, DW, APP_WINDOW, GtkApplicationWindow)
 
+DwAppWindow *dw_app_window_new (DwApp *app);
+void dw_app_window_open (DwAppWindow *win, GFile *file);
 
-    DwAppWindow       *dw_app_window_new          (DwApp *app);
-void                    dw_app_window_open         (DwAppWindow *win,
-                                                         GFile            *file);
-
-
-
-
-
-//
 
 void edit_selected_channel();
 
-
-
-void del_selected_file();
-
 gboolean file_tree_keypress (GtkWidget *tree_view, GdkEventKey *event, gpointer data);
+void del_selected_file();
 
 // Channel
 typedef struct {
@@ -87,15 +76,11 @@ void del_selected_scope();
 void dw_scopes_to_disk(DwScope **, char *);
 void dw_scope_to_key_file(DwScope *, GKeyFile *);
 
-
-
-
 // deconwolf
 typedef struct {
     int nthreads;
     int tilesize;
     gboolean overwrite;
 } dwconf;
-
 
 #endif

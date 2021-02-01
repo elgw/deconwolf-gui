@@ -7,10 +7,19 @@ dw_app_get_new_scope(GtkWindow *parent, DwScope * old_scope)
  GtkWidget *dialog, *content_area;
  GtkDialogFlags flags;
 
+
+ char * msg = malloc(1024);
+ if(old_scope == NULL)
+ {
+     sprintf(msg, "Add a new microscope");
+ } else {
+     sprintf(msg, "Edit an existing microscope");
+ }
+
+
  // Create the widgets
  flags = GTK_DIALOG_DESTROY_WITH_PARENT;
-
- dialog = gtk_dialog_new_with_buttons ("Message",
+ dialog = gtk_dialog_new_with_buttons (msg,
                                        parent,
                                        flags,
                                        "Cancel",
@@ -18,6 +27,7 @@ dw_app_get_new_scope(GtkWindow *parent, DwScope * old_scope)
                                        "Ok",
                                        GTK_RESPONSE_ACCEPT,
                                        NULL);
+ free(msg);
  content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
 
 
@@ -49,6 +59,9 @@ dw_app_get_new_scope(GtkWindow *parent, DwScope * old_scope)
  }
 
 GtkWidget * grid = gtk_grid_new();
+gtk_grid_set_row_spacing ((GtkGrid*) grid , 5);
+gtk_grid_set_column_spacing ((GtkGrid*) grid , 5);
+
 gtk_grid_attach((GtkGrid*) grid, lName, 1, 1, 1, 1);
 gtk_grid_attach((GtkGrid*) grid, eName, 2, 1, 1, 1);
 gtk_grid_attach((GtkGrid*) grid, lNA, 1, 2, 1, 1);
@@ -67,6 +80,8 @@ gtk_box_pack_end((GtkBox*) hbox, im, FALSE, TRUE, 5);
 gtk_box_pack_start((GtkBox*) hbox, grid, FALSE, TRUE, 5);
 
  gtk_container_add (GTK_CONTAINER (content_area),  hbox);
+
+
  gtk_widget_show_all(content_area);
 
  int result = gtk_dialog_run (GTK_DIALOG (dialog));

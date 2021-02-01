@@ -12,8 +12,9 @@ make install
  - Channels and microscopes are stored as ini files in the folder `XDG_CONFIG_HOME/deconwolf/`, on Ubuntu that would be `~/.config/deconwolf/`.
 
 ## TODO
- - [ ] Save and load microscopes.
+
  - [ ] Change regexp for channel identification
+ - [ ] Set number of threads and tilesize (dw)
 
  ## Future:
  - [ ] Always use the C locale?
@@ -24,7 +25,8 @@ make install
  - [ ] Use a svg file for system icon.
  - [ ] Refactor alot.
 
- ## LOG
+ ## Done
+ - [x] Save and load microscopes.
  - [x] [GkeyFile](https://developer.gnome.org/glib/stable/glib-Key-value-file-parser.html#g-key-file-new) for settings.
  - [x] Parse lists to generate command list
  - [x] Monospace font in command list.

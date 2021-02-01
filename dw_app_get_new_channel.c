@@ -10,7 +10,15 @@ dw_app_get_new_channel(GtkWindow *parent, DwChannel * old_channel)
  // Create the widgets
  flags = GTK_DIALOG_DESTROY_WITH_PARENT;
 
- dialog = gtk_dialog_new_with_buttons ("Message",
+ char * msg = malloc(1024);
+ if(old_channel == NULL)
+ {
+     sprintf(msg, "Add a new channel");
+ } else {
+     sprintf(msg, "Edit an existing channel");
+ }
+
+ dialog = gtk_dialog_new_with_buttons (msg,
                                        parent,
                                        flags,
                                        "Cancel",
@@ -18,6 +26,7 @@ dw_app_get_new_channel(GtkWindow *parent, DwChannel * old_channel)
                                        "Ok",
                                        GTK_RESPONSE_ACCEPT,
                                        NULL);
+ free(msg);
  content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
 
 
@@ -45,6 +54,9 @@ dw_app_get_new_channel(GtkWindow *parent, DwChannel * old_channel)
  }
 
 GtkWidget * grid = gtk_grid_new();
+gtk_grid_set_row_spacing ((GtkGrid*) grid , 5);
+gtk_grid_set_column_spacing ((GtkGrid*) grid , 5);
+
 gtk_grid_attach((GtkGrid*) grid, lAlias, 1, 1, 1, 1);
 gtk_grid_attach((GtkGrid*) grid, eAlias, 2, 1, 1, 1);
 gtk_grid_attach((GtkGrid*) grid, lName, 1, 2, 1, 1);
