@@ -3,7 +3,6 @@
 #include "dw_app.h"
 #include "dw_app_window.h"
 #include "dw_app_get_new_scope.c"
-#include "dw_app_get_new_channel.c"
 #include "dw_app_runner.c"
 #include "dw_app_runner_simple.c"
 #include <libgen.h>
@@ -34,14 +33,7 @@ enum
     };
 
 // Columns for the channels
-enum
-    {
-     cALIAS_COLUMN,
-     cNAME_COLUMN,
-     cEMISSION_COLUMN,
-     cNITER_COLUMN,
-     cN_COLUMNS
-    };
+
 
 // Columns for files
 enum
@@ -60,28 +52,11 @@ typedef struct {
 } dwfile;
 
 
-void dw_channel_free(DwChannel * chan)
-{
-    if(chan->name != NULL)
-        free(chan->name);
-    if(chan->alias != NULL)
-        free(chan->alias);
-    // TODO: free chan as well?
-}
-
 void dw_scope_free(DwScope * scope)
 {
     if(scope->name != NULL)
         free(scope->name);
     // TODO: free scope as well?
-}
-
-DwChannel * dw_channel_new()
-{
-    DwChannel * chan = malloc(sizeof(DwChannel));
-    chan->name = NULL;
-    chan->alias = NULL;
-    return chan;
 }
 
 
@@ -213,7 +188,7 @@ new_channel_cb(GtkWidget *widget,
                gpointer user_data)
 {
     //add_channel("WLF", "Wolfram-X", 70.0, 100);
-    DwChannel * chan = dw_app_get_new_channel((GtkWindow*) config.window, NULL);
+    DwChannel * chan = dw_channel_edit_dlg((GtkWindow*) config.window, NULL);
     if(chan != NULL)
     {
         add_channel(chan->alias, chan->name, chan->lambda, chan->niter);
@@ -808,75 +783,7 @@ DwScope * dw_scope_get_from_model(GtkTreeModel * model, GtkTreeIter * iter)
      return scope;
     }
 
-    DwChannel ** dw_channels_get_from_gui()
-    {
-     // Get a list of all the channels.
-     // 1, Count the number of channels
-     // 2, Allocate the list
-     // 3, Populate the list
-     // Get Model
 
-     GtkTreeModel * model =
-     gtk_tree_view_get_model ( (GtkTreeView*) config.channel_tree);
-
-     GtkTreeIter iter;
-
-     gboolean valid = gtk_tree_model_get_iter_first (model, &iter);
-     if(valid == FALSE)
-     {
-         return NULL;
-     }
-     // Figure out how many rows there are
-     gint nchan = gtk_tree_model_iter_n_children(GTK_TREE_MODEL(model), NULL);
-
-     //printf("There are %d channels\n", nchan); fflush(stdout);
-     if(nchan < 1)
-     {
-         return NULL;
-     }
-
-     DwChannel ** clist = malloc( (nchan+1) * sizeof(DwChannel*));
-     clist[nchan] = NULL; // A null terminates the list
-
-     // Get all files and add to list.
-     gint pos = 0;
-     while (valid)
-     {
-         assert(pos < nchan);
-         gchar *alias;
-         gchar *name;
-         gint niter;
-         gfloat lambda;
-
-         gtk_tree_model_get (model, &iter,
-                             cALIAS_COLUMN, &alias,
-                             cNAME_COLUMN, &name,
-                             cNITER_COLUMN, &niter,
-                             cEMISSION_COLUMN, &lambda,
-                             -1);
-
-         clist[pos] = malloc(sizeof(DwChannel));
-         clist[pos]->name = strdup(name);
-         clist[pos]->alias = strdup(alias);
-         clist[pos]->lambda = (float) lambda;
-         clist[pos]->niter = (int) niter;
-         if(0){
-             printf("%s %s %f %d\n",
-                    clist[pos]->name, clist[pos]->alias,
-                    clist[pos]->lambda, clist[pos]->niter);
-         }
-         g_free(alias);
-         g_free(name);
-
-         pos++;
-
-         valid = gtk_tree_model_iter_next (model,
-                                           &iter);
-
-     }
-
-     return clist;
-    }
 
 DwScope ** dw_scopes_get_from_gui()
 {
@@ -995,19 +902,6 @@ DwScope * dwscope_get()
  }
 }
 
-DwChannel * dw_channels_get_by_alias(DwChannel ** channels, char * alias)
-{
- int pos = 0;
- while(channels[pos] != NULL)
- {
-     if(strcmp(alias, channels[pos]->alias) == 0)
-     {
-         return channels[pos];
-     }
-     pos++;
- }
- return NULL;
-}
 
 void update_cmd(int ready)
 {
@@ -1058,7 +952,7 @@ void update_cmd(int ready)
  // Get scope
  DwScope * scope = dwscope_get();
 
- DwChannel ** channels = dw_channels_get_from_gui();
+ DwChannel ** channels = dw_channels_get_from_gtk_tree_view((GtkTreeView*) config.channel_tree);
  int nfiles = 0;
  dwfile ** files = dwfile_get(&nfiles);
 
@@ -1138,8 +1032,6 @@ tab_change_cb(GtkNotebook *notebook,
  }
  return TRUE;
 }
-
-
 
 
 void del_selected_file()
@@ -1253,7 +1145,7 @@ void edit_selected_channel()
      curr->lambda = clambda;
      curr->niter = cniter;
 
-     DwChannel * new = dw_app_get_new_channel((GtkWindow*) config.window, curr);
+     DwChannel * new = dw_channel_edit_dlg((GtkWindow*) config.window, curr);
      if(new != NULL)
      {
          gtk_tree_store_set((GtkTreeStore*) model, &iter,
@@ -1299,19 +1191,7 @@ gboolean edit_channel_cb(GtkWidget * w, gpointer p)
  return TRUE;
 }
 
-void dw_chan_to_key_file(DwChannel * chan, GKeyFile * kf)
-{
- char * alias = chan->alias;
- if(alias == NULL)
- {
-     printf("unable to save channel -- no alias\n");
-     return;
- }
- g_key_file_set_string (kf, alias, "Name", chan->name);
- g_key_file_set_double(kf, alias, "lambda", (double) chan->lambda);
- g_key_file_set_integer(kf, alias, "iter", chan->niter);
- return;
-}
+
 
 void dw_scope_to_key_file(DwScope * scope, GKeyFile * kf)
 {
@@ -1379,16 +1259,7 @@ void dw_scopes_free(DwScope ** scopes)
  free(scopes);
 }
 
-void dw_channels_free(DwChannel ** channels)
-{
- int pos = 0;
- while(channels[pos] != NULL)
- {
-     dw_channel_free(channels[pos]);
-     pos++;
- }
- free(channels);
-}
+
 
 DwScope * dw_scope_new()
 {
@@ -1453,61 +1324,7 @@ DwScope ** dw_scopes_from_disk(char * fname)
  return scopes;
 }
 
-DwChannel ** dw_channels_from_disk(char * fname)
-{
- GError * error = NULL;
- GKeyFile * key_file = g_key_file_new ();
 
- if (!g_key_file_load_from_file (key_file, fname, G_KEY_FILE_NONE, &error))
- {
-     if (!g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
-         g_warning ("Error loading key file: %s", error->message);
-     g_error_free(error);
-     g_key_file_free(key_file);
-     return NULL;
- }
-
- gsize length;
- gchar ** groups =
- g_key_file_get_groups (key_file,
-                        &length);
- if(length == 0)
- {
-     printf("Can't parse anything from %s\n", fname);
-     g_key_file_free(key_file);
-     g_error_free(error);
-     return NULL;
- }
-
- DwChannel ** channels = malloc((length+1)*sizeof(DwChannel*));
- channels[length] = NULL; // End of array
-
- for(int kk = 0; kk<length; kk++)
- {
-     channels[kk] = dw_channel_new();
-     DwChannel * chan = channels[kk];
-     gchar * group = groups[kk]; // I.e. Alias
-     chan->alias = strdup(group);
-
-     // Read name
-     gchar *val = g_key_file_get_string (key_file, group, "Name", &error);
-     if (val == NULL)
-     {
-         val = g_strdup ("Give me a name");
-     }
-     chan->name = strdup(val);
-     free(val);
-     gint niter = g_key_file_get_integer(key_file, group, "iter", &error);
-     chan->niter = niter;
-
-     gdouble lambda = g_key_file_get_double(key_file, group, "lambda", &error);
-     chan->lambda = lambda;
- }
- g_assert(channels[length] == NULL);
- g_strfreev(groups);
- g_key_file_free(key_file);
- return channels;
-}
 
 gboolean save_channels_cb(GtkWidget * w, gpointer p)
 {
@@ -1525,7 +1342,7 @@ gboolean save_channels_cb(GtkWidget * w, gpointer p)
 
  // Grab information from gui and save
  sprintf(cfile, "%s/deconwolf/dw_gui_channels", g_get_user_config_dir());
- DwChannel ** channels = dw_channels_get_from_gui();
+ DwChannel ** channels = dw_channels_get_from_gtk_tree_view((GtkTreeView*) config.channel_tree);
  dw_channels_to_disk(channels, cfile);
  dw_channels_free(channels);
  free(cfile);
