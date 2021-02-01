@@ -2,13 +2,18 @@
 
 A GUI for deconwolf written in GTK 3.24.23.
 
-## Build on Ubuntu
+## Build and Install (on Ubuntu)
+For building this should be enough:
 
 ``` shell
 # sudo apt-get install libgtk-3-dev
 make
+
+```
+Once it is built, the gui can be launched by `./dw_gui` To install it system wide so that it is accessible from gnome, perform:
+
+``` shell
 sudo make install
-# or ./dw_gui
 ```
 
 ## Usage notes:
