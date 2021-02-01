@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include "dw_app.h"
 #include "dw_channel.h"
+#include "dw_scope.h"
 
 #define DW_APP_WINDOW_TYPE (dw_app_window_get_type ())
 G_DECLARE_FINAL_TYPE (DwAppWindow, dw_app_window, DW, APP_WINDOW, GtkApplicationWindow)
@@ -12,6 +13,10 @@ G_DECLARE_FINAL_TYPE (DwAppWindow, dw_app_window, DW, APP_WINDOW, GtkApplication
 DwAppWindow *dw_app_window_new (DwApp *app);
 void dw_app_window_open (DwAppWindow *win, GFile *file);
 
+
+// Create the widget for the "Files" tab
+GtkWidget * create_file_tree();
+GtkWidget * create_deconwolf_tab();
 
 void edit_selected_channel();
 
@@ -27,38 +32,11 @@ gboolean del_channel_cb(GtkWidget * w, gpointer p);
 gboolean save_channels_cb(GtkWidget * w, gpointer p);
 gboolean edit_channel_cb(GtkWidget * w, gpointer p);
 
+gboolean clear_files_cb(GtkWidget * w, gpointer p);
 
-
-// Microscope
-typedef struct {
-    char * name;
-    float NA;
-    float ni;
-    float xy_nm;
-    float z_nm;
-} DwScope;
-
-DwScope * dw_scope_new();
-void dw_scope_free(DwScope *);
-void dw_scopes_free(DwScope ** );
-// Get NULL-terminated list of microscopes from the GUI
-DwScope ** dw_scopes_get_from_gui();
-//
-DwScope * dw_scope_get_from_model(GtkTreeModel * model, GtkTreeIter * iter);
-
-// Edit button in scope view
-gboolean edit_scope_cb(GtkWidget * w, gpointer p);
-// Delete selected scope
-gboolean del_scope_cb(GtkWidget * w, gpointer p);
-gboolean save_scopes_cb(GtkWidget * w, gpointer p);
-/* Read channels from file */
-DwScope ** dw_scopes_from_disk(char * fname);
-
-//
 void edit_selected_scope();
 void del_selected_scope();
-void dw_scopes_to_disk(DwScope **, char *);
-void dw_scope_to_key_file(DwScope *, GKeyFile *);
+
 
 // deconwolf
 typedef struct {

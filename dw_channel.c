@@ -280,3 +280,24 @@ gtk_box_pack_start((GtkBox*) hbox, grid, FALSE, TRUE, 5);
 
  return channel;
 }
+
+
+void dw_channels_to_disk(DwChannel ** channels, char * file)
+{
+    printf("Saving channels to %s\n", file);
+    GKeyFile * key_file = g_key_file_new();
+    int pos = 0;
+    while(channels[pos] != NULL)
+    {
+        dw_chan_to_key_file(channels[pos], key_file);
+        pos++;
+    }
+    GError * error = NULL;
+    if (!g_key_file_save_to_file (key_file, file, &error))
+    {
+        g_warning ("Error saving key file: %s", error->message);
+        g_error_free(error);
+    }
+    g_key_file_free(key_file);
+
+}

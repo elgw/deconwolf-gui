@@ -21,20 +21,6 @@ typedef struct {
     GtkWidget * status;
 } gconf;
 
-// Columns for the scopes
-enum
-    {
-     sNAME_COLUMN,
-     sNA_COLUMN,
-     sNI_COLUMN,
-     sDX_COLUMN,
-     sDZ_COLUMN,
-     sSN_COLUMNS
-    };
-
-// Columns for the channels
-
-
 // Columns for files
 enum
     {
@@ -52,25 +38,16 @@ typedef struct {
 } dwfile;
 
 
-void dw_scope_free(DwScope * scope)
+GtkWidget * create_deconwolf_tab()
 {
-    if(scope->name != NULL)
-        free(scope->name);
-    // TODO: free scope as well?
+    return gtk_frame_new(NULL);
 }
 
-
-// GtkTreeView
 GtkWidget * create_file_tree()
 {
-
-    /* Create tree-view for files */
-
-
     GtkTreeStore * file_store = gtk_tree_store_new (fN_COLUMNS,       /* Total number of columns */
                                                     G_TYPE_STRING,   /* File name */
                                                     G_TYPE_STRING);   /* Channel */
-
 
     GtkWidget * file_tree = gtk_tree_view_new_with_model (GTK_TREE_MODEL (file_store));
     config.file_tree = file_tree;
@@ -79,7 +56,6 @@ GtkWidget * create_file_tree()
     g_object_set (G_OBJECT (renderer),
                   "foreground", "black",
                   NULL);
-
 
     /* Create a column, associating the "text" attribute of the
      * cell_renderer to the first column of the model */
@@ -98,7 +74,23 @@ GtkWidget * create_file_tree()
 
     gtk_tree_view_append_column (GTK_TREE_VIEW (file_tree), column);
 
-    return file_tree;
+
+    GtkWidget * btnClear = gtk_button_new_from_icon_name("edit-delete",
+                                                        GTK_ICON_SIZE_SMALL_TOOLBAR);
+    gtk_widget_set_tooltip_text(btnClear, "Clear the list of files");
+    g_signal_connect(btnClear, "clicked", G_CALLBACK (clear_files_cb), NULL);
+    GtkWidget * Bar = gtk_action_bar_new();
+    gtk_action_bar_pack_start((GtkActionBar*) Bar, btnClear);
+
+    GtkWidget * boxV = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+    gtk_box_pack_end((GtkBox*) boxV,
+                     Bar,
+                     FALSE, TRUE, 5);
+    gtk_box_pack_start((GtkBox*) boxV,
+                       file_tree,
+                       FALSE, TRUE, 5);
+
+    return boxV;
 }
 
 
@@ -311,7 +303,7 @@ new_scope_cb (GtkWidget *widget,
 {
     //    add_scope("Magic-scope1", 3.14, 1.4, 45, 45);
 
-    DwScope * scope = dw_app_get_new_scope((GtkWindow*) config.window, NULL);
+    DwScope * scope = dw_scope_edit_dlg((GtkWindow*) config.window, NULL);
     if(scope != NULL)
     {
         add_scope(scope->name, scope->NA, scope->ni, scope->xy_nm, scope->z_nm);
@@ -339,7 +331,7 @@ save_scopes_cb (GtkWidget *widget,
 
     // Grab information from gui and save
     sprintf(cfile, "%s/deconwolf/dw_gui_microscopes", g_get_user_config_dir());
-    DwScope ** scopes = dw_scopes_get_from_gui();
+    DwScope ** scopes = dw_scopes_get_from_gtk_tree_view((GtkTreeView*) config.scope_tree);
     dw_scopes_to_disk(scopes, cfile);
     dw_scopes_free(scopes);
     free(cfile);
@@ -391,7 +383,6 @@ GtkWidget * create_microscope_tab()
                                                        "text", sDX_COLUMN,
                                                        NULL);
     gtk_tree_view_append_column (GTK_TREE_VIEW (scope_tree), column);
-
 
     column = gtk_tree_view_column_new_with_attributes ("dz [nm]",
                                                        renderer,
@@ -571,10 +562,6 @@ dw_app_window_class_init (DwAppWindowClass *class)
 {
 }
 
-GtkWidget * dw_frame()
-{
-    return gtk_frame_new(NULL);
-}
 
 gboolean run_dw_cb_not_ready(GtkWidget * widget, gpointer user_data)
 {
@@ -757,75 +744,6 @@ GtkWidget * run_frame()
 
 }
 
-DwScope * dw_scope_get_from_model(GtkTreeModel * model, GtkTreeIter * iter)
-    {
-     DwScope * scope = malloc(sizeof(DwScope));
-     scope->name = NULL;
-
-     gchar *name;
-     gfloat NA, ni, xy_nm, z_nm;
-
-     // Make sure you terminate calls to gtk_tree_model_get() with a “-1” value
-     gtk_tree_model_get (model, iter,
-                         sNAME_COLUMN, &name,
-                         sNA_COLUMN, &NA,
-                         sNI_COLUMN, &ni,
-                         sDX_COLUMN, &xy_nm,
-                         sDZ_COLUMN, &z_nm,
-                         -1);
-
-     scope->name = strdup(name);
-     g_free(name);
-     scope->NA = NA;
-     scope->ni = ni;
-     scope->xy_nm = xy_nm;
-     scope->z_nm = z_nm;
-     return scope;
-    }
-
-
-
-DwScope ** dw_scopes_get_from_gui()
-{
- // Get a list of all the channels.
- // 1, Count the number of channels
- // 2, Allocate the list
- // 3, Populate the list
- // Get Model
-
- GtkTreeModel * model =
- gtk_tree_view_get_model ( (GtkTreeView*) config.scope_tree);
-
- GtkTreeIter iter;
-
- gboolean valid = gtk_tree_model_get_iter_first (model, &iter);
- if(valid == FALSE)
- {
-     return NULL;
- }
- // Figure out how many rows there are
- gint nscopes = gtk_tree_model_iter_n_children(GTK_TREE_MODEL(model), NULL);
-
- //printf("There are %d channels\n", nchan); fflush(stdout);
- if(nscopes < 1)
- {
-     return NULL;
- }
-
- DwScope ** slist = malloc( (nscopes+1) * sizeof(DwScope*));
- slist[nscopes] = NULL; // A null terminates the list
-
- // Get all files and add to list.
- gint pos = 0;
- while (valid)
- {
-     slist[pos++] = dw_scope_get_from_model(model, &iter);
-     valid = gtk_tree_model_iter_next (model,
-                                       &iter);
- }
-
- return slist;
-}
 
 dwfile ** dwfile_get(int * nfiles)
 {
@@ -885,24 +803,6 @@ dwfile ** dwfile_get(int * nfiles)
  return flist;
 }
 
-DwScope * dwscope_get()
-{
- // Get the scope from the list of scopes
- GtkTreeView * view = (GtkTreeView*) config.scope_tree;
- GtkTreeModel * model = gtk_tree_view_get_model( (GtkTreeView*) view);
- GtkTreeIter iter;
- GtkTreeSelection * selection = gtk_tree_view_get_selection( (GtkTreeView*) view);
-
- if(gtk_tree_selection_get_selected(selection, &model, &iter))
- {
-     DwScope * scope = dw_scope_get_from_model(model, &iter);
-     return scope;
- } else {
-     return NULL;
- }
-}
-
-
 void update_cmd(int ready)
 {
 
@@ -950,7 +850,7 @@ void update_cmd(int ready)
  // Get all channels and add to list
 
  // Get scope
- DwScope * scope = dwscope_get();
+ DwScope * scope = dwscope_get_selected_from_gtk_tree_view((GtkTreeView*) config.scope_tree);
 
  DwChannel ** channels = dw_channels_get_from_gtk_tree_view((GtkTreeView*) config.channel_tree);
  int nfiles = 0;
@@ -1066,7 +966,7 @@ void del_selected_scope()
 
 void edit_selected_scope()
 {
- printf("edit_selected_scope()\n");
+
  GtkTreeModel * model =
  gtk_tree_view_get_model ( (GtkTreeView*) config.scope_tree);
  GtkTreeSelection * selection = gtk_tree_view_get_selection ( (GtkTreeView*) config.scope_tree);
@@ -1096,22 +996,14 @@ void edit_selected_scope()
      current_scope->ni = sNI;
      current_scope->xy_nm = sDX;
      current_scope->z_nm = sDZ;
-     DwScope * scope = dw_app_get_new_scope((GtkWindow*) config.window, current_scope);
+     DwScope * scope = dw_scope_edit_dlg((GtkWindow*) config.window, current_scope);
      if(scope != NULL)
      {
-         gtk_tree_store_set((GtkTreeStore*) model, &iter,
-                            sNAME_COLUMN, scope->name,
-                            sNA_COLUMN, scope->NA,
-                            sNI_COLUMN, scope->ni,
-                            sDX_COLUMN, scope->xy_nm,
-                            sDZ_COLUMN, scope->z_nm,
-                            -1);
-
+         dw_scope_to_gtk_tree_store(scope, (GtkTreeStore*) model, &iter);
          free(scope);
      }
      free(current_scope);
  }
-
 }
 
 
@@ -1191,141 +1083,6 @@ gboolean edit_channel_cb(GtkWidget * w, gpointer p)
  return TRUE;
 }
 
-
-
-void dw_scope_to_key_file(DwScope * scope, GKeyFile * kf)
-{
- char * name = scope->name;
- if(name == NULL)
- {
-     printf("unable to save scope -- no name\n");
-     return;
- }
-
- g_key_file_set_double(kf, name, "NA", (double) scope->NA);
- g_key_file_set_double(kf, name, "ni", (double) scope->ni);
- g_key_file_set_double(kf, name, "DX_NM", (double) scope->xy_nm);
- g_key_file_set_double(kf, name, "DZ_NM", (double) scope->z_nm);
- return;
-}
-
-void dw_channels_to_disk(DwChannel ** channels, char * file)
-{
- printf("Saving channels to %s\n", file);
- GKeyFile * key_file = g_key_file_new();
- int pos = 0;
- while(channels[pos] != NULL)
- {
-     dw_chan_to_key_file(channels[pos], key_file);
-     pos++;
- }
- GError * error = NULL;
- if (!g_key_file_save_to_file (key_file, file, &error))
- {
-     g_warning ("Error saving key file: %s", error->message);
-     g_error_free(error);
- }
- g_key_file_free(key_file);
-
-}
-
-void dw_scopes_to_disk(DwScope ** scopes, char * file)
-{
- printf("Saving scopes to %s\n", file);
- GKeyFile * key_file = g_key_file_new();
- int pos = 0;
- while(scopes[pos] != NULL)
- {
-     dw_scope_to_key_file(scopes[pos], key_file);
-     pos++;
- }
- GError * error = NULL;
- if (!g_key_file_save_to_file (key_file, file, &error))
- {
-     g_warning ("Error saving key file: %s", error->message);
-     g_error_free(error);
- }
- g_key_file_free(key_file);
-}
-
-void dw_scopes_free(DwScope ** scopes)
-{
- int pos = 0;
- while(scopes[pos] != NULL)
- {
-     dw_scope_free(scopes[pos]);
-     pos++;
- }
- free(scopes);
-}
-
-
-
-DwScope * dw_scope_new()
-{
-    DwScope * scope = malloc(sizeof(DwScope));
-    scope->name = NULL;
-    scope->NA = 0;
-    scope->ni=0;
-    scope->xy_nm=0;
-    scope->z_nm = 0;
-    return scope;
-}
-
-DwScope ** dw_scopes_from_disk(char * fname)
-{
- GError * error = NULL;
- GKeyFile * key_file = g_key_file_new ();
-
- if (!g_key_file_load_from_file (key_file, fname, G_KEY_FILE_NONE, &error))
- {
-     if (!g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
-         g_warning ("Error loading key file: %s", error->message);
-     g_error_free(error);
-     g_key_file_free(key_file);
-     return NULL;
- }
-
- gsize length;
- gchar ** groups =
- g_key_file_get_groups (key_file,
-                        &length);
- if(length == 0)
- {
-     printf("Can't parse anything from %s\n", fname);
-     g_key_file_free(key_file);
-     g_error_free(error);
-     return NULL;
- }
-
- DwScope ** scopes = malloc((length+1)*sizeof(DwScope*));
- scopes[length] = NULL; // End of array
-
- for(int kk = 0; kk<length; kk++)
- {
-     scopes[kk] = dw_scope_new();
-     DwScope * scope = scopes[kk];
-     gchar * group = groups[kk]; // I.e. Alias
-     scope->name = strdup(group);
-
-     gdouble NA = g_key_file_get_double(key_file, group, "NA", &error);
-     scope->NA = NA;
-     gdouble ni = g_key_file_get_double(key_file, group, "ni", &error);
-     scope->ni = ni;
-     gdouble dx = g_key_file_get_double(key_file, group, "DX_NM", &error);
-     scope->xy_nm = dx;
-     gdouble dz = g_key_file_get_double(key_file, group, "DZ_NM", &error);
-     scope->z_nm = dz;
-
- }
- g_assert(scopes[length] == NULL);
- g_strfreev(groups);
- g_key_file_free(key_file);
- return scopes;
-}
-
-
-
 gboolean save_channels_cb(GtkWidget * w, gpointer p)
 {
  // Save list of channels to ini file.
@@ -1349,6 +1106,19 @@ gboolean save_channels_cb(GtkWidget * w, gpointer p)
  return TRUE;
 }
 
+gboolean clear_files_cb(GtkWidget * w, gpointer p)
+{
+    GtkTreeModel * model = gtk_tree_view_get_model((GtkTreeView*) config.file_tree);
+    GtkTreeSelection * sel = gtk_tree_view_get_selection((GtkTreeView*) config.file_tree);
+    GtkTreeIter iter;
+
+    while(gtk_tree_selection_get_selected(sel, &model, &iter))
+    {
+        gtk_tree_store_remove(GTK_TREE_STORE(model), &iter);
+    }
+    return TRUE;
+}
+
 gboolean del_channel_cb(GtkWidget * w, gpointer p)
 {
  del_selected_channel();
@@ -1360,25 +1130,27 @@ gboolean del_scope_cb(GtkWidget * w, gpointer p)
  return TRUE;
 }
 
-gboolean file_tree_keypress (GtkWidget *tree_view, GdkEventKey *event, gpointer data) {
+gboolean file_tree_keypress (GtkWidget *tree_view, GdkEventKey *event, gpointer data)
+{
                                                                                        if (event->keyval == GDK_KEY_Delete){
                                                                                                                             del_selected_file();
                                                                                        }
                                                                                        return FALSE;
 }
-gboolean channel_tree_keypress (GtkWidget *tree_view, GdkEventKey *event, gpointer data) {
+gboolean channel_tree_keypress (GtkWidget *tree_view, GdkEventKey *event, gpointer data)
+{
                                                                                           if (event->keyval == GDK_KEY_Delete){
                                                                                                                                del_selected_channel();
                                                                                           }
                                                                                           return FALSE;
 }
-gboolean microscope_tree_keypress (GtkWidget *tree_view, GdkEventKey *event, gpointer data) {
+gboolean microscope_tree_keypress (GtkWidget *tree_view, GdkEventKey *event, gpointer data)
+{
                                                                                              if (event->keyval == GDK_KEY_Delete){
                                                                                                                                   del_selected_scope();
                                                                                              }
                                                                                              return FALSE;
 }
-
 
 DwAppWindow *
 dw_app_window_new (DwApp *app)
@@ -1389,7 +1161,7 @@ dw_app_window_new (DwApp *app)
  GtkWidget * frame_channels = gtk_frame_new (NULL);
  GtkWidget * frame_scope = gtk_frame_new (NULL);
  GtkWidget * frame_run = run_frame();
- GtkWidget * frame_dw = dw_frame();
+ GtkWidget * frame_dw = create_deconwolf_tab();
 
  gtk_frame_set_shadow_type (GTK_FRAME (frame_drop), GTK_SHADOW_IN);
  gtk_frame_set_shadow_type (GTK_FRAME (frame_files), GTK_SHADOW_IN);
