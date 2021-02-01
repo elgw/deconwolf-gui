@@ -16,17 +16,16 @@ G_DECLARE_FINAL_TYPE (DwAppWindow, dw_app_window, DW, APP_WINDOW, GtkApplication
 void                    dw_app_window_open         (DwAppWindow *win,
                                                          GFile            *file);
 
-// Callback from buttons in channel tab
-gboolean del_channel_cb(GtkWidget * w, gpointer p);
-gboolean del_scope_cb(GtkWidget * w, gpointer p);
-gboolean save_channel_cb(GtkWidget * w, gpointer p);
-
-gboolean edit_scope_cb(GtkWidget * w, gpointer p);
 
 
-// Remove selected items from the treeviews:
-void del_selected_channel();
-void del_selected_scope();
+
+
+//
+
+void edit_selected_channel();
+
+
+
 void del_selected_file();
 
 gboolean file_tree_keypress (GtkWidget *tree_view, GdkEventKey *event, gpointer data);
@@ -39,6 +38,12 @@ typedef struct {
     int niter;
 } DwChannel;
 
+// Remove selected items from the treeviews:
+void del_selected_channel();
+// Callback from buttons in channel tab
+gboolean del_channel_cb(GtkWidget * w, gpointer p);
+gboolean save_channels_cb(GtkWidget * w, gpointer p);
+gboolean edit_channel_cb(GtkWidget * w, gpointer p);
 DwChannel * dw_channel_new();
 void dw_channels_free(DwChannel **);
 void dw_channel_free(DwChannel*);
@@ -59,6 +64,31 @@ typedef struct {
     float xy_nm;
     float z_nm;
 } DwScope;
+
+DwScope * dw_scope_new();
+void dw_scope_free(DwScope *);
+void dw_scopes_free(DwScope ** );
+// Get NULL-terminated list of microscopes from the GUI
+DwScope ** dw_scopes_get_from_gui();
+//
+DwScope * dw_scope_get_from_model(GtkTreeModel * model, GtkTreeIter * iter);
+
+// Edit button in scope view
+gboolean edit_scope_cb(GtkWidget * w, gpointer p);
+// Delete selected scope
+gboolean del_scope_cb(GtkWidget * w, gpointer p);
+gboolean save_scopes_cb(GtkWidget * w, gpointer p);
+/* Read channels from file */
+DwScope ** dw_scopes_from_disk(char * fname);
+
+//
+void edit_selected_scope();
+void del_selected_scope();
+void dw_scopes_to_disk(DwScope **, char *);
+void dw_scope_to_key_file(DwScope *, GKeyFile *);
+
+
+
 
 // deconwolf
 typedef struct {
