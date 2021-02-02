@@ -29,5 +29,5 @@ resources:
 
 install:
 	cp dw_gui /usr/local/bin
-	cp deconwolf.desktop /usr/share/applications
-	cp deconwolf.png /usr/share/icons/hicolor/48x48/apps/
+	cp resources/deconwolf.desktop /usr/share/applications
+	cp resources/deconwolf.png /usr/share/icons/hicolor/48x48/apps/
