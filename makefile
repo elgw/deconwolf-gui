@@ -9,20 +9,22 @@ else
 cflags += -O3 -flto
 endif
 
+src=src/
+
 dw_gui: resources dw_channel dw_scope dw_conf
-	$(cc) $(cflags)  resources.c dw_app.c dw_app_window.c dw_gui.c $(ldflags) dw_channel.o dw_scope.o dw_conf.o -o dw_gui
+	$(cc) $(cflags) resources.c $(src)dw_app.c $(src)dw_app_window.c $(src)dw_gui.c $(ldflags) dw_channel.o dw_scope.o dw_conf.o -o dw_gui
 
 dw_channel:
-	$(cc) -c $(cflags) dw_channel.c
+	$(cc) -c $(cflags) $(src)dw_channel.c
 
 dw_scope:
-	$(cc) -c $(cflags) dw_scope.c
+	$(cc) -c $(cflags) $(src)dw_scope.c
 
 dw_conf:
-	$(cc) -c $(cflags) dw_conf.c
+	$(cc) -c $(cflags) $(src)dw_conf.c
 
 resources:
-	glib-compile-resources --target=resources.c --generate-source gresources.xml
+	glib-compile-resources --target=resources.c --generate-source src/gresources.xml
 
 
 install:

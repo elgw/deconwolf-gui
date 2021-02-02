@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+      <gresource prefix="/images/">
+          <file alias="wolf1.png">resources/wolf1.png</file>
+          <file alias="Compound_Microscope_(cropped).jpeg">resources/Compound_Microscope_(cropped).jpeg</file>
+          <file alias="FluorescentCells.jpg">resources/FluorescentCells.jpg</file>
+      </gresource>
+</gresources>
