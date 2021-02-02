@@ -1,3 +1,4 @@
 resources.c
 dw_gui
 *.o
+builddir

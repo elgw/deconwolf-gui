@@ -26,8 +26,6 @@ void edit_selected_channel();
 gboolean file_tree_keypress (GtkWidget *tree_view, GdkEventKey *event, gpointer data);
 void del_selected_file();
 
-
-
 // Remove selected items from the treeviews:
 void del_selected_channel();
 // Callback from buttons in channel tab
@@ -39,7 +37,6 @@ gboolean clear_files_cb(GtkWidget * w, gpointer p);
 
 void edit_selected_scope();
 void del_selected_scope();
-
 
 // deconwolf
 typedef struct {

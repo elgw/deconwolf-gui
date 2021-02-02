@@ -2,9 +2,9 @@
 
 #include "dw_app.h"
 #include "dw_app_window.h"
-#include "dw_app_get_new_scope.c"
-#include "dw_app_runner.c"
-#include "dw_app_runner_simple.c"
+
+// #include "dw_app_runner.c"
+//#include "dw_app_runner_simple.c"
 #include <libgen.h>
 #include <locale.h>
 #include <assert.h>
@@ -689,7 +689,7 @@ dw_app_window_class_init (DwAppWindowClass *class)
 gboolean run_dw_cb_not_ready(GtkWidget * widget, gpointer user_data)
 {
     // Run deconwolf
-    dw_app_runner((GtkWindow*) config.window, "pause 1");
+    //dw_app_runner((GtkWindow*) config.window, "pause 1");
     return TRUE;
 }
 
@@ -709,13 +709,64 @@ void runscript(char * name)
 }
 
 
+gboolean save_cmd(GtkWindow * parent_window, char ** savename)
+/* Save the command-queue to disk. Returns true on success and sets savename
+to the filename that was used.
+ */
+{
+
+    gboolean saved = FALSE;
+
+    GtkWidget *dialog;
+    GtkFileChooser *chooser;
+    GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_SAVE;
+    gint res;
+
+    dialog = gtk_file_chooser_dialog_new ("Save File",
+                                      parent_window,
+                                      action,
+                                      "_Cancel",
+                                      GTK_RESPONSE_CANCEL,
+                                      "_Save",
+                                      GTK_RESPONSE_ACCEPT,
+                                      NULL);
+chooser = GTK_FILE_CHOOSER (dialog);
+
+gtk_file_chooser_set_do_overwrite_confirmation (chooser, TRUE);
+
+
+char * suggname = malloc(1024);
+sprintf(suggname, "dwcommands.sh");
+
+gtk_file_chooser_set_current_name (chooser,
+                                     suggname);
+
+
+res = gtk_dialog_run (GTK_DIALOG (dialog));
+if (res == GTK_RESPONSE_ACCEPT)
+  {
+
+
+    char * filename = gtk_file_chooser_get_filename (chooser);
+    char * sname = strdup(filename);
+    savename[0] = sname;
+
+    // save_to_file (filename);
+    g_free (filename);
+    saved = TRUE;
+  }
+
+gtk_widget_destroy (dialog);
+return saved;
+}
+
 gboolean save_dw_cb(GtkWidget * widget, gpointer user_data)
 {
     // This should by factored to remove out duplicate code in
     // gboolean run_dw_cb(GtkWidget * widget, gpointer user_data)
     //
     char * filename = NULL;
-    if(save_cmd((GtkWindow*) config.window, &filename)) // in dw_app_runner_simple.c
+    if(save_cmd((GtkWindow*) config.window, &filename))
     { // If we got a filename
         // Get text from
         // config.cmd

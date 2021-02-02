@@ -2,7 +2,9 @@
 
 A GUI for deconwolf (to be released) written in GTK 3.24.23.
 
-## Build and Install (on Ubuntu)
+## Build and Install
+
+### On Ubuntu
 For building this should be enough:
 
 ``` shell
@@ -14,6 +16,14 @@ Once it is built, the gui can be launched by `./dw_gui` To install it system wid
 
 ``` shell
 sudo make install
+```
+
+### Other systems
+If the makefile does not work, try with meson:
+``` shell
+meson builddir
+cd builddir
+ninja
 ```
 
 ## Usage notes:
@@ -31,6 +41,7 @@ sudo make install
  - [ ] One-file simple mode?
 
 ### Future:
+ - [ ] Install from meson
  - [ ] Set up a `./configure ; make ; make install` chain.
  - [ ] Always use the C locale?
  - [ ] Group files by folder
