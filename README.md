@@ -1,6 +1,6 @@
-# dwgui (GTK)
+# Deconwolf GUI (dwgui)
 
-A GUI for deconwolf written in GTK 3.24.23.
+A GUI for deconwolf (to be released) written in GTK 3.24.23.
 
 ## Build and Install (on Ubuntu)
 For building this should be enough:
@@ -31,6 +31,7 @@ sudo make install
  - [ ] One-file simple mode?
 
 ### Future:
+ - [ ] Set up a `./configure ; make ; make install` chain.
  - [ ] Always use the C locale?
  - [ ] Group files by folder
  - [ ] Menus
