@@ -1,10 +1,6 @@
 #include <gtk/gtk.h>
-
 #include "dw_app.h"
 #include "dw_app_window.h"
-
-// #include "dw_app_runner.c"
-//#include "dw_app_runner_simple.c"
 #include <libgen.h>
 #include <locale.h>
 #include <assert.h>
@@ -94,7 +90,7 @@ next_page_cb (GtkWidget *widget,
 
 
 
-GtkWidget * create_deconwolf_tab()
+GtkWidget * create_deconwolf_frame()
 {
 
     char * cfile = get_configuration_file("deconwolf");
@@ -161,8 +157,9 @@ GtkWidget * create_deconwolf_tab()
 
 }
 
-GtkWidget * create_file_tree()
+GtkWidget * create_file_frame()
 {
+
     GtkTreeStore * file_store = gtk_tree_store_new (fN_COLUMNS,       /* Total number of columns */
                                                     G_TYPE_STRING,   /* File name */
                                                     G_TYPE_STRING);   /* Channel */
@@ -208,15 +205,26 @@ GtkWidget * create_file_tree()
     gtk_action_bar_pack_start((GtkActionBar*) Bar, btnClear);
     gtk_action_bar_pack_end ((GtkActionBar*) Bar, btnNext);
 
+    GtkWidget * file_tree_scroller = gtk_scrolled_window_new (NULL, NULL);
+    gtk_container_add (GTK_CONTAINER (file_tree_scroller),
+                       file_tree);
+
     GtkWidget * boxV = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+    gtk_box_pack_start((GtkBox*) boxV,
+                       file_tree_scroller,
+                       TRUE, TRUE, 0);
     gtk_box_pack_end((GtkBox*) boxV,
                      Bar,
-                     FALSE, TRUE, 5);
-    gtk_box_pack_start((GtkBox*) boxV,
-                       file_tree,
-                       FALSE, TRUE, 5);
+                     FALSE, TRUE, 0);
 
-    return boxV;
+    GtkWidget * file_frame = gtk_frame_new(NULL);
+    gtk_container_add (GTK_CONTAINER (file_frame),
+                       boxV);
+
+    g_signal_connect (G_OBJECT (file_tree), "key_press_event",
+                      G_CALLBACK (file_tree_keypress), NULL);
+
+    return file_frame;
 }
 
 
@@ -863,7 +871,7 @@ gboolean run_dw_cb(GtkWidget * widget, gpointer user_data)
 }
 
 
-GtkWidget * run_frame()
+GtkWidget * create_run_frame()
 {
 
     GtkWidget * cmd = gtk_text_view_new();
@@ -1338,7 +1346,6 @@ void populate_channels()
     char * cfile = get_configuration_file("channels");
     if(cfile != NULL)
     {
-        printf("cfile: %s\n", cfile);
         channels = dw_channels_from_disk(cfile);
         free(cfile);
     }
@@ -1389,16 +1396,56 @@ void populate_microscopes()
     return;
 }
 
+GtkWidget * create_drop_frame()
+{
+
+    GtkWidget * frame_drop = gtk_frame_new (NULL);
+    GtkWidget * overlay = gtk_overlay_new();
+
+    GtkWidget * image = gtk_image_new_from_resource("/images/wolf1.png");
+
+    /* Set up Drag and Drop */
+    enum
+    {
+        TARGET_STRING,
+        TARGET_URL
+    };
+
+    static GtkTargetEntry targetentries[] =
+        {
+            { "STRING",        0, TARGET_STRING },
+            { "text/plain",    0, TARGET_STRING },
+            { "text/uri-list", 0, TARGET_URL },
+        };
+
+    gtk_drag_dest_set(frame_drop, GTK_DEST_DEFAULT_ALL, targetentries, 3,
+                      GDK_ACTION_COPY | GDK_ACTION_MOVE | GDK_ACTION_LINK);
+    g_signal_connect(frame_drop, "drag_data_received",
+                     G_CALLBACK(drag_data_cb), NULL);
+
+    GtkWidget * label = gtk_label_new("Drag and Drop images here");
+    gtk_widget_set_halign((GtkWidget* ) label, GTK_ALIGN_CENTER);
+    gtk_widget_set_valign((GtkWidget* ) label, GTK_ALIGN_CENTER);
+    gtk_widget_show(label);
+    gtk_container_add (GTK_CONTAINER (overlay), image);
+    gtk_overlay_add_overlay((GtkOverlay*) overlay, label);
+    gtk_container_add (GTK_CONTAINER (frame_drop), overlay);
+    return frame_drop;
+}
+
 DwAppWindow *
 dw_app_window_new (DwApp *app)
 {
 
- GtkWidget * frame_drop = gtk_frame_new (NULL);
- GtkWidget * frame_files = gtk_frame_new (NULL);
+    GtkWidget * frame_drop = create_drop_frame ();
+    GtkWidget * frame_dw = create_deconwolf_frame();
+
+ GtkWidget * frame_files = create_file_frame(NULL);
  GtkWidget * frame_channels = gtk_frame_new (NULL);
  GtkWidget * frame_scope = gtk_frame_new (NULL);
- GtkWidget * frame_run = run_frame();
- GtkWidget * frame_dw = create_deconwolf_tab();
+ GtkWidget * frame_run = create_run_frame();
+
+
 
  gtk_frame_set_shadow_type (GTK_FRAME (frame_drop), GTK_SHADOW_IN);
  gtk_frame_set_shadow_type (GTK_FRAME (frame_files), GTK_SHADOW_IN);
@@ -1427,54 +1474,21 @@ dw_app_window_new (DwApp *app)
  g_signal_connect(notebook, "switch-page",
                   G_CALLBACK(tab_change_cb), NULL);
 
- GtkWidget *image = gtk_image_new_from_resource("/images/wolf1.png");
-
- GtkWidget * file_tree = create_file_tree();
- g_signal_connect (G_OBJECT (file_tree), "key_press_event",
-                   G_CALLBACK (file_tree_keypress), NULL);
-
- GtkWidget * file_tree_scroller = gtk_scrolled_window_new (NULL, NULL);
- gtk_container_add (GTK_CONTAINER (file_tree_scroller),
-                    file_tree);
-
  GtkWidget * channel_tree = create_channel_tree();
  g_signal_connect (G_OBJECT (config.channel_tree), "key_press_event",
                    G_CALLBACK (channel_tree_keypress), NULL);
- //GtkWidget * channel_tree = gtk_label_new("testing");
+
  GtkWidget * scope_tab = create_microscope_tab();
  g_signal_connect (G_OBJECT (config.scope_tree), "key_press_event",
                    G_CALLBACK (microscope_tree_keypress), NULL);
- //GtkWidget * scope_tab = gtk_label_new("Bug free, but boring, scope_tab replacement");
 
- /* Set up Drag and Drop */
- enum
- {
-  TARGET_STRING,
-  TARGET_URL
- };
-
- static GtkTargetEntry targetentries[] =
- {
-  { "STRING",        0, TARGET_STRING },
-  { "text/plain",    0, TARGET_STRING },
-  { "text/uri-list", 0, TARGET_URL },
- };
-
- gtk_drag_dest_set(image, GTK_DEST_DEFAULT_ALL, targetentries, 3,
-                   GDK_ACTION_COPY | GDK_ACTION_MOVE | GDK_ACTION_LINK);
- g_signal_connect(image, "drag_data_received",
-                  G_CALLBACK(drag_data_cb), NULL);
 
  /* Create the window */
  DwAppWindow * window = g_object_new (DW_APP_WINDOW_TYPE, "application", app, NULL);
  config.window = window;
- gtk_window_set_title (GTK_WINDOW (window), "BiCroLab deconwolf GUI, 2021");
-
-
+ gtk_window_set_title (GTK_WINDOW (window), "BiCroLab deconwolf GUI, 2021 v0.1");
 
  /* Pack components */
- gtk_container_add (GTK_CONTAINER (frame_drop), image);
- gtk_container_add (GTK_CONTAINER (frame_files), file_tree_scroller);
  gtk_container_add (GTK_CONTAINER (frame_channels), channel_tree);
  gtk_container_add (GTK_CONTAINER (frame_scope), scope_tab);
  gtk_container_add (GTK_CONTAINER (window), notebook);
