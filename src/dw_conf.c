@@ -12,6 +12,13 @@ DwConf * dw_conf_new()
 
 DwConf * dw_conf_new_from_file(char * file)
 {
+    DwConf * conf = dw_conf_new();
+
+    if(file == NULL)
+    {
+        return conf;
+    }
+
     GError * error = NULL;
  GKeyFile * key_file = g_key_file_new ();
 
@@ -21,7 +28,7 @@ DwConf * dw_conf_new_from_file(char * file)
          g_warning ("Error loading key file: %s", error->message);
      g_error_free(error);
      g_key_file_free(key_file);
-     return NULL;
+     return conf;
  }
 
  gsize length;
@@ -34,10 +41,8 @@ DwConf * dw_conf_new_from_file(char * file)
      printf("Can't parse anything from %s\n", file);
      g_key_file_free(key_file);
      g_error_free(error);
-     return NULL;
+     return conf;
  }
-
- DwConf * conf = dw_conf_new();
 
 
  gchar group[] = "deconwolf";
