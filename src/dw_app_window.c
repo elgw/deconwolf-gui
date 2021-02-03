@@ -46,17 +46,19 @@ typedef struct {
 char * get_configuration_file(char * name)
 /* Return the name for the configuration file */
 {
+
+// Set up the configuration folder
 char * cfile = malloc(1024);
-sprintf(cfile, "%s/%s/", g_get_user_config_dir(), name);
+sprintf(cfile, "%s/%s/", g_get_user_config_dir(), "deconwolf");
 if(g_mkdir_with_parents(cfile, S_IXUSR | S_IWUSR | S_IRUSR) == -1)
  {
      printf("Unable to access %s\n", cfile);
      free(cfile);
-     return FALSE;
+     return NULL;
  }
 
-// Grab information from gui and save
-sprintf(cfile, "%s/deconwolf/dw_gui_deconwolf", g_get_user_config_dir());
+// Return the actual name for the configuration file
+sprintf(cfile, "%s/deconwolf/dw_gui_%s", g_get_user_config_dir(), name);
 return cfile;
 }
 
@@ -448,7 +450,7 @@ save_scopes_cb (GtkWidget *widget,
     // Save list of channels to ini file.
 
     // First, figure out where:
-    char * cfile = get_configuration_file("dw_gui_microscopes");
+    char * cfile = get_configuration_file("microscopes");
     DwScope ** scopes = dw_scopes_get_from_gtk_tree_view((GtkTreeView*) config.scope_tree);
     dw_scopes_to_disk(scopes, cfile);
     dw_scopes_free(scopes);
@@ -1275,7 +1277,7 @@ gboolean save_channels_cb(GtkWidget * w, gpointer p)
  // Save list of channels to ini file.
 
  // First, figure out where:
-    char * cfile = get_configuration_file("dw_gui_channels");
+    char * cfile = get_configuration_file("channels");
  DwChannel ** channels = dw_channels_get_from_gtk_tree_view((GtkTreeView*) config.channel_tree);
  dw_channels_to_disk(channels, cfile);
  dw_channels_free(channels);
@@ -1327,6 +1329,64 @@ gboolean microscope_tree_keypress (GtkWidget *tree_view, GdkEventKey *event, gpo
                                                                                                                                   del_selected_scope();
                                                                                              }
                                                                                              return FALSE;
+}
+
+void populate_channels()
+{
+    DwChannel ** channels = NULL;
+    // Set up channels from configuration file or use defaults
+    char * cfile = get_configuration_file("channels");
+    if(cfile != NULL)
+    {
+        printf("cfile: %s\n", cfile);
+        channels = dw_channels_from_disk(cfile);
+        free(cfile);
+    }
+
+    int pos = 0;
+    if(channels != NULL)
+    {
+        while(channels[pos] != NULL)
+        {
+            DwChannel * chan = channels[pos++];
+            add_channel(chan->alias, chan->name, chan->lambda, chan->niter);
+        }
+        dw_channels_free(channels);
+    }
+    else
+    {
+        /* Until we read and write configuration files, add some defaults */
+        add_channel("DAPI", "4′,6-diamidino-2-phenylindole", 466.0, 50);
+        add_channel("A594", "Alexa Fluor 594", 617.0, 100);
+        add_channel("CY5", "Alexa Fluor 647", 664.0, 100);
+        add_channel("TMR", "Tetramethylrhodamine", 562.0, 100);
+    }
+    return;
+}
+
+void populate_microscopes()
+{
+    char * cfile = get_configuration_file("microscopes");
+    DwScope ** scopes = dw_scopes_from_disk(cfile);
+    free(cfile);
+
+    int pos = 0;
+    if(scopes != NULL)
+    {
+        while(scopes[pos] != NULL)
+        {
+            DwScope * scope = scopes[pos++];
+            add_scope(scope->name, scope->NA, scope->ni, scope->xy_nm, scope->z_nm);
+        }
+        dw_scopes_free(scopes);
+    }
+    else
+    {
+        add_scope("Bicroscope-1, 100X", 1.45, 1.515, 130, 250);
+        add_scope("Bicroscope-1, 60X", 1.40, 1.515, 216, 350);
+        add_scope("Bicroscope-2, 100X", 1.40, 1.515, 65, 250);
+    }
+    return;
 }
 
 DwAppWindow *
@@ -1419,45 +1479,9 @@ dw_app_window_new (DwApp *app)
  gtk_container_add (GTK_CONTAINER (frame_scope), scope_tab);
  gtk_container_add (GTK_CONTAINER (window), notebook);
 
- char * cfile = malloc(1024*sizeof(char));
- sprintf(cfile, "%s/deconwolf/dw_gui_channels", g_get_user_config_dir());
- DwChannel ** channels = dw_channels_from_disk(cfile);
- free(cfile);
- int pos = 0;
- if(channels != NULL)
- {
-     while(channels[pos] != NULL)
-     {
-         DwChannel * chan = channels[pos++];
-         add_channel(chan->alias, chan->name, chan->lambda, chan->niter);
-     }
-     dw_channels_free(channels);
- } else {
-     /* Until we read and write configuration files, add some defaults */
-     add_channel("DAPI", "4′,6-diamidino-2-phenylindole", 466.0, 50);
-     add_channel("A594", "Alexa Fluor 594", 617.0, 100);
-     add_channel("CY5", "Alexa Fluor 647", 664.0, 100);
-     add_channel("TMR", "Tetramethylrhodamine", 562.0, 100);
- }
+ populate_channels();
+ populate_microscopes();
 
- cfile = malloc(1024*sizeof(char));
- sprintf(cfile, "%s/deconwolf/dw_gui_microscopes", g_get_user_config_dir());
- DwScope ** scopes = dw_scopes_from_disk(cfile);
- free(cfile);
- pos = 0;
- if(scopes != NULL)
- {
-     while(scopes[pos] != NULL)
-     {
-         DwScope * scope = scopes[pos++];
-         add_scope(scope->name, scope->NA, scope->ni, scope->xy_nm, scope->z_nm);
-     }
-     dw_scopes_free(scopes);
- } else {
- add_scope("Bicroscope-1, 100X", 1.45, 1.515, 130, 250);
- add_scope("Bicroscope-1, 60X", 1.40, 1.515, 216, 350);
- add_scope("Bicroscope-2, 100X", 1.40, 1.515, 65, 250);
- }
 
  return window;
 
