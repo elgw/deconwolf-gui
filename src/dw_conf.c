@@ -9,6 +9,12 @@ DwConf * dw_conf_new()
     return conf;
 }
 
+void dw_conf_free(DwConf * conf)
+{
+    if(conf == NULL)
+        return;
+    free(conf);
+}
 
 DwConf * dw_conf_new_from_file(char * file)
 /*

@@ -10,6 +10,7 @@ typedef struct{
 } DwConf;
 
 DwConf * dw_conf_new();
+void dw_conf_free(DwConf*);
 DwConf * dw_conf_new_from_file(char * );
 void dw_conf_save_to_file(DwConf *, char *);
 
