@@ -39,19 +39,23 @@ ninja
  - [ ] Change regexp for channel identification
  - [ ] Add to batch.
  - [ ] One-file simple mode?
+ - [ ] Create a [.dmg installer](https://mesonbuild.com/Creating-OSX-packages.html) file for OSX (or alternatively a [HomeBrew Formula](https://medium.com/@tharun208/creating-a-homebrew-formula-f76da25b79e4)).
+ - [ ] Create a deb file?
+ - [ ] Warn when channel is missing.
+ - [ ] Warn when dw can't be found.
 
 ### Future:
  - [ ] Install from meson
  - [ ] Set up a `./configure ; make ; make install` chain.
- - [ ] Always use the C locale?
  - [ ] Group files by folder
  - [ ] Menus
  - [ ] About dialog
  - [ ] Select multiple files to delete
  - [ ] Use a svg file for system icon.
- - [ ] Refactor alot.
+ - [ ] Refactor, write tests, error handling etc.
 
 ### Done
+ - [x] Sets the c-locale (makes sense since the GUI is en English)
  - [x] Set number of threads and tilesize (dw)
  - [x] Save and load microscopes.
  - [x] [GkeyFile](https://developer.gnome.org/glib/stable/glib-Key-value-file-parser.html#g-key-file-new) for settings.

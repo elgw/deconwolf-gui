@@ -8,6 +8,7 @@
 #include "dw_channel.h"
 #include "dw_scope.h"
 #include "dw_conf.h"
+#include "dw_file.h"
 
 
 #define DW_APP_WINDOW_TYPE (dw_app_window_get_type ())

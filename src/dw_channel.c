@@ -10,11 +10,14 @@ DwChannel * dw_channel_new()
 
 void dw_channel_free(DwChannel * chan)
 {
+    if(chan == NULL)
+        return;
+
     if(chan->name != NULL)
         free(chan->name);
     if(chan->alias != NULL)
         free(chan->alias);
-    // TODO: free chan as well?
+    free(chan);
 }
 
 void dw_channels_free(DwChannel ** channels)

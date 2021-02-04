@@ -2,9 +2,12 @@
 
 void dw_scope_free(DwScope * scope)
 {
+    if(scope == NULL)
+        return;
+
     if(scope->name != NULL)
         free(scope->name);
-    // TODO: free scope as well?
+    free(scope);
 }
 
 DwScope * dw_scope_get_from_model(GtkTreeModel * model, GtkTreeIter * iter)
