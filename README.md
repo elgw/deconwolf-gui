@@ -41,6 +41,8 @@ ninja
  - [ ] One-file simple mode?
  - [ ] Create a [.dmg installer](https://mesonbuild.com/Creating-OSX-packages.html) file for OSX (or alternatively a [HomeBrew Formula](https://medium.com/@tharun208/creating-a-homebrew-formula-f76da25b79e4)).
  - [ ] Create a deb file?
+ - [ ] Warn when channel is missing.
+ - [ ] Warn when dw can't be found.
 
 ### Future:
  - [ ] Install from meson
