@@ -941,7 +941,7 @@ void update_cmd()
     //sprintf(buff, "# %d channels available\n", nchan);
     //gtk_text_buffer_insert(buffer, &titer, buff, -1);
     //sprintf(buff, "# %d files available\n", nfiles);
-    gtk_text_buffer_insert(buffer, &titer, buff, -1);
+    //gtk_text_buffer_insert(buffer, &titer, buff, -1);
 
     int nthreads = dwconf->nthreads;
     int tilesize = dwconf->tilesize;
