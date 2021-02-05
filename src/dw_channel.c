@@ -107,7 +107,7 @@ DwChannel * dw_channels_get_by_alias(DwChannel ** channels, char * alias)
     int pos = 0;
     while(channels[pos] != NULL)
     {
-        if(strcmp(alias, channels[pos]->alias) == 0)
+        if(strcasecmp(alias, channels[pos]->alias) == 0)
         {
             return channels[pos];
         }
