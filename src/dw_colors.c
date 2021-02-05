@@ -7,7 +7,6 @@
 #define CIE_Y 2
 #define CIE_Z 3
 
-
 /* CIE 1964 supplementary standard colorimetric observer
  * Format: lambda, x, y, z
  */
