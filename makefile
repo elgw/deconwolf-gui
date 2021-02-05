@@ -11,8 +11,8 @@ endif
 
 src=src/
 
-dw_gui: resources dw_channel dw_scope dw_conf dw_file
-	$(cc) $(cflags) resources.c $(src)dw_app.c $(src)dw_app_window.c $(src)dw_gui.c $(ldflags) dw_channel.o dw_scope.o dw_conf.o dw_file.o -o dw_gui
+dw_gui: resources dw_channel dw_scope dw_conf dw_file dw_colors
+	$(cc) $(cflags) resources.c $(src)dw_app.c $(src)dw_app_window.c $(src)dw_gui.c $(ldflags) dw_channel.o dw_scope.o dw_conf.o dw_file.o dw_colors.o -o dw_gui
 
 dw_channel:
 	$(cc) -c $(cflags) $(src)dw_channel.c
@@ -25,6 +25,9 @@ dw_conf:
 
 dw_file:
 	$(cc) -c $(cflags) $(src)dw_file.c
+
+dw_colors:
+	$(cc) -c $(cflags) $(src)dw_colors.c
 
 resources:
 	glib-compile-resources --target=resources.c --generate-source src/gresources.xml
