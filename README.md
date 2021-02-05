@@ -53,6 +53,8 @@ ninja
  - [ ] Select multiple files to delete
  - [ ] Use a svg file for system icon.
  - [ ] Refactor, write tests, error handling etc.
+ - [ ] Be consistent using the function from glib when possible.
+ - [ ] Suggest to save the command file in the folder of the first image.
 
 ### Done
  - [x] Sets the c-locale (makes sense since the GUI is en English)
