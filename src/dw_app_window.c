@@ -1350,10 +1350,52 @@ GtkWidget * create_drop_frame()
     return frame_drop;
 }
 
+static void
+about_activated(GSimpleAction *simple,
+               GVariant      *parameter,
+               gpointer       user_data)
+{
+    GtkWidget * about = gtk_about_dialog_new();
+    gtk_about_dialog_set_program_name((GtkAboutDialog*) about, "deconwolf GUI");
+    gtk_about_dialog_set_version( (GtkAboutDialog*) about, DW_GUI_VERSION);
+    gtk_about_dialog_set_website((GtkAboutDialog*) about, "https://github.com/elgw/dw_gui/");
+
+    //    gtk_about_dialog_set_authors((GtkAboutDialog*) about, &author);
+    gtk_window_set_title((GtkWindow*) about, "About ...");
+
+
+    gtk_widget_show((GtkWidget*) about);
+}
+
+static void
+ configuration_activated(GSimpleAction *simple,
+                      GVariant      *parameter,
+                      gpointer       user_data)
+{
+    printf("configuration...\n");
+}
+
+static GActionEntry main_menu_actions[] =
+    {
+     { "about", about_activated, NULL, NULL, NULL },
+     { "configuration", configuration_activated, NULL, NULL, NULL }
+    };
+
 DwAppWindow *
 dw_app_window_new (DwApp *app)
 {
     setlocale(LC_ALL,"C");
+
+    // Set up a fallback icon
+    GError * error = NULL;
+    GdkPixbuf * im = gdk_pixbuf_new_from_resource("/images/wolf1.png", &error);
+    int width = gdk_pixbuf_get_width(im);
+    int height = gdk_pixbuf_get_height(im);
+    int new_height = round(100.0 / ( (double) width) * (double) height );
+    GdkPixbuf * icon = gdk_pixbuf_scale_simple(im, 100, new_height, GDK_INTERP_BILINEAR);
+    g_object_unref(im);
+    gtk_window_set_default_icon(icon);
+    g_object_unref(icon);
 
     GtkWidget * frame_drop = create_drop_frame ();
     GtkWidget * frame_dw = create_deconwolf_frame();
@@ -1415,7 +1457,28 @@ dw_app_window_new (DwApp *app)
     /* Parse saved presets */
     populate_channels();
     populate_microscopes();
-    // TODO: also deconwolf settings
+
+    // Replace the stock menu bar with a new one
+    // that has a menu
+    GMenu * menu = g_menu_new();
+    g_menu_insert(menu, 1, "About", "menu1.about");
+    g_menu_insert(menu, 2, "Configuration", "menu1.configuration");
+    GtkWidget * mbtn = gtk_menu_button_new();
+    gtk_menu_button_set_menu_model((GtkMenuButton*) mbtn, (GMenuModel*) menu);
+    GtkWidget * hbar = gtk_header_bar_new();
+    gtk_header_bar_set_title((GtkHeaderBar*) hbar, "BiCroLab deconwolf GUI, 2021");
+    gtk_header_bar_set_show_close_button((GtkHeaderBar*) hbar, TRUE);
+    gtk_header_bar_pack_end((GtkHeaderBar*) hbar, mbtn);
+    gtk_window_set_titlebar((GtkWindow*) window, hbar);
+
+    // See https://stackoverflow.com/questions/22582768/connecting-a-function-to-a-gtkaction
+
+    GSimpleActionGroup * group = g_simple_action_group_new ();
+    g_action_map_add_action_entries (G_ACTION_MAP (group),
+                                     main_menu_actions, G_N_ELEMENTS (main_menu_actions),
+                                     NULL);
+    gtk_widget_insert_action_group((GtkWidget*) hbar, "menu1", (GActionGroup*) group);
+
 
     return window;
 
