@@ -94,9 +94,12 @@ GtkWidget * create_deconwolf_frame()
     GtkWidget * lOverwrite = gtk_label_new("Overwrite existing files?");
     GtkWidget * lThreads = gtk_label_new("Number of threads to use.");
     GtkWidget * lTile = gtk_label_new("Max side length of a tile [pixels]");
+
     GtkWidget * vOverwrite = gtk_switch_new();
     gtk_switch_set_state((GtkSwitch*) vOverwrite, dwconf->overwrite);
     config.dwc_overwrite = (GtkSwitch*) vOverwrite;
+    gtk_widget_set_halign((GtkWidget*) config.dwc_overwrite, GTK_ALIGN_CENTER);
+    gtk_widget_set_valign((GtkWidget*) config.dwc_overwrite, GTK_ALIGN_CENTER);
 
     GtkWidget * vThreads = gtk_spin_button_new(adjThreads, 1, 0);
     GtkWidget * vTile = gtk_spin_button_new(adjTile, 10, 0);
@@ -1231,6 +1234,28 @@ gboolean microscope_tree_keypress (GtkWidget *tree_view, GdkEventKey *event, gpo
     return FALSE;
 }
 
+gboolean channel_tree_buttonpress(GtkWidget *tree_view,
+                                     GdkEventButton * event,
+                                     gpointer data)
+{
+    if(event->type == GDK_DOUBLE_BUTTON_PRESS)
+    {
+        edit_selected_channel();
+    }
+    return FALSE;
+}
+
+gboolean microscope_tree_buttonpress(GtkWidget *tree_view,
+                                     GdkEventButton * event,
+                                     gpointer data)
+{
+    if(event->type == GDK_DOUBLE_BUTTON_PRESS)
+    {
+        edit_selected_scope();
+    }
+    return FALSE;
+}
+
 void populate_channels()
 {
     DwChannel ** channels = NULL;
@@ -1367,10 +1392,15 @@ dw_app_window_new (DwApp *app)
     GtkWidget * channel_tree = create_channel_tree();
     g_signal_connect (G_OBJECT (config.channel_tree), "key_press_event",
                       G_CALLBACK (channel_tree_keypress), NULL);
+    g_signal_connect (G_OBJECT (config.channel_tree), "button_press_event",
+                      G_CALLBACK (channel_tree_buttonpress), NULL);
 
     GtkWidget * scope_tab = create_microscope_tab();
     g_signal_connect (G_OBJECT (config.scope_tree), "key_press_event",
                       G_CALLBACK (microscope_tree_keypress), NULL);
+    g_signal_connect (G_OBJECT (config.scope_tree), "button_press_event",
+                      G_CALLBACK (microscope_tree_buttonpress), NULL);
+
 
     /* Create the window */
     DwAppWindow * window = g_object_new (DW_APP_WINDOW_TYPE, "application", app, NULL);

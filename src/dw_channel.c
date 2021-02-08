@@ -107,7 +107,7 @@ DwChannel * dw_channels_get_by_alias(DwChannel ** channels, char * alias)
     int pos = 0;
     while(channels[pos] != NULL)
     {
-        if(strcmp(alias, channels[pos]->alias) == 0)
+        if(strcasecmp(alias, channels[pos]->alias) == 0)
         {
             return channels[pos];
         }
@@ -188,6 +188,37 @@ DwChannel ** dw_channels_from_disk(char * fname)
  return channels;
 }
 
+gboolean
+color_draw_cb (GtkWidget    *widget,
+               cairo_t  * cr,
+               gpointer      user_data)
+{
+    double * lambda = (double*) user_data;
+
+    DwRGB * C = dw_RGB_new_from_lambda(lambda[0]);
+    cairo_set_source_rgb (cr, C->R, C->G, C->B);
+    free(C);
+    cairo_paint (cr);
+    return TRUE;
+}
+
+typedef struct {
+    double * lambda;
+    GtkWidget * widget;
+} UserData1;
+
+gboolean elambda_event(GtkWidget * widget,
+                       GdkEvent  *event,
+                       gpointer user_data)
+{
+    UserData1 * u = (UserData1*) user_data;
+    u->lambda[0] = atof(gtk_entry_get_text((GtkEntry*) widget));
+    // printf("Got lambda = %f\n", u->lambda[0]);
+    // Force redraw of the box
+    gtk_widget_queue_draw(u->widget);
+    return FALSE; // pass on event
+
+}
 
 // Function to open a dialog box with a message
 DwChannel *
@@ -198,6 +229,7 @@ dw_channel_edit_dlg(GtkWindow *parent, DwChannel * old_channel)
 
  // Create the widgets
  flags = GTK_DIALOG_DESTROY_WITH_PARENT;
+ double lambda = 0;
 
  char * msg = malloc(1024);
  if(old_channel == NULL)
@@ -205,6 +237,7 @@ dw_channel_edit_dlg(GtkWindow *parent, DwChannel * old_channel)
      sprintf(msg, "Add a new channel");
  } else {
      sprintf(msg, "Edit an existing channel");
+     lambda = old_channel->lambda;
  }
 
  dialog = gtk_dialog_new_with_buttons (msg,
@@ -219,6 +252,7 @@ dw_channel_edit_dlg(GtkWindow *parent, DwChannel * old_channel)
  content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
 
 
+
  GtkWidget * lAlias = gtk_label_new("Alias");
  GtkWidget * eAlias = gtk_entry_new();
 
@@ -228,6 +262,16 @@ dw_channel_edit_dlg(GtkWindow *parent, DwChannel * old_channel)
  GtkWidget * eLambda = gtk_entry_new();
  GtkWidget * lNiter = gtk_label_new("Number of iterations");
  GtkWidget * eNiter = gtk_entry_new();
+ GtkWidget * lColor = gtk_label_new("Color:");
+ GtkWidget * eColor = gtk_event_box_new();
+ g_signal_connect(eColor, "draw",
+                  G_CALLBACK(color_draw_cb), &lambda);
+ UserData1 ud;
+ ud.lambda = &lambda;
+ ud.widget = eColor;
+
+ g_signal_connect(eLambda, "key-release-event",
+                  G_CALLBACK(elambda_event), &ud);
 
  if(old_channel != NULL)
  {
@@ -252,8 +296,10 @@ gtk_grid_attach((GtkGrid*) grid, lName, 1, 2, 1, 1);
 gtk_grid_attach((GtkGrid*) grid, eName, 2, 2, 1, 1);
 gtk_grid_attach((GtkGrid*) grid, lLambda, 1, 3, 1, 1);
 gtk_grid_attach((GtkGrid*) grid, eLambda, 2, 3, 1, 1);
-gtk_grid_attach((GtkGrid*) grid, lNiter, 1, 4, 1, 1);
-gtk_grid_attach((GtkGrid*) grid, eNiter, 2, 4, 1, 1);
+gtk_grid_attach((GtkGrid*) grid, lColor, 1, 4, 1, 1);
+gtk_grid_attach((GtkGrid*) grid, eColor, 2, 4, 1, 1);
+gtk_grid_attach((GtkGrid*) grid, lNiter, 1, 5, 1, 1);
+gtk_grid_attach((GtkGrid*) grid, eNiter, 2, 5, 1, 1);
 
 GtkWidget * hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
 GtkWidget * im = gtk_image_new_from_resource("/images/FluorescentCells.jpg");

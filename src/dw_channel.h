@@ -4,6 +4,8 @@
 #include <gtk/gtk.h>
 #include <ctype.h>
 #include <assert.h>
+#include <string.h>
+#include "dw_colors.h"
 
 // Channel
 typedef struct {
