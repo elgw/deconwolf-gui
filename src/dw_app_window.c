@@ -756,16 +756,19 @@ gboolean save_cmd(GtkWindow * parent_window, char ** savename)
                                           NULL);
     chooser = GTK_FILE_CHOOSER (dialog);
 
+    // Todo: handle "confirm-overwrite" signal to
+    //       add the option "append".
+    // see: https://developer.gnome.org/gtk3/stable/GtkFileChooser.html#GtkFileChooser-confirm-overwrite
+
     gtk_file_chooser_set_do_overwrite_confirmation (chooser, TRUE);
 
-
-    char * suggname = malloc(1024);
-    // TODO: use folder of first tif file
+    // use folder of first tif file if available
     if(config.savefolder != NULL)
     {
         gtk_file_chooser_set_current_folder (chooser, config.savefolder);
     }
 
+    char * suggname = malloc(1024);
     sprintf(suggname, "dw_script");
     gtk_file_chooser_set_current_name (chooser, suggname);
 

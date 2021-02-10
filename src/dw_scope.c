@@ -135,13 +135,19 @@ void dw_scopes_to_disk(DwScope ** scopes, char * file)
 
 void dw_scopes_free(DwScope ** scopes)
 {
- int pos = 0;
- while(scopes[pos] != NULL)
- {
-     dw_scope_free(scopes[pos]);
-     pos++;
- }
- free(scopes);
+    if(scopes == NULL)
+    {
+        return;
+    }
+
+    int pos = 0;
+    while(scopes[pos] != NULL)
+    {
+        dw_scope_free(scopes[pos]);
+        pos++;
+    }
+    free(scopes);
+    return;
 }
 
 
