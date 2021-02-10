@@ -18,12 +18,24 @@ Once it is built, the gui can be launched by `./dw_gui` To install it system wid
 sudo make install
 ```
 
-### Other systems
-If the makefile does not work, try with meson:
+### OSX
+To get the dependencies, either follow [the recommended way](https://wiki.gnome.org/action/show/Projects/GTK/OSX/Building?action=show&redirect=Projects%2FGTK%2B%2FOSX%2FBuilding) to install the Gtk3 libraries or use [brew](https://brew.sh/):
+``` shell
+brew update
+brew upgrade
+brew install gtk+3
+brew install adwaita-icon-theme
+```
+To build, either do:
 ``` shell
 meson builddir
 cd builddir
 ninja
+```
+or
+
+``` shell
+make -B
 ```
 
 ## Usage notes:
