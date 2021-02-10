@@ -22,6 +22,10 @@ void dw_channel_free(DwChannel * chan)
 
 void dw_channels_free(DwChannel ** channels)
 {
+    if(channels == NULL)
+    {
+        return;
+    }
     int pos = 0;
     while(channels[pos] != NULL)
     {
