@@ -73,3 +73,10 @@ ninja
  - [X] Use GResource to include image data in binary.
  - [x] Drag and drop. Note that drag and drop from the 'Desktop' on Gnome might crash the whole system.
  - [x] A tree-view for file list
+
+## Useful:
+
+Interactive debugging with gtk
+``` shell
+GTK_DEBUG=interactive ./dw_gui
+```

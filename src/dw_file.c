@@ -26,6 +26,11 @@ void dw_file_free(DwFile * file)
 
 void dw_files_free(DwFile ** files)
 {
+    if(files == NULL)
+    {
+        return;
+    }
+
     int pos = 0;
     while(files[pos] != NULL)
     {
@@ -38,6 +43,7 @@ void dw_files_free(DwFile ** files)
 DwFile ** dw_files_get_from_gtk_tree_view(GtkTreeView * tv)
 {
     // Get a NULL-terminated array with all files
+    // Returns NULL if no files
 
     GtkTreeModel * model =
         gtk_tree_view_get_model ( tv );

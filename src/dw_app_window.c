@@ -20,9 +20,17 @@ typedef struct {
     GtkAdjustment * dwc_nthreads;
     GtkAdjustment * dwc_tilesize;
     GtkSwitch * dwc_overwrite;
+    char * savefolder; // Suggested folder to save the script in
 } GlobConf;
 
 GlobConf config;
+
+
+/* Forward declarations */
+static  void
+drag_data_cb(GtkWidget *wgt, GdkDragContext *context, int x, int y,
+             GtkSelectionData *seldata, guint info, guint time,
+             gpointer userdata);
 
 
 char * get_configuration_file(char * name)
@@ -212,6 +220,23 @@ GtkWidget * create_file_frame()
 
     g_signal_connect (G_OBJECT (file_tree), "key_press_event",
                       G_CALLBACK (file_tree_keypress), NULL);
+
+    /* Set up Drag and Drop */
+    enum
+    {
+     TARGET_STRING,
+     TARGET_URL
+    };
+    static GtkTargetEntry targetentries[] =
+        {
+         { "STRING",        0, TARGET_STRING },
+         { "text/plain",    0, TARGET_STRING },
+         { "text/uri-list", 0, TARGET_URL },
+        };
+    gtk_drag_dest_set(file_frame, GTK_DEST_DEFAULT_ALL, targetentries, 3,
+                      GDK_ACTION_COPY | GDK_ACTION_MOVE | GDK_ACTION_LINK);
+    g_signal_connect(file_frame, "drag_data_received",
+                     G_CALLBACK(drag_data_cb), NULL);
 
     return file_frame;
 }
@@ -735,11 +760,14 @@ gboolean save_cmd(GtkWindow * parent_window, char ** savename)
 
 
     char * suggname = malloc(1024);
-    sprintf(suggname, "dwcommands.sh");
+    // TODO: use folder of first tif file
+    if(config.savefolder != NULL)
+    {
+        gtk_file_chooser_set_current_folder (chooser, config.savefolder);
+    }
 
-    gtk_file_chooser_set_current_name (chooser,
-                                       suggname);
-
+    sprintf(suggname, "dw_script");
+    gtk_file_chooser_set_current_name (chooser, suggname);
 
     res = gtk_dialog_run (GTK_DIALOG (dialog));
     if (res == GTK_RESPONSE_ACCEPT)
@@ -926,6 +954,17 @@ void update_cmd()
     DwFile ** files = dw_files_get_from_gtk_tree_view((GtkTreeView*) config.file_tree);
     DwConf * dwconf = parse_dw_conf();
 
+    // Update the suggested folder to save the script to
+    if(config.savefolder != NULL)
+    {
+        free(config.savefolder);
+    }
+
+    if(files != NULL)
+    {
+        config.savefolder = g_path_get_dirname(files[0]->name);
+    }
+
     GtkTextView * cmd = (GtkTextView*) config.cmd;
     GtkTextIter titer;
     GtkTextBuffer *buffer = gtk_text_buffer_new(NULL);
@@ -957,6 +996,10 @@ void update_cmd()
     }
 
     /* Generate the list of commands to run */
+    if(files == NULL)
+    {
+        goto nofiles;
+    }
     int kk = 0;
     while(files[kk] != NULL)
     {
@@ -989,6 +1032,7 @@ void update_cmd()
         kk++;
     }
 
+ nofiles:
     gtk_text_view_set_buffer (cmd,
                               buffer);
 
@@ -1350,10 +1394,53 @@ GtkWidget * create_drop_frame()
     return frame_drop;
 }
 
+static void
+about_activated(GSimpleAction *simple,
+               GVariant      *parameter,
+               gpointer       user_data)
+{
+    GtkWidget * about = gtk_about_dialog_new();
+    gtk_about_dialog_set_program_name((GtkAboutDialog*) about, "deconwolf GUI");
+    gtk_about_dialog_set_version( (GtkAboutDialog*) about, DW_GUI_VERSION);
+    gtk_about_dialog_set_website((GtkAboutDialog*) about, "https://github.com/elgw/dw_gui/");
+
+    //    gtk_about_dialog_set_authors((GtkAboutDialog*) about, &author);
+    gtk_window_set_title((GtkWindow*) about, "About ...");
+
+
+    gtk_widget_show((GtkWidget*) about);
+}
+
+static void
+ configuration_activated(GSimpleAction *simple,
+                      GVariant      *parameter,
+                      gpointer       user_data)
+{
+    printf("configuration...\n");
+}
+
+static GActionEntry main_menu_actions[] =
+    {
+     { "about", about_activated, NULL, NULL, NULL },
+     { "configuration", configuration_activated, NULL, NULL, NULL }
+    };
+
 DwAppWindow *
 dw_app_window_new (DwApp *app)
 {
+    config.savefolder = NULL;
     setlocale(LC_ALL,"C");
+
+    // Set up a fallback icon
+    GError * error = NULL;
+    GdkPixbuf * im = gdk_pixbuf_new_from_resource("/images/wolf1.png", &error);
+    int width = gdk_pixbuf_get_width(im);
+    int height = gdk_pixbuf_get_height(im);
+    int new_height = round(100.0 / ( (double) width) * (double) height );
+    GdkPixbuf * icon = gdk_pixbuf_scale_simple(im, 100, new_height, GDK_INTERP_BILINEAR);
+    g_object_unref(im);
+    gtk_window_set_default_icon(icon);
+    g_object_unref(icon);
 
     GtkWidget * frame_drop = create_drop_frame ();
     GtkWidget * frame_dw = create_deconwolf_frame();
@@ -1415,7 +1502,28 @@ dw_app_window_new (DwApp *app)
     /* Parse saved presets */
     populate_channels();
     populate_microscopes();
-    // TODO: also deconwolf settings
+
+    // Replace the stock menu bar with a new one
+    // that has a menu
+    GMenu * menu = g_menu_new();
+    g_menu_insert(menu, 1, "About", "menu1.about");
+    g_menu_insert(menu, 2, "Configuration", "menu1.configuration");
+    GtkWidget * mbtn = gtk_menu_button_new();
+    gtk_menu_button_set_menu_model((GtkMenuButton*) mbtn, (GMenuModel*) menu);
+    GtkWidget * hbar = gtk_header_bar_new();
+    gtk_header_bar_set_title((GtkHeaderBar*) hbar, "BiCroLab deconwolf GUI, 2021");
+    gtk_header_bar_set_show_close_button((GtkHeaderBar*) hbar, TRUE);
+    gtk_header_bar_pack_end((GtkHeaderBar*) hbar, mbtn);
+    gtk_window_set_titlebar((GtkWindow*) window, hbar);
+
+    // See https://stackoverflow.com/questions/22582768/connecting-a-function-to-a-gtkaction
+
+    GSimpleActionGroup * group = g_simple_action_group_new ();
+    g_action_map_add_action_entries (G_ACTION_MAP (group),
+                                     main_menu_actions, G_N_ELEMENTS (main_menu_actions),
+                                     NULL);
+    gtk_widget_insert_action_group((GtkWidget*) hbar, "menu1", (GActionGroup*) group);
+
 
     return window;
 

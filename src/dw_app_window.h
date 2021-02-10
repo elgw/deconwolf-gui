@@ -9,7 +9,7 @@
 #include "dw_scope.h"
 #include "dw_conf.h"
 #include "dw_file.h"
-
+#include "version.h"
 
 #define DW_APP_WINDOW_TYPE (dw_app_window_get_type ())
 G_DECLARE_FINAL_TYPE (DwAppWindow, dw_app_window, DW, APP_WINDOW, GtkApplicationWindow)
