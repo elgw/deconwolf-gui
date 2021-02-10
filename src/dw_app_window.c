@@ -959,7 +959,8 @@ void update_cmd()
     {
         free(config.savefolder);
     }
-    if(files[0] != NULL)
+
+    if(files != NULL)
     {
         config.savefolder = g_path_get_dirname(files[0]->name);
     }
@@ -995,6 +996,10 @@ void update_cmd()
     }
 
     /* Generate the list of commands to run */
+    if(files == NULL)
+    {
+        goto nofiles;
+    }
     int kk = 0;
     while(files[kk] != NULL)
     {
@@ -1027,6 +1032,7 @@ void update_cmd()
         kk++;
     }
 
+ nofiles:
     gtk_text_view_set_buffer (cmd,
                               buffer);
 
