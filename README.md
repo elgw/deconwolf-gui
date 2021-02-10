@@ -34,29 +34,28 @@ ninja
    - Choose how many threads to use etc.
    - Finally, save and launch.
  - Channels and microscopes are stored as ini files in the folder `XDG_CONFIG_HOME/deconwolf/`, on Ubuntu that would be `~/.config/deconwolf/`. Remember to hit the save button if you add or change anything that you want to make persistent.
+ - It is actually possible to use your own PSFs since the PSF generator by default does not overwrite existing files. To use your custom PSF, just be ahead of deconwolf and place your PSFs where deconwolf plans to create its own PSFs.
 
 ## TODO
- - [ ] Change regexp for channel identification
- - [ ] Add to batch.
- - [ ] One-file simple mode?
- - [ ] Create a [.dmg installer](https://mesonbuild.com/Creating-OSX-packages.html) file for OSX (or alternatively a [HomeBrew Formula](https://medium.com/@tharun208/creating-a-homebrew-formula-f76da25b79e4)).
- - [ ] Create a deb file?
- - [ ] Warn when channel is missing.
- - [ ] Warn when dw can't be found.
+ - [ ] Warn when `dw` can't be found.
+ - [ ] Allow custom regexp for channel identification
+ - [ ] Have a way to create batch jobs (append to another job script?).
+ - [ ] A simpler dialog/mode for single files.
+ - [ ] Create installers. [.dmg installer](https://mesonbuild.com/Creating-OSX-packages.html) file for OSX (or alternatively a [HomeBrew Formula](https://medium.com/@tharun208/creating-a-homebrew-formula-f76da25b79e4)) etc...
 
 ### Future:
- - [ ] Install from meson
- - [ ] Set up a `./configure ; make ; make install` chain.
+ - [ ] Update `meson.build` to prepare for system wide installation.
  - [ ] Group files by folder
- - [ ] Menus
- - [ ] About dialog
  - [ ] Select multiple files to delete
  - [ ] Use a svg file for system icon.
  - [ ] Refactor, write tests, error handling etc.
- - [ ] Be consistent using the function from glib when possible.
- - [ ] Suggest to save the command file in the folder of the first image.
+ - [ ] Be consistent, use glib functions when possible.
 
 ### Done
+ - [x] About dialog
+ - [x] Enable drag and drop also on the file list.
+ - [x] Suggest to save the command file in the folder of the first image.
+ - [x] Warn when channel is missing.
  - [x] Sets the c-locale (makes sense since the GUI is en English)
  - [x] Set number of threads and tilesize (dw)
  - [x] Save and load microscopes.
