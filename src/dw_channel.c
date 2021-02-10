@@ -165,7 +165,7 @@ DwChannel ** dw_channels_from_disk(char * fname)
  DwChannel ** channels = malloc((length+1)*sizeof(DwChannel*));
  channels[length] = NULL; // End of array
 
- for(int kk = 0; kk<length; kk++)
+ for(gsize kk = 0; kk < length; kk++)
  {
      channels[kk] = dw_channel_new();
      DwChannel * chan = channels[kk];
@@ -197,8 +197,9 @@ color_draw_cb (GtkWidget    *widget,
                cairo_t  * cr,
                gpointer      user_data)
 {
-    double * lambda = (double*) user_data;
+    UNUSED(widget);
 
+    double * lambda = (double*) user_data;
     DwRGB * C = dw_RGB_new_from_lambda(lambda[0]);
     cairo_set_source_rgb (cr, C->R, C->G, C->B);
     free(C);
@@ -215,6 +216,7 @@ gboolean elambda_event(GtkWidget * widget,
                        GdkEvent  *event,
                        gpointer user_data)
 {
+    UNUSED(event);
     UserData1 * u = (UserData1*) user_data;
     u->lambda[0] = atof(gtk_entry_get_text((GtkEntry*) widget));
     // printf("Got lambda = %f\n", u->lambda[0]);

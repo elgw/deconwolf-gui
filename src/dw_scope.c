@@ -192,7 +192,7 @@ DwScope ** dw_scopes_from_disk(char * fname)
  DwScope ** scopes = malloc((length+1)*sizeof(DwScope*));
  scopes[length] = NULL; // End of array
 
- for(int kk = 0; kk<length; kk++)
+ for(gsize kk = 0; kk<length; kk++)
  {
      scopes[kk] = dw_scope_new();
      DwScope * scope = scopes[kk];

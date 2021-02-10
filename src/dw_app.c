@@ -13,6 +13,7 @@ G_DEFINE_TYPE(DwApp, dw_app, GTK_TYPE_APPLICATION);
 static void
 dw_app_init (DwApp *app)
 {
+    UNUSED(app);
 }
 
 static void
@@ -32,6 +33,7 @@ dw_app_open (GApplication  *app,
                   gint           n_files,
                   const gchar   *hint)
 {
+    UNUSED(hint);
   GList *windows;
   DwAppWindow *win;
   int i;
