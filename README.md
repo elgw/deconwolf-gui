@@ -37,7 +37,6 @@ ninja
  - It is actually possible to use your own PSFs since the PSF generator by default does not overwrite existing files. To use your custom PSF, just be ahead of deconwolf and place your PSFs where deconwolf plans to create its own PSFs.
 
 ## TODO
- - [ ] Warn when `dw` can't be found.
  - [ ] Allow custom regexp for channel identification
  - [ ] Have a way to create batch jobs (append to another job script?).
  - [ ] A simpler dialog/mode for single files.
@@ -52,7 +51,8 @@ ninja
  - [ ] Be consistent, use glib functions when possible.
 
 ### Done
- - [x] About dialog
+ - [x] Warn when `dw` can't be found.
+ - [x] About dialog.
  - [x] Enable drag and drop also on the file list.
  - [x] Suggest to save the command file in the folder of the first image.
  - [x] Warn when channel is missing.

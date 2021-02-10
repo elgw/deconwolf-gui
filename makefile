@@ -32,6 +32,9 @@ dw_colors:
 resources:
 	glib-compile-resources --target=resources.c --generate-source src/gresources.xml
 
+clean:
+	rm *.o
+	rm dw_gui
 
 install:
 	cp dw_gui /usr/local/bin

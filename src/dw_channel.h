@@ -20,6 +20,7 @@ typedef struct {
 #define cEMISSION_COLUMN 2
 #define cNITER_COLUMN 3
 #define cN_COLUMNS 4
+#define UNUSED(x) (void)(x)
 
 DwChannel * dw_channel_new();
 void dw_channel_free(DwChannel*);

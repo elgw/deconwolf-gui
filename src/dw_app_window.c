@@ -21,10 +21,21 @@ typedef struct {
     GtkAdjustment * dwc_tilesize;
     GtkSwitch * dwc_overwrite;
     char * savefolder; // Suggested folder to save the script in
+    gboolean has_dw;
 } GlobConf;
 
 GlobConf config;
 
+gboolean has_dw()
+{
+    printf("...\n");
+    int ret = system("dw --version > /dev/null 2>&1"); //The redirect to /dev/null ensures that your program does not produce the output of these commands.
+    if (ret == 0) {
+        //The executable was found.
+        return TRUE;
+    }
+    return FALSE;
+}
 
 /* Forward declarations */
 static  void
@@ -65,7 +76,8 @@ gboolean
 save_dw_settings_cb (GtkWidget *widget,
                      gpointer   user_data)
 {
-
+    UNUSED(widget);
+    UNUSED(user_data);
     DwConf * conf = parse_dw_conf();
     char * cfile = get_configuration_file("deconwolf");
     dw_conf_save_to_file(conf, cfile);
@@ -78,6 +90,8 @@ gboolean
 next_page_cb (GtkWidget *widget,
               gpointer   user_data)
 {
+    UNUSED(widget);
+    UNUSED(user_data);
     gtk_notebook_next_page (config.notebook);
     return TRUE;
 }
@@ -273,7 +287,7 @@ char * get_channel_name(char *fname0)
     char * fname = strdup(fname0);
     char * ret = NULL;
 
-    for(int kk = 0 ; kk<strlen(fname); kk++)
+    for(size_t kk = 0 ; kk<strlen(fname); kk++)
         fname[kk] = toupper(fname[kk]);
 
     // Return channel name, i.e. /dir/dapi_001.tif -> DAPI
@@ -327,7 +341,8 @@ gboolean
 new_channel_cb(GtkWidget *widget,
                gpointer user_data)
 {
-    //add_channel("WLF", "Wolfram-X", 70.0, 100);
+    UNUSED(widget);
+    UNUSED(user_data);
     DwChannel * chan = dw_channel_edit_dlg((GtkWindow*) config.window, NULL);
     if(chan != NULL)
     {
@@ -453,7 +468,8 @@ gboolean
 new_scope_cb (GtkWidget *widget,
               gpointer   user_data)
 {
-    //    add_scope("Magic-scope1", 3.14, 1.4, 45, 45);
+    UNUSED(widget);
+    UNUSED(user_data);
 
     DwScope * scope = dw_scope_edit_dlg((GtkWindow*) config.window, NULL);
     if(scope != NULL)
@@ -469,6 +485,8 @@ gboolean
 save_scopes_cb (GtkWidget *widget,
                 gpointer   user_data)
 {
+    UNUSED(widget);
+    UNUSED(user_data);
     // Save list of channels to ini file.
 
     // First, figure out where:
@@ -633,6 +651,12 @@ drag_data_cb(GtkWidget *wgt, GdkDragContext *context, int x, int y,
              GtkSelectionData *seldata, guint info, guint time,
              gpointer userdata)
 {
+    UNUSED(wgt);
+    UNUSED(x);
+    UNUSED(y);
+    UNUSED(info);
+    UNUSED(userdata);
+
     //  printf("Starting DnD callback\n"); fflush(stdout);
     if (!seldata || !gtk_selection_data_get_data(seldata))
     {
@@ -700,22 +724,15 @@ G_DEFINE_TYPE(DwAppWindow, dw_app_window, GTK_TYPE_APPLICATION_WINDOW);
 static void
 dw_app_window_init (DwAppWindow *app)
 {
-
-
+    UNUSED(app);
 }
 
 static void
 dw_app_window_class_init (DwAppWindowClass *class)
 {
+    UNUSED(class);
 }
 
-
-gboolean run_dw_cb_not_ready(GtkWidget * widget, gpointer user_data)
-{
-    // Run deconwolf
-    //dw_app_runner((GtkWindow*) config.window, "pause 1");
-    return TRUE;
-}
 
 void runscript(char * name)
 {
@@ -775,8 +792,6 @@ gboolean save_cmd(GtkWindow * parent_window, char ** savename)
     res = gtk_dialog_run (GTK_DIALOG (dialog));
     if (res == GTK_RESPONSE_ACCEPT)
     {
-
-
         char * filename = gtk_file_chooser_get_filename (chooser);
         char * sname = strdup(filename);
         savename[0] = sname;
@@ -792,6 +807,8 @@ gboolean save_cmd(GtkWindow * parent_window, char ** savename)
 
 gboolean save_dw_cb(GtkWidget * widget, gpointer user_data)
 {
+    UNUSED(widget);
+    UNUSED(user_data);
     // This should by factored to remove out duplicate code in
     // gboolean run_dw_cb(GtkWidget * widget, gpointer user_data)
     //
@@ -811,25 +828,22 @@ gboolean save_dw_cb(GtkWidget * widget, gpointer user_data)
 
 
         /* set the contents of the file to the text from the buffer */
-        gboolean result;
+        gboolean result = TRUE;;
         GError * err = NULL;
         if (filename != NULL)
         {
             result = g_file_set_contents (filename, text, -1, &err);
+            if (result == FALSE)
+            {
+                /* error saving file, show message to user */
+                //error_message (err->message);
+                g_error_free (err);
 
+            } else {
+                int chmod_ok = g_chmod(filename, S_IXUSR | S_IWUSR | S_IRUSR );
+                g_assert(chmod_ok == 0);
+            }
         }
-
-        if (result == FALSE)
-        {
-            /* error saving file, show message to user */
-            //error_message (err->message);
-            g_error_free (err);
-
-        } else {
-            int chmod_ok = g_chmod(filename, S_IXUSR | S_IWUSR | S_IRUSR );
-            g_assert(chmod_ok == 0);
-        }
-
         g_free (text);
         free(filename);
     }
@@ -839,6 +853,8 @@ gboolean save_dw_cb(GtkWidget * widget, gpointer user_data)
 
 gboolean run_dw_cb(GtkWidget * widget, gpointer user_data)
 {
+    UNUSED(widget);
+    UNUSED(user_data);
     // Run deconwolf
     // 1/ Save the script to a file
     // 2/ Use g_app_info_create_from_commandline
@@ -866,19 +882,17 @@ gboolean run_dw_cb(GtkWidget * widget, gpointer user_data)
         {
             result = g_file_set_contents (filename, text, -1, &err);
 
+            if (result == FALSE)
+            {
+                /* error saving file, show message to user */
+                //error_message (err->message);
+                g_error_free (err);
+
+            } else {
+                int chmod_ok = g_chmod(filename, S_IXUSR | S_IWUSR | S_IRUSR );
+                g_assert(chmod_ok == 0);
+            }
         }
-
-        if (result == FALSE)
-        {
-            /* error saving file, show message to user */
-            //error_message (err->message);
-            g_error_free (err);
-
-        } else {
-            int chmod_ok = g_chmod(filename, S_IXUSR | S_IWUSR | S_IRUSR );
-            g_assert(chmod_ok == 0);
-        }
-
         g_free (text);
 
 
@@ -1057,6 +1071,10 @@ tab_change_cb(GtkNotebook *notebook,
               guint        page_num,
               gpointer     user_data)
 {
+    UNUSED(notebook);
+    UNUSED(page);
+    UNUSED(user_data);
+
     if(page_num == 5)
     {
         update_cmd();
@@ -1204,18 +1222,24 @@ void del_selected_channel()
 
 gboolean edit_scope_cb(GtkWidget * w, gpointer p)
 {
+    UNUSED(w);
+    UNUSED(p);
     edit_selected_scope();
     return TRUE;
 }
 
 gboolean edit_channel_cb(GtkWidget * w, gpointer p)
 {
+    UNUSED(w);
+    UNUSED(p);
     edit_selected_channel();
     return TRUE;
 }
 
 gboolean save_channels_cb(GtkWidget * w, gpointer p)
 {
+    UNUSED(w);
+    UNUSED(p);
     // Save list of channels to ini file.
 
     // First, figure out where:
@@ -1229,6 +1253,8 @@ gboolean save_channels_cb(GtkWidget * w, gpointer p)
 
 gboolean clear_files_cb(GtkWidget * w, gpointer p)
 {
+    UNUSED(w);
+    UNUSED(p);
     GtkTreeModel * model = gtk_tree_view_get_model((GtkTreeView*) config.file_tree);
     GtkTreeSelection * sel = gtk_tree_view_get_selection((GtkTreeView*) config.file_tree);
     GtkTreeIter iter;
@@ -1242,25 +1268,33 @@ gboolean clear_files_cb(GtkWidget * w, gpointer p)
 
 gboolean del_channel_cb(GtkWidget * w, gpointer p)
 {
+    UNUSED(w);
+    UNUSED(p);
     del_selected_channel();
     return TRUE;
 }
 gboolean del_scope_cb(GtkWidget * w, gpointer p)
 {
+    UNUSED(w);
+    UNUSED(p);
     del_selected_scope();
     return TRUE;
 }
 
-gboolean file_tree_keypress (GtkWidget *tree_view, GdkEventKey *event, gpointer data)
+gboolean file_tree_keypress (GtkWidget *tree_view, GdkEventKey *event, gpointer p)
 {
+    UNUSED(tree_view);
+    UNUSED(p);
     if (event->keyval == GDK_KEY_Delete){
         del_selected_file();
     }
     return FALSE;
 }
 
-gboolean channel_tree_keypress (GtkWidget *tree_view, GdkEventKey *event, gpointer data)
+gboolean channel_tree_keypress (GtkWidget *tree_view, GdkEventKey *event, gpointer p)
 {
+    UNUSED(tree_view);
+    UNUSED(p);
     if (event->keyval == GDK_KEY_Delete){
         del_selected_channel();
     }
@@ -1270,8 +1304,10 @@ gboolean channel_tree_keypress (GtkWidget *tree_view, GdkEventKey *event, gpoint
     return FALSE;
 }
 
-gboolean microscope_tree_keypress (GtkWidget *tree_view, GdkEventKey *event, gpointer data)
+gboolean microscope_tree_keypress (GtkWidget *tree_view, GdkEventKey *event, gpointer p)
 {
+    UNUSED(tree_view);
+    UNUSED(p);
     if (event->keyval == GDK_KEY_Delete){
         del_selected_scope();
     }
@@ -1283,8 +1319,10 @@ gboolean microscope_tree_keypress (GtkWidget *tree_view, GdkEventKey *event, gpo
 
 gboolean channel_tree_buttonpress(GtkWidget *tree_view,
                                      GdkEventButton * event,
-                                     gpointer data)
+                                     gpointer p)
 {
+    UNUSED(tree_view);
+    UNUSED(p);
     if(event->type == GDK_DOUBLE_BUTTON_PRESS)
     {
         edit_selected_channel();
@@ -1294,8 +1332,10 @@ gboolean channel_tree_buttonpress(GtkWidget *tree_view,
 
 gboolean microscope_tree_buttonpress(GtkWidget *tree_view,
                                      GdkEventButton * event,
-                                     gpointer data)
+                                     gpointer p)
 {
+    UNUSED(tree_view);
+    UNUSED(p);
     if(event->type == GDK_DOUBLE_BUTTON_PRESS)
     {
         edit_selected_scope();
@@ -1400,8 +1440,11 @@ GtkWidget * create_drop_frame()
 static void
 about_activated(GSimpleAction *simple,
                GVariant      *parameter,
-               gpointer       user_data)
+               gpointer       p)
 {
+    UNUSED(simple);
+    UNUSED(parameter);
+    UNUSED(p);
     GtkWidget * about = gtk_about_dialog_new();
     gtk_about_dialog_set_program_name((GtkAboutDialog*) about, "deconwolf GUI");
     gtk_about_dialog_set_version( (GtkAboutDialog*) about, DW_GUI_VERSION);
@@ -1417,8 +1460,11 @@ about_activated(GSimpleAction *simple,
 static void
  configuration_activated(GSimpleAction *simple,
                       GVariant      *parameter,
-                      gpointer       user_data)
+                      gpointer       p)
 {
+    UNUSED(simple);
+    UNUSED(parameter);
+    UNUSED(p);
     printf("configuration...\n");
 }
 
@@ -1428,11 +1474,30 @@ static GActionEntry main_menu_actions[] =
      { "configuration", configuration_activated, NULL, NULL, NULL }
     };
 
+void warn_no_dw(GtkWindow * parent)
+{
+    GtkDialogFlags flags = GTK_DIALOG_DESTROY_WITH_PARENT;
+    GtkWidget * dialog = gtk_message_dialog_new (parent,
+                                     flags,
+                                     GTK_MESSAGE_ERROR,
+                                     GTK_BUTTONS_CLOSE,
+                                     "Could not locate deconwolf (i.e, the command 'dw'). You will not be able to run anything from this GUI!"
+                                     );
+    gtk_dialog_run (GTK_DIALOG (dialog));
+    gtk_widget_destroy (dialog);
+}
+
 DwAppWindow *
 dw_app_window_new (DwApp *app)
 {
-    config.savefolder = NULL;
     setlocale(LC_ALL,"C");
+
+    config.savefolder = NULL;
+    config.has_dw = has_dw();
+
+
+
+
 
     // Set up a fallback icon
     GError * error = NULL;
@@ -1510,7 +1575,7 @@ dw_app_window_new (DwApp *app)
     // that has a menu
     GMenu * menu = g_menu_new();
     g_menu_insert(menu, 1, "About", "menu1.about");
-    g_menu_insert(menu, 2, "Configuration", "menu1.configuration");
+    g_menu_insert(menu, 2, "Config", "menu1.configuration");
     GtkWidget * mbtn = gtk_menu_button_new();
     gtk_menu_button_set_menu_model((GtkMenuButton*) mbtn, (GMenuModel*) menu);
     GtkWidget * hbar = gtk_header_bar_new();
@@ -1528,6 +1593,13 @@ dw_app_window_new (DwApp *app)
     gtk_widget_insert_action_group((GtkWidget*) hbar, "menu1", (GActionGroup*) group);
 
 
+    if(config.has_dw)
+    {
+        // g_printf("Deconwolf found!\n");
+    } else {
+        warn_no_dw((GtkWindow*) window);
+    }
+
     return window;
 
 }
@@ -1536,4 +1608,6 @@ void
 dw_app_window_open (DwAppWindow *win,
                     GFile            *file)
 {
+    UNUSED(win);
+    UNUSED(file);
 }
