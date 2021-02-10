@@ -20,9 +20,17 @@ typedef struct {
     GtkAdjustment * dwc_nthreads;
     GtkAdjustment * dwc_tilesize;
     GtkSwitch * dwc_overwrite;
+    char * savefolder; // Suggested folder to save the script in
 } GlobConf;
 
 GlobConf config;
+
+
+/* Forward declarations */
+static  void
+drag_data_cb(GtkWidget *wgt, GdkDragContext *context, int x, int y,
+             GtkSelectionData *seldata, guint info, guint time,
+             gpointer userdata);
 
 
 char * get_configuration_file(char * name)
@@ -212,6 +220,23 @@ GtkWidget * create_file_frame()
 
     g_signal_connect (G_OBJECT (file_tree), "key_press_event",
                       G_CALLBACK (file_tree_keypress), NULL);
+
+    /* Set up Drag and Drop */
+    enum
+    {
+     TARGET_STRING,
+     TARGET_URL
+    };
+    static GtkTargetEntry targetentries[] =
+        {
+         { "STRING",        0, TARGET_STRING },
+         { "text/plain",    0, TARGET_STRING },
+         { "text/uri-list", 0, TARGET_URL },
+        };
+    gtk_drag_dest_set(file_frame, GTK_DEST_DEFAULT_ALL, targetentries, 3,
+                      GDK_ACTION_COPY | GDK_ACTION_MOVE | GDK_ACTION_LINK);
+    g_signal_connect(file_frame, "drag_data_received",
+                     G_CALLBACK(drag_data_cb), NULL);
 
     return file_frame;
 }
@@ -735,11 +760,14 @@ gboolean save_cmd(GtkWindow * parent_window, char ** savename)
 
 
     char * suggname = malloc(1024);
-    sprintf(suggname, "dwcommands.sh");
+    // TODO: use folder of first tif file
+    if(config.savefolder != NULL)
+    {
+        gtk_file_chooser_set_current_folder (chooser, config.savefolder);
+    }
 
-    gtk_file_chooser_set_current_name (chooser,
-                                       suggname);
-
+    sprintf(suggname, "dw_script");
+    gtk_file_chooser_set_current_name (chooser, suggname);
 
     res = gtk_dialog_run (GTK_DIALOG (dialog));
     if (res == GTK_RESPONSE_ACCEPT)
@@ -925,6 +953,16 @@ void update_cmd()
     DwChannel ** channels = dw_channels_get_from_gtk_tree_view((GtkTreeView*) config.channel_tree);
     DwFile ** files = dw_files_get_from_gtk_tree_view((GtkTreeView*) config.file_tree);
     DwConf * dwconf = parse_dw_conf();
+
+    // Update the suggested folder to save the script to
+    if(config.savefolder != NULL)
+    {
+        free(config.savefolder);
+    }
+    if(files[0] != NULL)
+    {
+        config.savefolder = g_path_get_dirname(files[0]->name);
+    }
 
     GtkTextView * cmd = (GtkTextView*) config.cmd;
     GtkTextIter titer;
@@ -1384,6 +1422,7 @@ static GActionEntry main_menu_actions[] =
 DwAppWindow *
 dw_app_window_new (DwApp *app)
 {
+    config.savefolder = NULL;
     setlocale(LC_ALL,"C");
 
     // Set up a fallback icon
