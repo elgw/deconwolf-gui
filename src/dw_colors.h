@@ -1,23 +1,32 @@
 #ifndef __dw_colors_h
 #define __dw_colors_h
-#include <math.h>
-#include <stdlib.h>
 
-/* A simple library build to convert wavelengths in nanometers
+/**
+ * A simple library build to convert wavelengths in nanometers
  * to RGB colors
- * Using `CIE 1964 supplementary standard colorimetric observer`
- * for this purpose and linear transformation from XYZ to RBG.
+ * It uses the `CIE 1964 supplementary standard colorimetric observer`
+ * for this purpose, and then a linear transformation from XYZ to RBG.
  *
+ * TODO:
  * Would be nice to interpolate the CIE table, not just pick the closest
  * row.
  */
 
+#include <math.h>
+#include <stdlib.h>
+
+/** @struct DwRGB
+ * A struct to represent an RGB triple.
+*/
 typedef struct{
     double R;
     double G;
     double B;
 } DwRGB;
 
+/** @struct DwXYZ
+ * For representation of
+*/
 typedef struct{
     double X;
     double Y;

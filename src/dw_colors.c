@@ -7,8 +7,12 @@
 #define CIE_Y 2
 #define CIE_Z 3
 
-/* CIE 1964 supplementary standard colorimetric observer
- * Format: lambda, x, y, z
+/**
+ * CIE 1964 supplementary standard colorimetric observer
+ * of spectral tristimulus values
+ * Format: lambda, (X, Y, Z)
+ * See here for more data:
+ * http://cvrl.ioo.ucl.ac.uk/cmfs.htm
  */
 
 static float CIE_data[] =
@@ -119,6 +123,15 @@ static double inrange(double x)
     return x;
 }
 
+double gamma_corr(double x)
+{
+    if(x<= 0.031308)
+    {
+        return 324.0*x/25.0;
+    }
+    return (211.0*pow(x, 5.0/12.0)-11.0)/200.0;
+}
+
 DwRGB * dw_RGB_new_from_dw_XYZ(DwXYZ * C)
 {
     DwRGB * O = malloc(sizeof(DwRGB));
@@ -127,9 +140,15 @@ DwRGB * dw_RGB_new_from_dw_XYZ(DwXYZ * C)
     O->G = -0.9692660*C->X + 1.8760108*C->Y + 0.0415560*C->Z;
     O->B =  0.0556434*C->X - 0.2040259*C->Y + 1.0572252*C->Z;
 
+    // cap
     O->R = inrange(O->R);
     O->G = inrange(O->G);
     O->B = inrange(O->B);
+
+    // Convert to sRGB
+    O->R = gamma_corr(O->R);
+    O->G = gamma_corr(O->G);
+    O->B = gamma_corr(O->B);
 
     return O;
 }
