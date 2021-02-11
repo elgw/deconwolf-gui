@@ -125,9 +125,9 @@ static double inrange(double x)
 
 double gamma_corr(double x)
 {
-    if(x<= 0.031308)
+    if(x<= 0.0031308)
     {
-        return 324.0*x/25.0;
+        return 323.0*x/25.0;
     }
     return (211.0*pow(x, 5.0/12.0)-11.0)/200.0;
 }
