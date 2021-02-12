@@ -2,10 +2,12 @@
 
 #define CIE_rows 81
 #define CIE_STRIDE 4
-#define CIE_LAMBDA 0
 #define CIE_X 1
 #define CIE_Y 2
 #define CIE_Z 3
+#define CIE_FIRST_LAMBDA 380
+#define CIE_DELTA_LAMBDA 5
+
 
 /**
  * CIE 1964 supplementary standard colorimetric observer
@@ -157,7 +159,7 @@ DwXYZ * dw_XYZ_new_from_lambda(double lambda)
 {
     // TODO: Interpolate the CIE table
 
-    float row = (lambda-380)/5;
+    float row = (lambda-CIE_FIRST_LAMBDA)/CIE_DELTA_LAMBDA;
     int drow = round(row);
 
     DwXYZ * C = dw_XYZ_new();

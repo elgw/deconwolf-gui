@@ -3,10 +3,14 @@
 
 #include <gtk/gtk.h>
 
+#define DW_CONF_OUTFORMAT_UINT16 0
+#define DW_CONF_OUTFORMAT_FLOAT32 1
+
 typedef struct{
     gboolean overwrite;
     gint nthreads;
     gint tilesize;
+    gint outformat;
 } DwConf;
 
 DwConf * dw_conf_new();

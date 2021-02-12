@@ -6,6 +6,7 @@ DwConf * dw_conf_new()
     conf->overwrite = FALSE;
     conf->nthreads = 4;
     conf->tilesize = 1024;
+    conf->outformat = DW_CONF_OUTFORMAT_UINT16;
     return conf;
 }
 
@@ -17,10 +18,11 @@ void dw_conf_free(DwConf * conf)
 }
 
 DwConf * dw_conf_new_from_file(char * file)
-/*
-Return the configuration in file or a default configuration
-if the loading fails or file==NULL
- */
+/**
+  Return the configuration in file or a default configuration
+  if the loading fails or file==NULL.
+  Errors are handled quietly.
+*/
 {
     DwConf * conf = dw_conf_new();
 
@@ -30,44 +32,72 @@ if the loading fails or file==NULL
     }
 
     GError * error = NULL;
- GKeyFile * key_file = g_key_file_new ();
+    GKeyFile * key_file = g_key_file_new ();
 
- if (!g_key_file_load_from_file (key_file, file, G_KEY_FILE_NONE, &error))
- {
-     if (!g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
-         g_warning ("Error loading key file: %s", error->message);
-     g_error_free(error);
-     g_key_file_free(key_file);
-     return conf;
- }
+    if (!g_key_file_load_from_file (key_file, file, G_KEY_FILE_NONE, &error))
+    {
+        if (!g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
+            g_warning ("Error loading key file: %s", error->message);
+        g_error_free(error);
+        g_key_file_free(key_file);
+        return conf;
+    }
 
- gsize length;
+    gsize length;
 
- gchar ** groups =
- g_key_file_get_groups (key_file,
-                        &length);
- if(length != 1)
- {
-     printf("Can't parse anything from %s\n", file);
-     g_key_file_free(key_file);
-     g_error_free(error);
-     return conf;
- }
+    gchar ** groups =
+        g_key_file_get_groups (key_file,
+                               &length);
+    if(length != 1)
+    {
+        printf("Can't parse anything from %s\n", file);
+        g_key_file_free(key_file);
+        g_error_free(error);
+        return conf;
+    }
 
+    gchar group[] = "deconwolf";
+    gint nthreads = g_key_file_get_integer(key_file, group, "nthreads", &error);
+    if( error != NULL )
+    {
+        g_clear_error(&error);
+    }
+    else
+    {
+        conf->nthreads = nthreads;
+    }
+    gint tilesize = g_key_file_get_integer(key_file, group, "tilesize", &error);
+    if( error != NULL )
+    {
+        g_clear_error(&error);
+    }
+    else
+    {
+        conf->tilesize = tilesize;
+    }
+    gboolean overwrite = g_key_file_get_boolean(key_file, group, "overwrite", &error);
+    if( error != NULL )
+    {
+        g_clear_error(&error);
+    }
+    else
+    {
+        conf->overwrite = overwrite;
+    }
 
- gchar group[] = "deconwolf";
+    gint outformat =  g_key_file_get_boolean(key_file, group, "outformat", &error);
+    if( error != NULL )
+    {
+        g_clear_error(&error);
+    }
+    else
+    {
+        conf->outformat = outformat;
+    }
 
-     gint nthreads = g_key_file_get_integer(key_file, group, "nthreads", &error);
-     conf->nthreads = nthreads;
-     gint tilesize = g_key_file_get_integer(key_file, group, "tilesize", &error);
-     conf->tilesize = tilesize;
-     gboolean overwrite = g_key_file_get_boolean(key_file, group, "overwrite", &error);
-     conf->overwrite = overwrite;
-
- g_strfreev(groups);
- g_key_file_free(key_file);
- return conf;
-
+    g_strfreev(groups);
+    g_key_file_free(key_file);
+    return conf;
 }
 void dw_conf_save_to_file(DwConf * conf, char * file)
 {
@@ -77,6 +107,7 @@ void dw_conf_save_to_file(DwConf * conf, char * file)
     g_key_file_set_integer(key_file, "deconwolf", "nthreads", conf->nthreads);
     g_key_file_set_integer(key_file, "deconwolf", "tilesize", conf->tilesize);
     g_key_file_set_boolean(key_file, "deconwolf", "overwrite", conf->overwrite);
+    g_key_file_set_integer(key_file, "deconwolf", "outformat", conf->outformat);
 
     if (!g_key_file_save_to_file (key_file, file, &error))
     {

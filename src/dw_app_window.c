@@ -19,6 +19,7 @@ typedef struct {
 
     GtkAdjustment * dwc_nthreads;
     GtkAdjustment * dwc_tilesize;
+    GtkToggleButton * dwc_outformat_uint16;
     GtkSwitch * dwc_overwrite;
     char * savefolder; // Suggested folder to save the script in
     gboolean has_dw;
@@ -69,6 +70,14 @@ DwConf * parse_dw_conf()
     conf->nthreads = (int) round(gtk_adjustment_get_value(config.dwc_nthreads));
     conf->tilesize = (int) round(gtk_adjustment_get_value(config.dwc_tilesize));
     conf->overwrite = gtk_switch_get_state(config.dwc_overwrite);
+    if( gtk_toggle_button_get_active(config.dwc_outformat_uint16))
+    {
+        conf->outformat = DW_CONF_OUTFORMAT_UINT16;
+    }
+    else
+    {
+        conf->outformat = DW_CONF_OUTFORMAT_FLOAT32;
+    }
     return conf;
 }
 
@@ -125,16 +134,34 @@ GtkWidget * create_deconwolf_frame()
 
     GtkWidget * vThreads = gtk_spin_button_new(adjThreads, 1, 0);
     GtkWidget * vTile = gtk_spin_button_new(adjTile, 10, 0);
+
+    GtkWidget * lFormat = gtk_label_new("Output format:");
+    GtkWidget * out_uint16 = gtk_radio_button_new_with_label(NULL, "unsigned 16-bit");
+    GtkWidget * out_float32 = gtk_radio_button_new_with_label(NULL, "32 bit floating point");
+    gtk_radio_button_join_group((GtkRadioButton*) out_float32, (GtkRadioButton*) out_uint16);
+    config.dwc_outformat_uint16 = (GtkToggleButton*) out_uint16;
+    if(dwconf->outformat == DW_CONF_OUTFORMAT_UINT16)
+    {
+        gtk_toggle_button_set_active( (GtkToggleButton*) out_uint16, TRUE);
+    }
+    else
+    {
+        gtk_toggle_button_set_active( (GtkToggleButton*) out_float32, TRUE);
+    }
+
     GtkWidget * grid = gtk_grid_new();
     gtk_grid_set_row_spacing ((GtkGrid*) grid , 5);
     gtk_grid_set_column_spacing ((GtkGrid*) grid , 5);
-
+    // x, y, w, h
     gtk_grid_attach((GtkGrid*) grid, lThreads, 1, 1, 1, 2);
     gtk_grid_attach((GtkGrid*) grid, vThreads, 2, 1, 2, 1);
     gtk_grid_attach((GtkGrid*) grid, lOverwrite, 1, 3, 1, 2);
     gtk_grid_attach((GtkGrid*) grid, vOverwrite, 2, 3, 1, 1);
     gtk_grid_attach((GtkGrid*) grid, lTile, 1, 5, 1, 2);
-    gtk_grid_attach((GtkGrid*) grid, vTile, 2, 5, 2, 1);
+    gtk_grid_attach((GtkGrid*) grid, vTile, 2, 5, 2, 2);
+    gtk_grid_attach((GtkGrid*) grid, lFormat, 1, 8, 1, 2);
+    gtk_grid_attach((GtkGrid*) grid, out_uint16, 2, 8, 2, 1);
+    gtk_grid_attach((GtkGrid*) grid, out_float32, 2, 9, 2, 1);
 
     GtkWidget * btnSave = gtk_button_new_from_icon_name("document-save",
                                                         GTK_ICON_SIZE_SMALL_TOOLBAR);
@@ -1012,6 +1039,13 @@ void update_cmd()
         sprintf(ostring, " --overwrite ");
     }
 
+    char * fstring = malloc(1024);
+    fstring[0] = '\0';
+    if(dwconf->outformat == DW_CONF_OUTFORMAT_FLOAT32)
+    {
+        sprintf(fstring, " --float");
+    }
+
     /* Generate the list of commands to run */
     if(files == NULL)
     {
@@ -1034,8 +1068,9 @@ void update_cmd()
                     psf);
             //        printf("%s", buff);
             gtk_text_buffer_insert(buffer, &titer, buff, -1);
-            sprintf(buff, "dw %s --tilesize %d --iter %d --threads %d %s %s\n",
+            sprintf(buff, "dw %s %s --tilesize %d --iter %d --threads %d %s %s\n",
                     ostring,
+                    fstring,
                     tilesize, ch->niter, nthreads,
                     files[kk]->name, psf);
             gtk_text_buffer_insert(buffer, &titer, buff, -1);
@@ -1055,6 +1090,7 @@ void update_cmd()
 
     free(buff);
     free(ostring);
+    free(fstring);
 
     dw_conf_free(dwconf);
     dw_files_free(files);

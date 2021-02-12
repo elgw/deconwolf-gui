@@ -3,7 +3,7 @@
 
 /**
  * A simple library build to convert wavelengths in nanometers
- * to RGB colors
+ * to sRGB colors
  * It uses the `CIE 1964 supplementary standard colorimetric observer`
  * for this purpose, and then a linear transformation from XYZ to RBG.
  *

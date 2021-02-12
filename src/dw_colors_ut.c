@@ -9,7 +9,7 @@ void show(double lambda)
     DwXYZ * C2 = dw_XYZ_new_from_lambda(lambda);
     DwRGB * nC = malloc(sizeof(DwRGB));
     memcpy(nC, C, sizeof(DwRGB));
-    dw_RGB_normalize(nC);
+
     assert(nC->R <= 1);
     assert(nC->G <= 1);
     assert(nC->B <= 1);
