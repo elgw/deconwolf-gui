@@ -1,15 +1,23 @@
+#include "dw_colors.h"
 #include <stdio.h>
-#include <stdlib.h>
-#include "dw_colors.c"
+#include <string.h>
+#include <assert.h>
 
 void show(double lambda)
 {
     DwRGB * C = dw_RGB_new_from_lambda(lambda);
     DwXYZ * C2 = dw_XYZ_new_from_lambda(lambda);
-    printf("Lambda=%f, XYZ = (%f, %f, %f) RGB = (%f, %f, %f)\n",
+    DwRGB * nC = malloc(sizeof(DwRGB));
+    memcpy(nC, C, sizeof(DwRGB));
+
+    assert(nC->R <= 1);
+    assert(nC->G <= 1);
+    assert(nC->B <= 1);
+    printf("Lambda=%f, XYZ = (%f, %f, %f) RGB = (%f, %f, %f) nRGB = (%f, %f, %f)\n",
            lambda,
            C2->X, C2->Y, C2->Z,
-           C->R, C->G, C->B);
+           C->R, C->G, C->B,
+           nC->R, nC->G, nC->B);
     free(C2);
     free(C);
     return;

@@ -19,16 +19,17 @@ typedef struct {
 
     GtkAdjustment * dwc_nthreads;
     GtkAdjustment * dwc_tilesize;
+    GtkToggleButton * dwc_outformat_uint16;
     GtkSwitch * dwc_overwrite;
     char * savefolder; // Suggested folder to save the script in
     gboolean has_dw;
+    char * default_open_uri; // Where to open files
 } GlobConf;
 
 GlobConf config;
 
 gboolean has_dw()
 {
-    printf("...\n");
     int ret = system("dw --version > /dev/null 2>&1"); //The redirect to /dev/null ensures that your program does not produce the output of these commands.
     if (ret == 0) {
         //The executable was found.
@@ -69,6 +70,14 @@ DwConf * parse_dw_conf()
     conf->nthreads = (int) round(gtk_adjustment_get_value(config.dwc_nthreads));
     conf->tilesize = (int) round(gtk_adjustment_get_value(config.dwc_tilesize));
     conf->overwrite = gtk_switch_get_state(config.dwc_overwrite);
+    if( gtk_toggle_button_get_active(config.dwc_outformat_uint16))
+    {
+        conf->outformat = DW_CONF_OUTFORMAT_UINT16;
+    }
+    else
+    {
+        conf->outformat = DW_CONF_OUTFORMAT_FLOAT32;
+    }
     return conf;
 }
 
@@ -125,16 +134,34 @@ GtkWidget * create_deconwolf_frame()
 
     GtkWidget * vThreads = gtk_spin_button_new(adjThreads, 1, 0);
     GtkWidget * vTile = gtk_spin_button_new(adjTile, 10, 0);
+
+    GtkWidget * lFormat = gtk_label_new("Output format:");
+    GtkWidget * out_uint16 = gtk_radio_button_new_with_label(NULL, "unsigned 16-bit");
+    GtkWidget * out_float32 = gtk_radio_button_new_with_label(NULL, "32 bit floating point");
+    gtk_radio_button_join_group((GtkRadioButton*) out_float32, (GtkRadioButton*) out_uint16);
+    config.dwc_outformat_uint16 = (GtkToggleButton*) out_uint16;
+    if(dwconf->outformat == DW_CONF_OUTFORMAT_UINT16)
+    {
+        gtk_toggle_button_set_active( (GtkToggleButton*) out_uint16, TRUE);
+    }
+    else
+    {
+        gtk_toggle_button_set_active( (GtkToggleButton*) out_float32, TRUE);
+    }
+
     GtkWidget * grid = gtk_grid_new();
     gtk_grid_set_row_spacing ((GtkGrid*) grid , 5);
     gtk_grid_set_column_spacing ((GtkGrid*) grid , 5);
-
+    // x, y, w, h
     gtk_grid_attach((GtkGrid*) grid, lThreads, 1, 1, 1, 2);
     gtk_grid_attach((GtkGrid*) grid, vThreads, 2, 1, 2, 1);
     gtk_grid_attach((GtkGrid*) grid, lOverwrite, 1, 3, 1, 2);
     gtk_grid_attach((GtkGrid*) grid, vOverwrite, 2, 3, 1, 1);
     gtk_grid_attach((GtkGrid*) grid, lTile, 1, 5, 1, 2);
-    gtk_grid_attach((GtkGrid*) grid, vTile, 2, 5, 2, 1);
+    gtk_grid_attach((GtkGrid*) grid, vTile, 2, 5, 2, 2);
+    gtk_grid_attach((GtkGrid*) grid, lFormat, 1, 8, 1, 2);
+    gtk_grid_attach((GtkGrid*) grid, out_uint16, 2, 8, 2, 1);
+    gtk_grid_attach((GtkGrid*) grid, out_float32, 2, 9, 2, 1);
 
     GtkWidget * btnSave = gtk_button_new_from_icon_name("document-save",
                                                         GTK_ICON_SIZE_SMALL_TOOLBAR);
@@ -201,10 +228,21 @@ GtkWidget * create_file_frame()
     gtk_tree_view_append_column (GTK_TREE_VIEW (file_tree), column);
 
 
+    GtkWidget * btnNew = gtk_button_new_from_icon_name("list-add",
+                                                       GTK_ICON_SIZE_SMALL_TOOLBAR);
+    gtk_widget_set_tooltip_text(btnNew, "Add file(s)");
+
+    GtkWidget * btnDel = gtk_button_new_from_icon_name("list-remove",
+                                                       GTK_ICON_SIZE_SMALL_TOOLBAR);
+    gtk_widget_set_tooltip_text(btnDel, "Remove selected file");
+
     GtkWidget * btnClear = gtk_button_new_from_icon_name("edit-delete",
                                                          GTK_ICON_SIZE_SMALL_TOOLBAR);
     gtk_widget_set_tooltip_text(btnClear, "Clear the list of files");
     g_signal_connect(btnClear, "clicked", G_CALLBACK (clear_files_cb), NULL);
+    g_signal_connect(btnNew, "clicked", G_CALLBACK (add_files_cb), NULL);
+    g_signal_connect(btnDel, "clicked", G_CALLBACK (del_file_cb), NULL);
+
 
     GtkWidget * btnNext = gtk_button_new_from_icon_name("go-next",
                                                         GTK_ICON_SIZE_SMALL_TOOLBAR);
@@ -213,6 +251,8 @@ GtkWidget * create_file_frame()
 
 
     GtkWidget * Bar = gtk_action_bar_new();
+    gtk_action_bar_pack_start((GtkActionBar*) Bar, btnNew);
+    gtk_action_bar_pack_start((GtkActionBar*) Bar, btnDel);
     gtk_action_bar_pack_start((GtkActionBar*) Bar, btnClear);
     gtk_action_bar_pack_end ((GtkActionBar*) Bar, btnNext);
 
@@ -256,7 +296,7 @@ GtkWidget * create_file_frame()
 }
 
 
-int is_tif_file_name(char * fname)
+int is_tif_file_name(const char * fname)
 {
     GRegex *regex;
     GMatchInfo *match_info;
@@ -282,7 +322,7 @@ char * get_psfname(char * dir, char * channel)
     return name;
 }
 
-char * get_channel_name(char *fname0)
+char * get_channel_name(const char *fname0)
 {
     char * fname = strdup(fname0);
     char * ret = NULL;
@@ -599,7 +639,7 @@ GtkWidget * create_microscope_tab()
 }
 
 
-void file_tree_append(const char * file)
+void file_tree_append_dnd_file(const char * file)
 {
     // Should complain if the file format isn't something like:
     // file:///home/erikw/Desktop/iEG701_25oilx_200928_009/max_x_024.tif\r\n
@@ -624,7 +664,13 @@ void file_tree_append(const char * file)
             fname[kk] = '\0';
         }
     }
+    file_tree_append(fname);
+    free(fname0);
+    return;
+}
 
+void file_tree_append(const char * fname)
+    {
     GtkTreeStore * filetm = (GtkTreeStore*) gtk_tree_view_get_model((GtkTreeView*) config.file_tree);
     GtkTreeIter iter1;  /* Parent iter */
 
@@ -633,7 +679,6 @@ void file_tree_append(const char * file)
         goto done;
     }
 
-
     char * cname = get_channel_name(fname);
     gtk_tree_store_append (filetm, &iter1, NULL);  /* Acquire a top-level iterator */
     gtk_tree_store_set (filetm, &iter1,
@@ -641,8 +686,8 @@ void file_tree_append(const char * file)
                         fCHANNEL_COLUMN, cname,
                         -1);
     free(cname);
+
  done:
-    free(fname0);
     return;
 }
 
@@ -685,14 +730,14 @@ drag_data_cb(GtkWidget *wgt, GdkDragContext *context, int x, int y,
         char * file = strtok(dnd, &delim);
         if(file != NULL)
         {
-            file_tree_append(file);
+            file_tree_append_dnd_file(file);
         }
         while( file != NULL)
         {
             file = strtok(NULL, &delim);
             if(file != NULL)
             {
-                file_tree_append(file);
+                file_tree_append_dnd_file(file);
             }
         }
         if(dnd != NULL)
@@ -1012,6 +1057,13 @@ void update_cmd()
         sprintf(ostring, " --overwrite ");
     }
 
+    char * fstring = malloc(1024);
+    fstring[0] = '\0';
+    if(dwconf->outformat == DW_CONF_OUTFORMAT_FLOAT32)
+    {
+        sprintf(fstring, " --float");
+    }
+
     /* Generate the list of commands to run */
     if(files == NULL)
     {
@@ -1034,8 +1086,9 @@ void update_cmd()
                     psf);
             //        printf("%s", buff);
             gtk_text_buffer_insert(buffer, &titer, buff, -1);
-            sprintf(buff, "dw %s --tilesize %d --iter %d --threads %d %s %s\n",
+            sprintf(buff, "dw %s %s --tilesize %d --iter %d --threads %d %s %s\n",
                     ostring,
+                    fstring,
                     tilesize, ch->niter, nthreads,
                     files[kk]->name, psf);
             gtk_text_buffer_insert(buffer, &titer, buff, -1);
@@ -1055,6 +1108,7 @@ void update_cmd()
 
     free(buff);
     free(ostring);
+    free(fstring);
 
     dw_conf_free(dwconf);
     dw_files_free(files);
@@ -1082,6 +1136,13 @@ tab_change_cb(GtkNotebook *notebook,
     return TRUE;
 }
 
+gboolean del_file_cb(GtkWidget * w, gpointer p)
+{
+    UNUSED(w);
+    UNUSED(p);
+    del_selected_file();
+    return TRUE;
+}
 
 void del_selected_file()
 {
@@ -1248,6 +1309,59 @@ gboolean save_channels_cb(GtkWidget * w, gpointer p)
     dw_channels_to_disk(channels, cfile);
     dw_channels_free(channels);
     free(cfile);
+    return TRUE;
+}
+
+gboolean add_files_cb(GtkWidget * w, gpointer p)
+{
+    GtkWidget *dialog;
+    GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_OPEN;
+    gint res;
+
+
+    dialog = gtk_file_chooser_dialog_new ("Open File",
+                                          (GtkWindow*) config.window,
+                                          action,
+                                          "_Cancel",
+                                          GTK_RESPONSE_CANCEL,
+                                          "_Open",
+                                          GTK_RESPONSE_ACCEPT,
+                                          NULL);
+
+    gtk_file_chooser_set_select_multiple((GtkFileChooser *) dialog, TRUE);
+
+    if(config.default_open_uri != NULL)
+    {
+        gtk_file_chooser_set_current_folder_uri( (GtkFileChooser *) dialog, config.default_open_uri);
+    }
+
+
+
+    res = gtk_dialog_run (GTK_DIALOG (dialog));
+    if (res == GTK_RESPONSE_ACCEPT)
+    {
+
+        if(config.default_open_uri != NULL)
+        {
+            free(config.default_open_uri);
+        }
+        config.default_open_uri = gtk_file_chooser_get_current_folder_uri( (GtkFileChooser *) dialog );
+
+        GSList * filenames=NULL, *iter=NULL;;
+        GtkFileChooser *chooser = GTK_FILE_CHOOSER (dialog);
+        filenames = gtk_file_chooser_get_filenames(chooser);
+        for(iter = filenames; iter; iter = iter->next)
+        {
+            //printf("File: %s\n", (char *) iter->data);
+            file_tree_append((char *) iter->data);
+        }
+        g_slist_free(filenames);
+    }
+
+    gtk_widget_destroy (dialog);
+
+
+
     return TRUE;
 }
 
@@ -1492,12 +1606,9 @@ dw_app_window_new (DwApp *app)
 {
     setlocale(LC_ALL,"C");
 
+    config.default_open_uri = NULL;
     config.savefolder = NULL;
     config.has_dw = has_dw();
-
-
-
-
 
     // Set up a fallback icon
     GError * error = NULL;

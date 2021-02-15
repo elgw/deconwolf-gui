@@ -76,7 +76,13 @@ DwFile ** dw_files_get_from_gtk_tree_view(GtkTreeView * tv)
                             -1);
         flist[pos] = dw_file_new();
         flist[pos]->name = strdup(file);
+        if(channel == NULL)
+        {
+            flist[pos]->channel = strdup("_UNKNOWN");
+        }
+        else {
         flist[pos]->channel = strdup(channel);
+        }
         //        printf("%s %s\n", flist[pos]->name, flist[pos]->channel);
 
         g_free(file);

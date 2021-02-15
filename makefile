@@ -40,3 +40,8 @@ install:
 	cp dw_gui /usr/local/bin
 	cp resources/deconwolf.desktop /usr/share/applications
 	cp resources/deconwolf.png /usr/share/icons/hicolor/48x48/apps/
+
+uninstall:
+	rm /usr/local/bin/dw_gui
+	rm /usr/share/applications/deconwolf.desktop
+	rm /usr/share/icons/hicolor/48x48/apps/deconwolf.png

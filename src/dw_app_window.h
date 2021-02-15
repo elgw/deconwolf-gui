@@ -29,6 +29,14 @@ void edit_selected_channel();
 gboolean file_tree_keypress (GtkWidget *tree_view, GdkEventKey *event, gpointer data);
 void del_selected_file();
 
+// Clean upp DND formatting, then add to file tree
+void file_tree_append_dnd_file(const char * file);
+// Append a file to the file tree
+void file_tree_append(const char * fname);
+
+// Parse the name of a channel from a file
+char * get_channel_name(const char *);
+
 // Remove selected items from the treeviews:
 void del_selected_channel();
 // Callback from buttons in channel tab
@@ -37,6 +45,8 @@ gboolean save_channels_cb(GtkWidget * w, gpointer p);
 gboolean edit_channel_cb(GtkWidget * w, gpointer p);
 
 gboolean clear_files_cb(GtkWidget * w, gpointer p);
+gboolean add_files_cb(GtkWidget * w, gpointer p);
+gboolean del_file_cb(GtkWidget * w, gpointer p);
 
 void edit_selected_scope();
 void del_selected_scope();
