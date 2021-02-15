@@ -55,6 +55,7 @@ make -B
  - [ ] Create installers. [.dmg installer](https://mesonbuild.com/Creating-OSX-packages.html) file for OSX (or alternatively a [HomeBrew Formula](https://medium.com/@tharun208/creating-a-homebrew-formula-f76da25b79e4)) etc...
 
 ### Future:
+ - [ ] When regexp fails to parse a channel, the DwFile struct should be fully pupulated.
  - [ ] Update `meson.build` to prepare for system wide installation.
  - [ ] Group files by folder
  - [ ] Select multiple files to delete
@@ -63,6 +64,7 @@ make -B
  - [ ] Be consistent, use glib functions when possible.
 
 ### Done
+ - [x] 'Add files' - button and 'Remove file' - button.
  - [x] Warn when `dw` can't be found.
  - [x] About dialog.
  - [x] Enable drag and drop also on the file list.
