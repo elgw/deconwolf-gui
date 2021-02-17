@@ -1,6 +1,6 @@
 # Deconwolf GUI (dwgui)
 
-![screenshot](resources/screenshot_20210217.png)
+<img src="resources/screenshot_20210217.png" width="678">
 A GUI for deconwolf (to be released) written in GTK 3.24.23.
 
 ## Build and Install
