@@ -307,11 +307,18 @@ gtk_grid_attach((GtkGrid*) grid, eColor, 2, 4, 1, 1);
 gtk_grid_attach((GtkGrid*) grid, lNiter, 1, 5, 1, 1);
 gtk_grid_attach((GtkGrid*) grid, eNiter, 2, 5, 1, 1);
 
+ gtk_widget_set_halign((GtkWidget*) grid, GTK_ALIGN_CENTER);
+ gtk_widget_set_valign((GtkWidget*) grid, GTK_ALIGN_CENTER);
 GtkWidget * hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
 GtkWidget * im = gtk_image_new_from_resource("/images/FluorescentCells.jpg");
+ gtk_widget_set_margin_bottom((GtkWidget*) im, 20);
+ gtk_widget_set_margin_top((GtkWidget*) im, 20);
 
 gtk_box_pack_end((GtkBox*) hbox, im, FALSE, TRUE, 5);
 gtk_box_pack_start((GtkBox*) hbox, grid, FALSE, TRUE, 5);
+
+ gtk_widget_set_halign((GtkWidget*) hbox, GTK_ALIGN_CENTER);
+ gtk_widget_set_valign((GtkWidget*) hbox, GTK_ALIGN_CENTER);
 
  gtk_container_add (GTK_CONTAINER (content_area),  hbox);
  gtk_widget_show_all(content_area);
