@@ -123,7 +123,7 @@ GtkWidget * create_deconwolf_frame()
     config.dwc_tilesize = adjTile;
 
     GtkWidget * lOverwrite = gtk_label_new("Overwrite existing files?");
-    GtkWidget * lThreads = gtk_label_new("Number of threads to use.");
+    GtkWidget * lThreads = gtk_label_new("Number of threads to use:");
     GtkWidget * lTile = gtk_label_new("Max side length of a tile [pixels]");
 
     GtkWidget * vOverwrite = gtk_switch_new();
@@ -162,6 +162,9 @@ GtkWidget * create_deconwolf_frame()
     gtk_grid_attach((GtkGrid*) grid, lFormat, 1, 8, 1, 2);
     gtk_grid_attach((GtkGrid*) grid, out_uint16, 2, 8, 2, 1);
     gtk_grid_attach((GtkGrid*) grid, out_float32, 2, 9, 2, 1);
+
+    gtk_widget_set_halign((GtkWidget*) grid, GTK_ALIGN_CENTER);
+    gtk_widget_set_valign((GtkWidget*) grid, GTK_ALIGN_CENTER);
 
     GtkWidget * btnSave = gtk_button_new_from_icon_name("document-save",
                                                         GTK_ICON_SIZE_SMALL_TOOLBAR);

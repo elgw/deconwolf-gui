@@ -226,9 +226,9 @@ dw_scope_edit_dlg(GtkWindow *parent, DwScope * old_scope)
  char * msg = malloc(1024);
  if(old_scope == NULL)
  {
-     sprintf(msg, "Add a new microscope");
+     sprintf(msg, "Add a new microscope/objective");
  } else {
-     sprintf(msg, "Edit an existing microscope");
+     sprintf(msg, "Edit an existing microscope/objective");
  }
 
 
@@ -291,9 +291,16 @@ gtk_grid_attach((GtkGrid*) grid, edz, 2, 5, 1, 1);
 GtkWidget * hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
 GtkWidget * im = gtk_image_new_from_resource("/images/Compound_Microscope_(cropped).jpeg");
 
+gtk_widget_set_margin_bottom((GtkWidget*) im, 20);
+gtk_widget_set_margin_top((GtkWidget*) im, 20);
+
 gtk_box_pack_end((GtkBox*) hbox, im, FALSE, TRUE, 5);
 gtk_box_pack_start((GtkBox*) hbox, grid, FALSE, TRUE, 5);
 
+gtk_widget_set_halign((GtkWidget*) grid, GTK_ALIGN_CENTER);
+gtk_widget_set_valign((GtkWidget*) grid, GTK_ALIGN_CENTER);
+gtk_widget_set_halign((GtkWidget*) hbox, GTK_ALIGN_CENTER);
+gtk_widget_set_valign((GtkWidget*) hbox, GTK_ALIGN_CENTER);
  gtk_container_add (GTK_CONTAINER (content_area),  hbox);
 
 
