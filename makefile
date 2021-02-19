@@ -1,4 +1,4 @@
-cflags=`pkg-config --cflags gtk+-3.0` -Wall
+cflags=-march=x86-64 `pkg-config --cflags gtk+-3.0` -Wall
 ldflags=`pkg-config --libs gtk+-3.0` -lm
 cc=gcc
 

@@ -11,12 +11,22 @@ For building this should be enough:
 ``` shell
 # sudo apt-get install libgtk-3-dev
 make
-
 ```
 Once it is built, the gui can be launched by `./dw_gui` To install it system wide so that it is accessible from gnome, perform:
 
 ``` shell
 sudo make install
+# to remove
+# sudo make uninstall
+```
+
+or, if you prefer to install it as a package:
+
+``` shell
+./deb_make.sh
+sudo dpkg -i dwgui*deb
+# to remove
+# sudo dpkg -r dwgui
 ```
 
 ### OSX
