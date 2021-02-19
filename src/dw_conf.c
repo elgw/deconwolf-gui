@@ -5,7 +5,7 @@ DwConf * dw_conf_new()
     DwConf * conf = malloc(sizeof(DwConf));
     conf->overwrite = FALSE;
     conf->nthreads = 4;
-    conf->tilesize = 1024;
+    conf->tilesize = 3000;
     conf->outformat = DW_CONF_OUTFORMAT_UINT16;
     return conf;
 }
