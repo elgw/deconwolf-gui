@@ -479,9 +479,16 @@ GtkWidget * create_channel_tree()
     gtk_box_pack_end((GtkBox*) boxV,
                      Bar,
                      FALSE, TRUE, 5);
+
+    // Make the list of channels scrollable
+    GtkWidget * channel_tree_scroll = gtk_scrolled_window_new (NULL, NULL);
+
+    gtk_container_add (GTK_CONTAINER (channel_tree_scroll),
+                       channel_tree);
+
     gtk_box_pack_start((GtkBox*) boxV,
-                       channel_tree,
-                       FALSE, TRUE, 5);
+                       channel_tree_scroll,
+                       TRUE, TRUE, 5);
 
     return boxV;
 }
