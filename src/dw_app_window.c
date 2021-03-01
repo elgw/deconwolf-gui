@@ -24,6 +24,7 @@ typedef struct {
     char * savefolder; // Suggested folder to save the script in
     gboolean has_dw;
     char * default_open_uri; // Where to open files
+    char * regexp_channel; // Regular expression to identify channels
 } GlobConf;
 
 GlobConf config;
@@ -338,7 +339,15 @@ char * get_channel_name(const char *fname0)
     GRegex *regex;
     GMatchInfo *match_info;
 
-    regex = g_regex_new ("([A-Z0-9]*)\\_[0-9]*\\.TIFF?", 0, 0, NULL);
+    assert(config.regexp_channel != NULL);
+    assert(strlen(config.regexp_channel) > 0);
+
+    regex = g_regex_new (config.regexp_channel, 0, 0, NULL);
+    if(regex == NULL)
+    {
+        printf("Can't create a regular expression out of '%s'\n", config.regexp_channel);
+        return NULL;
+    }
     g_regex_match (regex, fname, 0, &match_info);
     while (g_match_info_matches (match_info))
     {
@@ -1582,6 +1591,62 @@ about_activated(GSimpleAction *simple,
 }
 
 static void
+edit_global_config(void)
+{
+
+    GtkWidget * dialog, *content_area;
+    GtkDialogFlags flags;
+
+    // Create the widgets
+    flags = GTK_DIALOG_DESTROY_WITH_PARENT;
+    dialog = gtk_dialog_new_with_buttons ("Edit global settings",
+                                          (GtkWindow*) config.window,
+                                          flags,
+                                          "Cancel",
+                                          GTK_RESPONSE_NONE,
+                                          "Ok",
+                                          GTK_RESPONSE_ACCEPT,
+                                          NULL);
+    content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
+    GtkWidget * lRegexp = gtk_label_new("Regular expression");
+    GtkWidget * eRegexp = gtk_entry_new();
+    gtk_entry_set_text((GtkEntry*) eRegexp, config.regexp_channel);
+
+    GtkWidget * grid = gtk_grid_new();
+    gtk_grid_set_row_spacing ((GtkGrid*) grid , 5);
+    gtk_grid_set_column_spacing ((GtkGrid*) grid , 5);
+
+    GtkWidget * lRegexp_extra = gtk_label_new("Set the regular expression used to identify channel \nnames from the file names. For example, if the \nchannel name is at the end, \ntry '[A-Z0-9]*\\_([A-Z0-9]*)\\.TIFF?'\n");
+    gtk_label_set_line_wrap((GtkLabel*) lRegexp_extra, TRUE);
+    gtk_label_set_selectable((GtkLabel*) lRegexp_extra, TRUE);
+
+    gtk_grid_attach((GtkGrid*) grid, lRegexp_extra, 1, 1, 3, 2);
+    gtk_grid_attach((GtkGrid*) grid, lRegexp, 1, 3, 1, 1);
+    gtk_grid_attach((GtkGrid*) grid, eRegexp, 2, 3, 2, 1);
+
+    gtk_widget_set_halign((GtkWidget*) grid, GTK_ALIGN_CENTER);
+    gtk_widget_set_valign((GtkWidget*) grid, GTK_ALIGN_CENTER);
+
+    gtk_container_add (GTK_CONTAINER (content_area),  grid);
+    gtk_widget_show_all(content_area);
+    int result = gtk_dialog_run (GTK_DIALOG (dialog));
+
+    switch (result)
+    {
+    case GTK_RESPONSE_ACCEPT:
+        sprintf(config.regexp_channel, "%s", gtk_entry_get_text((GtkEntry*) eRegexp));
+        break;
+    default:
+        // do_nothing_since_dialog_was_cancelled ();
+        break;
+    }
+    gtk_widget_destroy (dialog);
+
+    return;
+
+}
+
+static void
  configuration_activated(GSimpleAction *simple,
                       GVariant      *parameter,
                       gpointer       p)
@@ -1589,7 +1654,9 @@ static void
     UNUSED(simple);
     UNUSED(parameter);
     UNUSED(p);
-    printf("configuration...\n");
+    edit_global_config();
+    //printf("configuration...\n");
+
 }
 
 static GActionEntry main_menu_actions[] =
@@ -1619,6 +1686,8 @@ dw_app_window_new (DwApp *app)
     config.default_open_uri = NULL;
     config.savefolder = NULL;
     config.has_dw = has_dw();
+    config.regexp_channel = malloc(1024);
+    sprintf(config.regexp_channel, "([A-Z0-9]*)\\_[0-9]*\\.TIFF?");
 
     // Set up a fallback icon
     GError * error = NULL;
@@ -1697,6 +1766,7 @@ dw_app_window_new (DwApp *app)
     GMenu * menu = g_menu_new();
     g_menu_insert(menu, 1, "About", "menu1.about");
     g_menu_insert(menu, 2, "Config", "menu1.configuration");
+
     GtkWidget * mbtn = gtk_menu_button_new();
     gtk_menu_button_set_menu_model((GtkMenuButton*) mbtn, (GMenuModel*) menu);
     GtkWidget * hbar = gtk_header_bar_new();
