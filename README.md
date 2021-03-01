@@ -60,7 +60,6 @@ make -B
  - It is actually possible to use your own PSFs since the PSF generator by default does not overwrite existing files. To use your custom PSF, just be ahead of deconwolf and place your PSFs where deconwolf plans to create its own PSFs.
 
 ## TODO
- - [ ] Allow custom regexp for channel identification
  - [ ] Have a way to create batch jobs (append to another job script?).
  - [ ] A simpler dialog/mode for single files.
  - [ ] Create installers. [.dmg installer](https://mesonbuild.com/Creating-OSX-packages.html) file for OSX (or alternatively a [HomeBrew Formula](https://medium.com/@tharun208/creating-a-homebrew-formula-f76da25b79e4)) etc...
@@ -75,6 +74,7 @@ make -B
  - [ ] Be consistent, use glib functions when possible.
 
 ### Done
+ - [x] Allow custom regexp for channel identification. However this setting is just temporary.
  - [x] 'Add files' - button and 'Remove file' - button.
  - [x] Warn when `dw` can't be found.
  - [x] About dialog.
