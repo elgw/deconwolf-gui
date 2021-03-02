@@ -207,6 +207,9 @@ GtkWidget * create_file_frame()
                                                     G_TYPE_STRING);   /* Channel */
 
     GtkWidget * file_tree = gtk_tree_view_new_with_model (GTK_TREE_MODEL (file_store));
+    // Fixes performance issue
+    gtk_tree_view_set_fixed_height_mode(GTK_TREE_VIEW (file_tree), TRUE);
+
     config.file_tree = file_tree;
 
     GtkCellRenderer * renderer = gtk_cell_renderer_text_new ();
@@ -220,6 +223,8 @@ GtkWidget * create_file_frame()
                                                                            "text", fFILE_COLUMN,
                                                                            NULL);
 
+    gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
+
     /* Add the column to the view. */
     gtk_tree_view_append_column (GTK_TREE_VIEW (file_tree), column);
 
@@ -228,6 +233,8 @@ GtkWidget * create_file_frame()
                                                        renderer,
                                                        "text", fCHANNEL_COLUMN,
                                                        NULL);
+    gtk_tree_view_column_set_sizing (column,
+                                     GTK_TREE_VIEW_COLUMN_FIXED);
 
     gtk_tree_view_append_column (GTK_TREE_VIEW (file_tree), column);
 
@@ -379,13 +386,16 @@ gboolean add_channel(char * alias, char * name, float emission, int iter)
     GtkTreeStore * channel_store = (GtkTreeStore*) gtk_tree_view_get_model((GtkTreeView*) config.channel_tree);
     GtkTreeIter iter1;  /* Parent iter */
 
+    char * emission_str = malloc(1024);
+    sprintf(emission_str, "%.2f", emission);
     gtk_tree_store_append (channel_store, &iter1, NULL);  /* Acquire a top-level iterator */
     gtk_tree_store_set (channel_store, &iter1,
                         cALIAS_COLUMN, alias,
                         cNAME_COLUMN, name,
                         cNITER_COLUMN, iter,
-                        cEMISSION_COLUMN, emission,
+                        cEMISSION_COLUMN, emission_str,
                         -1);
+    free(emission_str);
     return TRUE;
 }
 
@@ -411,10 +421,11 @@ GtkWidget * create_channel_tree()
     GtkTreeStore * channel_store = gtk_tree_store_new (cN_COLUMNS,       /* Total number of columns */
                                                        G_TYPE_STRING,
                                                        G_TYPE_STRING,
-                                                       G_TYPE_FLOAT,
+                                                       G_TYPE_STRING,
                                                        G_TYPE_INT);
 
     GtkWidget * channel_tree = gtk_tree_view_new_with_model (GTK_TREE_MODEL (channel_store));
+    gtk_tree_view_set_fixed_height_mode(GTK_TREE_VIEW (channel_tree), TRUE);
     config.channel_tree = channel_tree;
 
     GtkCellRenderer * renderer = gtk_cell_renderer_text_new ();
@@ -429,19 +440,23 @@ GtkWidget * create_channel_tree()
     GtkTreeViewColumn * column = gtk_tree_view_column_new_with_attributes ("Alias", renderer,
                                                                            "text", cALIAS_COLUMN,
                                                                            NULL);
+    gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
     gtk_tree_view_append_column (GTK_TREE_VIEW (channel_tree), column);
 
-
+    renderer = gtk_cell_renderer_text_new ();
     column = gtk_tree_view_column_new_with_attributes ("Emission [nm]",
                                                        renderer,
                                                        "text", cEMISSION_COLUMN,
                                                        NULL);
+    g_object_set (renderer, "xalign", 0.5, NULL);
+    gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
     gtk_tree_view_append_column (GTK_TREE_VIEW (channel_tree), column);
 
     column = gtk_tree_view_column_new_with_attributes ("Iterations",
                                                        renderer,
                                                        "text", cNITER_COLUMN,
                                                        NULL);
+    gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
     gtk_tree_view_append_column (GTK_TREE_VIEW (channel_tree), column);
 
 
@@ -449,6 +464,7 @@ GtkWidget * create_channel_tree()
                                                        renderer,
                                                        "text", cNAME_COLUMN,
                                                        NULL);
+    gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
     gtk_tree_view_append_column (GTK_TREE_VIEW (channel_tree), column);
 
 
@@ -568,9 +584,11 @@ GtkWidget * create_microscope_tab()
                                                      G_TYPE_FLOAT); // dz
 
     GtkWidget * scope_tree = gtk_tree_view_new_with_model (GTK_TREE_MODEL (scope_store));
+    gtk_tree_view_set_fixed_height_mode(GTK_TREE_VIEW (scope_tree), TRUE);
     config.scope_tree = scope_tree;
 
     GtkCellRenderer * renderer = gtk_cell_renderer_text_new ();
+
     g_object_set (G_OBJECT (renderer),
                   "foreground", "black",
                   NULL);
@@ -581,6 +599,7 @@ GtkWidget * create_microscope_tab()
     GtkTreeViewColumn * column = gtk_tree_view_column_new_with_attributes ("Name", renderer,
                                                                            "text", sNAME_COLUMN,
                                                                            NULL);
+    gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
     gtk_tree_view_append_column (GTK_TREE_VIEW (scope_tree), column);
 
 
@@ -588,12 +607,14 @@ GtkWidget * create_microscope_tab()
                                                        renderer,
                                                        "text", sNA_COLUMN,
                                                        NULL);
+    gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
     gtk_tree_view_append_column (GTK_TREE_VIEW (scope_tree), column);
 
     column = gtk_tree_view_column_new_with_attributes ("ni",
                                                        renderer,
                                                        "text", sNI_COLUMN,
                                                        NULL);
+    gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
     gtk_tree_view_append_column (GTK_TREE_VIEW (scope_tree), column);
 
 
@@ -601,12 +622,14 @@ GtkWidget * create_microscope_tab()
                                                        renderer,
                                                        "text", sDX_COLUMN,
                                                        NULL);
+    gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
     gtk_tree_view_append_column (GTK_TREE_VIEW (scope_tree), column);
 
     column = gtk_tree_view_column_new_with_attributes ("dz [nm]",
                                                        renderer,
                                                        "text", sDZ_COLUMN,
                                                        NULL);
+    gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
     gtk_tree_view_append_column (GTK_TREE_VIEW (scope_tree), column);
 
     GtkWidget * btnNew = gtk_button_new_from_icon_name("list-add",
@@ -1251,7 +1274,7 @@ void edit_selected_channel()
         // Get what we need from the mode
         gchar * cname;
         gchar * calias;
-        gfloat clambda;
+        gchar * clambda;
         gint cniter;
 
         gtk_tree_model_get(model, &iter,
@@ -1263,19 +1286,21 @@ void edit_selected_channel()
         DwChannel * curr = malloc(sizeof(DwChannel));
         curr->name = strdup(cname);
         curr->alias = strdup(calias);
-        curr->lambda = clambda;
+        curr->lambda = atof(clambda);
         curr->niter = cniter;
 
         DwChannel * new = dw_channel_edit_dlg((GtkWindow*) config.window, curr);
         if(new != NULL)
         {
+            char * lambdastr = malloc(1024);
+            sprintf(lambdastr, "%.2f", new->lambda);
             gtk_tree_store_set((GtkTreeStore*) model, &iter,
                                cALIAS_COLUMN, new->alias,
                                cNAME_COLUMN, new->name,
-                               cEMISSION_COLUMN, new->lambda,
+                               cEMISSION_COLUMN, lambdastr,
                                cNITER_COLUMN, new->niter,
                                -1);
-
+            free(lambdastr);
             free(new);
         }
         free(curr);
