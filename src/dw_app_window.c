@@ -685,29 +685,34 @@ void file_tree_append_dnd_file(const char * file)
 {
     // Should complain if the file format isn't something like:
     // file:///home/erikw/Desktop/iEG701_25oilx_200928_009/max_x_024.tif\r\n
-    if(strlen(file) < 6)
+    // Replace '%20' by ' ' etc
+
+    GError * err = NULL;
+    char * fname = g_filename_from_uri(file, NULL, &err);
+    if(err != NULL || fname == NULL)
     {
-        printf("Weird DND data\n");
         return;
     }
-    if(strncmp(file, "file://", 7) != 0)
+    if(strlen(fname) == 0)
     {
-        printf("Weird DND data\n");
         return;
     }
 
-    char * fname0 = strdup(file);
-    // Remove trailing CRCL
-    char * fname = fname0 + 7;
-    for(size_t kk = 0; kk < strlen(fname); kk++)
+    size_t lastpos = strlen(fname)-1;
+    if(fname[lastpos] == '\n' || fname[lastpos] == '\r') {
+        fname[lastpos] = '\0';
+    }
+    lastpos --;
+    if(strlen(fname) > 1)
     {
-        if(fname[kk] == '\n' || fname[kk] == '\r')
-        {
-            fname[kk] = '\0';
+        if(fname[lastpos] == '\n' || fname[lastpos] == '\r') {
+            fname[lastpos] = '\0';
         }
     }
+
+    //printf("fname: \n>%s<\n", fname);
     file_tree_append(fname);
-    free(fname0);
+    free(fname);
     return;
 }
 
@@ -727,11 +732,14 @@ void file_tree_append(const char * fname)
                         fFILE_COLUMN, fname,
                         fCHANNEL_COLUMN, cname,
                         -1);
+
     free(cname);
 
- done:
+    done:
     return;
 }
+
+
 
 static  void
 drag_data_cb(GtkWidget *wgt, GdkDragContext *context, int x, int y,
@@ -760,19 +768,32 @@ drag_data_cb(GtkWidget *wgt, GdkDragContext *context, int x, int y,
     }
 
     //  printf("%d data items\n", gtk_selection_data_get_length (seldata));
-    const guchar * data = gtk_selection_data_get_data(seldata);
+
+
+    gchar ** uris =  gtk_selection_data_get_uris(seldata);
+    for (gchar **uris_iter = uris; uris_iter && *uris_iter; ++uris_iter)
+        {
+            printf("--%s--\n", *uris_iter);
+        }
+    g_strfreev(uris);
+    // Use g_uri_to_string() or similar here
+
     //printf("---\n%s---\n", data);
     //fflush(stdout);
-
+    const guchar * data = gtk_selection_data_get_data(seldata);
     /* Append to file tree, need to split the data first */
     if(strlen( (char *) data) > 0)
     {
         char * dnd = strdup( (char *) data);
         char delim = '\n';
         char * file = strtok(dnd, &delim);
+
         if(file != NULL)
         {
-            file_tree_append_dnd_file(file);
+
+
+                file_tree_append_dnd_file(file);
+
         }
         while( file != NULL)
         {
@@ -821,10 +842,14 @@ dw_app_window_class_init (DwAppWindowClass *class)
 }
 
 
-void runscript(char * name)
+void runscript(const char * name_in)
 {
     GAppInfo *appinfo = NULL;
     gboolean ret = FALSE;
+
+    // 'quote' the name
+    char * name = malloc(strlen(name_in) + 3);
+    sprintf(name, "'%s'", name_in);
 
     appinfo = g_app_info_create_from_commandline(name,
                                                  NULL,
@@ -834,6 +859,7 @@ void runscript(char * name)
 
     ret = g_app_info_launch(appinfo, NULL, NULL, NULL);
     g_assert(ret == TRUE); // TODO error handling is not implemented.
+    free(name);
 }
 
 
@@ -1120,15 +1146,15 @@ void update_cmd()
             char * fdir = strdup(files[kk]->name);
             fdir = dirname(fdir);
             char * psf = get_psfname(fdir, files[kk]->channel);
-            sprintf(buff, "mkdir %s/PSFBW/\n", fdir);
+            sprintf(buff, "mkdir '%s/PSFBW/'\n", fdir);
             gtk_text_buffer_insert(buffer, &titer, buff, -1);
-            sprintf(buff, "dw_bw %s--lambda %f --NA %f --ni %f --threads %d --resxy %f --resz %f %s\n",
+            sprintf(buff, "dw_bw %s--lambda %f --NA %f --ni %f --threads %d --resxy %f --resz %f '%s'\n",
                     ostring,
                     ch->lambda, scope->NA, scope->ni, nthreads, scope->xy_nm, scope->z_nm,
                     psf);
             //        printf("%s", buff);
             gtk_text_buffer_insert(buffer, &titer, buff, -1);
-            sprintf(buff, "dw %s %s --tilesize %d --iter %d --threads %d %s %s\n",
+            sprintf(buff, "dw %s %s --tilesize %d --iter %d --threads %d '%s' '%s'\n",
                     ostring,
                     fstring,
                     tilesize, ch->niter, nthreads,
@@ -1727,7 +1753,7 @@ dw_app_window_new (DwApp *app)
 
     GtkWidget * frame_drop = create_drop_frame ();
     GtkWidget * frame_dw = create_deconwolf_frame();
-    GtkWidget * frame_files = create_file_frame(NULL);
+    GtkWidget * frame_files = create_file_frame();
     GtkWidget * frame_channels = gtk_frame_new (NULL);
     GtkWidget * frame_scope = gtk_frame_new (NULL);
     GtkWidget * frame_run = create_run_frame();

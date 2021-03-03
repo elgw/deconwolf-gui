@@ -29,7 +29,7 @@ dw_file:
 dw_colors:
 	$(cc) -c $(cflags) $(src)dw_colors.c
 
-resources:
+resources: resources.c
 	glib-compile-resources --target=resources.c --generate-source src/gresources.xml
 
 clean:

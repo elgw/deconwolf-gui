@@ -311,7 +311,7 @@ gtk_widget_set_valign((GtkWidget*) hbox, GTK_ALIGN_CENTER);
  switch (result)
  {
  case GTK_RESPONSE_ACCEPT:
-     scope = malloc(sizeof(scope));
+     scope = malloc(sizeof(DwScope));
      scope->name = strdup(gtk_entry_get_text((GtkEntry*) eName));
      scope->NA = atof(gtk_entry_get_text((GtkEntry*) eNA));
      scope->ni = atof(gtk_entry_get_text((GtkEntry*) eni));
