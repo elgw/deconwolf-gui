@@ -24,6 +24,7 @@ typedef struct {
     char * savefolder; // Suggested folder to save the script in
     gboolean has_dw;
     char * default_open_uri; // Where to open files
+    char * regexp_channel; // Regular expression to identify channels
 } GlobConf;
 
 GlobConf config;
@@ -206,6 +207,9 @@ GtkWidget * create_file_frame()
                                                     G_TYPE_STRING);   /* Channel */
 
     GtkWidget * file_tree = gtk_tree_view_new_with_model (GTK_TREE_MODEL (file_store));
+    // Fixes performance issue
+    gtk_tree_view_set_fixed_height_mode(GTK_TREE_VIEW (file_tree), TRUE);
+
     config.file_tree = file_tree;
 
     GtkCellRenderer * renderer = gtk_cell_renderer_text_new ();
@@ -219,6 +223,8 @@ GtkWidget * create_file_frame()
                                                                            "text", fFILE_COLUMN,
                                                                            NULL);
 
+    gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
+
     /* Add the column to the view. */
     gtk_tree_view_append_column (GTK_TREE_VIEW (file_tree), column);
 
@@ -227,6 +233,8 @@ GtkWidget * create_file_frame()
                                                        renderer,
                                                        "text", fCHANNEL_COLUMN,
                                                        NULL);
+    gtk_tree_view_column_set_sizing (column,
+                                     GTK_TREE_VIEW_COLUMN_FIXED);
 
     gtk_tree_view_append_column (GTK_TREE_VIEW (file_tree), column);
 
@@ -338,7 +346,15 @@ char * get_channel_name(const char *fname0)
     GRegex *regex;
     GMatchInfo *match_info;
 
-    regex = g_regex_new ("([A-Z0-9]*)\\_[0-9]*\\.TIFF?", 0, 0, NULL);
+    assert(config.regexp_channel != NULL);
+    assert(strlen(config.regexp_channel) > 0);
+
+    regex = g_regex_new (config.regexp_channel, 0, 0, NULL);
+    if(regex == NULL)
+    {
+        printf("Can't create a regular expression out of '%s'\n", config.regexp_channel);
+        return NULL;
+    }
     g_regex_match (regex, fname, 0, &match_info);
     while (g_match_info_matches (match_info))
     {
@@ -370,13 +386,16 @@ gboolean add_channel(char * alias, char * name, float emission, int iter)
     GtkTreeStore * channel_store = (GtkTreeStore*) gtk_tree_view_get_model((GtkTreeView*) config.channel_tree);
     GtkTreeIter iter1;  /* Parent iter */
 
+    char * emission_str = malloc(1024);
+    sprintf(emission_str, "%.2f", emission);
     gtk_tree_store_append (channel_store, &iter1, NULL);  /* Acquire a top-level iterator */
     gtk_tree_store_set (channel_store, &iter1,
                         cALIAS_COLUMN, alias,
                         cNAME_COLUMN, name,
                         cNITER_COLUMN, iter,
-                        cEMISSION_COLUMN, emission,
+                        cEMISSION_COLUMN, emission_str,
                         -1);
+    free(emission_str);
     return TRUE;
 }
 
@@ -402,10 +421,11 @@ GtkWidget * create_channel_tree()
     GtkTreeStore * channel_store = gtk_tree_store_new (cN_COLUMNS,       /* Total number of columns */
                                                        G_TYPE_STRING,
                                                        G_TYPE_STRING,
-                                                       G_TYPE_FLOAT,
+                                                       G_TYPE_STRING,
                                                        G_TYPE_INT);
 
     GtkWidget * channel_tree = gtk_tree_view_new_with_model (GTK_TREE_MODEL (channel_store));
+    gtk_tree_view_set_fixed_height_mode(GTK_TREE_VIEW (channel_tree), TRUE);
     config.channel_tree = channel_tree;
 
     GtkCellRenderer * renderer = gtk_cell_renderer_text_new ();
@@ -420,19 +440,23 @@ GtkWidget * create_channel_tree()
     GtkTreeViewColumn * column = gtk_tree_view_column_new_with_attributes ("Alias", renderer,
                                                                            "text", cALIAS_COLUMN,
                                                                            NULL);
+    gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
     gtk_tree_view_append_column (GTK_TREE_VIEW (channel_tree), column);
 
-
+    renderer = gtk_cell_renderer_text_new ();
     column = gtk_tree_view_column_new_with_attributes ("Emission [nm]",
                                                        renderer,
                                                        "text", cEMISSION_COLUMN,
                                                        NULL);
+    g_object_set (renderer, "xalign", 0.5, NULL);
+    gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
     gtk_tree_view_append_column (GTK_TREE_VIEW (channel_tree), column);
 
     column = gtk_tree_view_column_new_with_attributes ("Iterations",
                                                        renderer,
                                                        "text", cNITER_COLUMN,
                                                        NULL);
+    gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
     gtk_tree_view_append_column (GTK_TREE_VIEW (channel_tree), column);
 
 
@@ -440,6 +464,7 @@ GtkWidget * create_channel_tree()
                                                        renderer,
                                                        "text", cNAME_COLUMN,
                                                        NULL);
+    gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
     gtk_tree_view_append_column (GTK_TREE_VIEW (channel_tree), column);
 
 
@@ -559,9 +584,11 @@ GtkWidget * create_microscope_tab()
                                                      G_TYPE_FLOAT); // dz
 
     GtkWidget * scope_tree = gtk_tree_view_new_with_model (GTK_TREE_MODEL (scope_store));
+    gtk_tree_view_set_fixed_height_mode(GTK_TREE_VIEW (scope_tree), TRUE);
     config.scope_tree = scope_tree;
 
     GtkCellRenderer * renderer = gtk_cell_renderer_text_new ();
+
     g_object_set (G_OBJECT (renderer),
                   "foreground", "black",
                   NULL);
@@ -572,6 +599,7 @@ GtkWidget * create_microscope_tab()
     GtkTreeViewColumn * column = gtk_tree_view_column_new_with_attributes ("Name", renderer,
                                                                            "text", sNAME_COLUMN,
                                                                            NULL);
+    gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
     gtk_tree_view_append_column (GTK_TREE_VIEW (scope_tree), column);
 
 
@@ -579,12 +607,14 @@ GtkWidget * create_microscope_tab()
                                                        renderer,
                                                        "text", sNA_COLUMN,
                                                        NULL);
+    gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
     gtk_tree_view_append_column (GTK_TREE_VIEW (scope_tree), column);
 
     column = gtk_tree_view_column_new_with_attributes ("ni",
                                                        renderer,
                                                        "text", sNI_COLUMN,
                                                        NULL);
+    gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
     gtk_tree_view_append_column (GTK_TREE_VIEW (scope_tree), column);
 
 
@@ -592,12 +622,14 @@ GtkWidget * create_microscope_tab()
                                                        renderer,
                                                        "text", sDX_COLUMN,
                                                        NULL);
+    gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
     gtk_tree_view_append_column (GTK_TREE_VIEW (scope_tree), column);
 
     column = gtk_tree_view_column_new_with_attributes ("dz [nm]",
                                                        renderer,
                                                        "text", sDZ_COLUMN,
                                                        NULL);
+    gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
     gtk_tree_view_append_column (GTK_TREE_VIEW (scope_tree), column);
 
     GtkWidget * btnNew = gtk_button_new_from_icon_name("list-add",
@@ -653,29 +685,34 @@ void file_tree_append_dnd_file(const char * file)
 {
     // Should complain if the file format isn't something like:
     // file:///home/erikw/Desktop/iEG701_25oilx_200928_009/max_x_024.tif\r\n
-    if(strlen(file) < 6)
+    // Replace '%20' by ' ' etc
+
+    GError * err = NULL;
+    char * fname = g_filename_from_uri(file, NULL, &err);
+    if(err != NULL || fname == NULL)
     {
-        printf("Weird DND data\n");
         return;
     }
-    if(strncmp(file, "file://", 7) != 0)
+    if(strlen(fname) == 0)
     {
-        printf("Weird DND data\n");
         return;
     }
 
-    char * fname0 = strdup(file);
-    // Remove trailing CRCL
-    char * fname = fname0 + 7;
-    for(size_t kk = 0; kk < strlen(fname); kk++)
+    size_t lastpos = strlen(fname)-1;
+    if(fname[lastpos] == '\n' || fname[lastpos] == '\r') {
+        fname[lastpos] = '\0';
+    }
+    lastpos --;
+    if(strlen(fname) > 1)
     {
-        if(fname[kk] == '\n' || fname[kk] == '\r')
-        {
-            fname[kk] = '\0';
+        if(fname[lastpos] == '\n' || fname[lastpos] == '\r') {
+            fname[lastpos] = '\0';
         }
     }
+
+    //printf("fname: \n>%s<\n", fname);
     file_tree_append(fname);
-    free(fname0);
+    free(fname);
     return;
 }
 
@@ -695,11 +732,14 @@ void file_tree_append(const char * fname)
                         fFILE_COLUMN, fname,
                         fCHANNEL_COLUMN, cname,
                         -1);
+
     free(cname);
 
- done:
+    done:
     return;
 }
+
+
 
 static  void
 drag_data_cb(GtkWidget *wgt, GdkDragContext *context, int x, int y,
@@ -728,19 +768,32 @@ drag_data_cb(GtkWidget *wgt, GdkDragContext *context, int x, int y,
     }
 
     //  printf("%d data items\n", gtk_selection_data_get_length (seldata));
-    const guchar * data = gtk_selection_data_get_data(seldata);
+
+
+    gchar ** uris =  gtk_selection_data_get_uris(seldata);
+    for (gchar **uris_iter = uris; uris_iter && *uris_iter; ++uris_iter)
+        {
+            printf("--%s--\n", *uris_iter);
+        }
+    g_strfreev(uris);
+    // Use g_uri_to_string() or similar here
+
     //printf("---\n%s---\n", data);
     //fflush(stdout);
-
+    const guchar * data = gtk_selection_data_get_data(seldata);
     /* Append to file tree, need to split the data first */
     if(strlen( (char *) data) > 0)
     {
         char * dnd = strdup( (char *) data);
         char delim = '\n';
         char * file = strtok(dnd, &delim);
+
         if(file != NULL)
         {
-            file_tree_append_dnd_file(file);
+
+
+                file_tree_append_dnd_file(file);
+
         }
         while( file != NULL)
         {
@@ -789,10 +842,14 @@ dw_app_window_class_init (DwAppWindowClass *class)
 }
 
 
-void runscript(char * name)
+void runscript(const char * name_in)
 {
     GAppInfo *appinfo = NULL;
     gboolean ret = FALSE;
+
+    // 'quote' the name
+    char * name = malloc(strlen(name_in) + 3);
+    sprintf(name, "'%s'", name_in);
 
     appinfo = g_app_info_create_from_commandline(name,
                                                  NULL,
@@ -802,6 +859,7 @@ void runscript(char * name)
 
     ret = g_app_info_launch(appinfo, NULL, NULL, NULL);
     g_assert(ret == TRUE); // TODO error handling is not implemented.
+    free(name);
 }
 
 
@@ -1088,15 +1146,15 @@ void update_cmd()
             char * fdir = strdup(files[kk]->name);
             fdir = dirname(fdir);
             char * psf = get_psfname(fdir, files[kk]->channel);
-            sprintf(buff, "mkdir %s/PSFBW/\n", fdir);
+            sprintf(buff, "mkdir '%s/PSFBW/'\n", fdir);
             gtk_text_buffer_insert(buffer, &titer, buff, -1);
-            sprintf(buff, "dw_bw %s--lambda %f --NA %f --ni %f --threads %d --resxy %f --resz %f %s\n",
+            sprintf(buff, "dw_bw %s--lambda %f --NA %f --ni %f --threads %d --resxy %f --resz %f '%s'\n",
                     ostring,
                     ch->lambda, scope->NA, scope->ni, nthreads, scope->xy_nm, scope->z_nm,
                     psf);
             //        printf("%s", buff);
             gtk_text_buffer_insert(buffer, &titer, buff, -1);
-            sprintf(buff, "dw %s %s --tilesize %d --iter %d --threads %d %s %s\n",
+            sprintf(buff, "dw %s %s --tilesize %d --iter %d --threads %d '%s' '%s'\n",
                     ostring,
                     fstring,
                     tilesize, ch->niter, nthreads,
@@ -1242,7 +1300,7 @@ void edit_selected_channel()
         // Get what we need from the mode
         gchar * cname;
         gchar * calias;
-        gfloat clambda;
+        gchar * clambda;
         gint cniter;
 
         gtk_tree_model_get(model, &iter,
@@ -1254,19 +1312,21 @@ void edit_selected_channel()
         DwChannel * curr = malloc(sizeof(DwChannel));
         curr->name = strdup(cname);
         curr->alias = strdup(calias);
-        curr->lambda = clambda;
+        curr->lambda = atof(clambda);
         curr->niter = cniter;
 
         DwChannel * new = dw_channel_edit_dlg((GtkWindow*) config.window, curr);
         if(new != NULL)
         {
+            char * lambdastr = malloc(1024);
+            sprintf(lambdastr, "%.2f", new->lambda);
             gtk_tree_store_set((GtkTreeStore*) model, &iter,
                                cALIAS_COLUMN, new->alias,
                                cNAME_COLUMN, new->name,
-                               cEMISSION_COLUMN, new->lambda,
+                               cEMISSION_COLUMN, lambdastr,
                                cNITER_COLUMN, new->niter,
                                -1);
-
+            free(lambdastr);
             free(new);
         }
         free(curr);
@@ -1582,6 +1642,62 @@ about_activated(GSimpleAction *simple,
 }
 
 static void
+edit_global_config(void)
+{
+
+    GtkWidget * dialog, *content_area;
+    GtkDialogFlags flags;
+
+    // Create the widgets
+    flags = GTK_DIALOG_DESTROY_WITH_PARENT;
+    dialog = gtk_dialog_new_with_buttons ("Edit global settings",
+                                          (GtkWindow*) config.window,
+                                          flags,
+                                          "Cancel",
+                                          GTK_RESPONSE_NONE,
+                                          "Ok",
+                                          GTK_RESPONSE_ACCEPT,
+                                          NULL);
+    content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
+    GtkWidget * lRegexp = gtk_label_new("Regular expression");
+    GtkWidget * eRegexp = gtk_entry_new();
+    gtk_entry_set_text((GtkEntry*) eRegexp, config.regexp_channel);
+
+    GtkWidget * grid = gtk_grid_new();
+    gtk_grid_set_row_spacing ((GtkGrid*) grid , 5);
+    gtk_grid_set_column_spacing ((GtkGrid*) grid , 5);
+
+    GtkWidget * lRegexp_extra = gtk_label_new("Set the regular expression used to identify channel \nnames from the file names. For example, if the \nchannel name is at the end, \ntry '[A-Z0-9]*\\_([A-Z0-9]*)\\.TIFF?'\n");
+    gtk_label_set_line_wrap((GtkLabel*) lRegexp_extra, TRUE);
+    gtk_label_set_selectable((GtkLabel*) lRegexp_extra, TRUE);
+
+    gtk_grid_attach((GtkGrid*) grid, lRegexp_extra, 1, 1, 3, 2);
+    gtk_grid_attach((GtkGrid*) grid, lRegexp, 1, 3, 1, 1);
+    gtk_grid_attach((GtkGrid*) grid, eRegexp, 2, 3, 2, 1);
+
+    gtk_widget_set_halign((GtkWidget*) grid, GTK_ALIGN_CENTER);
+    gtk_widget_set_valign((GtkWidget*) grid, GTK_ALIGN_CENTER);
+
+    gtk_container_add (GTK_CONTAINER (content_area),  grid);
+    gtk_widget_show_all(content_area);
+    int result = gtk_dialog_run (GTK_DIALOG (dialog));
+
+    switch (result)
+    {
+    case GTK_RESPONSE_ACCEPT:
+        sprintf(config.regexp_channel, "%s", gtk_entry_get_text((GtkEntry*) eRegexp));
+        break;
+    default:
+        // do_nothing_since_dialog_was_cancelled ();
+        break;
+    }
+    gtk_widget_destroy (dialog);
+
+    return;
+
+}
+
+static void
  configuration_activated(GSimpleAction *simple,
                       GVariant      *parameter,
                       gpointer       p)
@@ -1589,7 +1705,9 @@ static void
     UNUSED(simple);
     UNUSED(parameter);
     UNUSED(p);
-    printf("configuration...\n");
+    edit_global_config();
+    //printf("configuration...\n");
+
 }
 
 static GActionEntry main_menu_actions[] =
@@ -1619,6 +1737,8 @@ dw_app_window_new (DwApp *app)
     config.default_open_uri = NULL;
     config.savefolder = NULL;
     config.has_dw = has_dw();
+    config.regexp_channel = malloc(1024);
+    sprintf(config.regexp_channel, "([A-Z0-9]*)\\_[0-9]*\\.TIFF?");
 
     // Set up a fallback icon
     GError * error = NULL;
@@ -1633,7 +1753,7 @@ dw_app_window_new (DwApp *app)
 
     GtkWidget * frame_drop = create_drop_frame ();
     GtkWidget * frame_dw = create_deconwolf_frame();
-    GtkWidget * frame_files = create_file_frame(NULL);
+    GtkWidget * frame_files = create_file_frame();
     GtkWidget * frame_channels = gtk_frame_new (NULL);
     GtkWidget * frame_scope = gtk_frame_new (NULL);
     GtkWidget * frame_run = create_run_frame();
@@ -1697,6 +1817,7 @@ dw_app_window_new (DwApp *app)
     GMenu * menu = g_menu_new();
     g_menu_insert(menu, 1, "About", "menu1.about");
     g_menu_insert(menu, 2, "Config", "menu1.configuration");
+
     GtkWidget * mbtn = gtk_menu_button_new();
     gtk_menu_button_set_menu_model((GtkMenuButton*) mbtn, (GMenuModel*) menu);
     GtkWidget * hbar = gtk_header_bar_new();

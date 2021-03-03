@@ -73,7 +73,7 @@ DwChannel ** dw_channels_get_from_gtk_tree_view(GtkTreeView * tv)
          gchar *alias;
          gchar *name;
          gint niter;
-         gfloat lambda;
+         gchar *lambda;
 
          gtk_tree_model_get (model, &iter,
                              cALIAS_COLUMN, &alias,
@@ -85,7 +85,7 @@ DwChannel ** dw_channels_get_from_gtk_tree_view(GtkTreeView * tv)
          clist[pos] = malloc(sizeof(DwChannel));
          clist[pos]->name = strdup(name);
          clist[pos]->alias = strdup(alias);
-         clist[pos]->lambda = (float) lambda;
+         clist[pos]->lambda = atof(lambda);
          clist[pos]->niter = (int) niter;
          if(0){
              printf("%s %s %f %d\n",
@@ -94,6 +94,7 @@ DwChannel ** dw_channels_get_from_gtk_tree_view(GtkTreeView * tv)
          }
          g_free(alias);
          g_free(name);
+         g_free(lambda);
 
          pos++;
 

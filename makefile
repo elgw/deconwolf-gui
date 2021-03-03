@@ -1,4 +1,4 @@
-cflags=`pkg-config --cflags gtk+-3.0` -Wall
+cflags=-march=x86-64 `pkg-config --cflags gtk+-3.0` -Wall
 ldflags=`pkg-config --libs gtk+-3.0` -lm
 cc=gcc
 
@@ -29,7 +29,7 @@ dw_file:
 dw_colors:
 	$(cc) -c $(cflags) $(src)dw_colors.c
 
-resources:
+resources: resources.c
 	glib-compile-resources --target=resources.c --generate-source src/gresources.xml
 
 clean:
