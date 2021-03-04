@@ -11,7 +11,7 @@ endif
 
 src=src/
 
-dw_gui: resources dw_channel dw_scope dw_conf dw_file dw_colors
+dw_gui: resources.c dw_channel dw_scope dw_conf dw_file dw_colors
 	$(cc) $(cflags) resources.c $(src)dw_app.c $(src)dw_app_window.c $(src)dw_gui.c dw_channel.o dw_scope.o dw_conf.o dw_file.o dw_colors.o $(ldflags) -o dw_gui
 
 dw_channel:
@@ -29,12 +29,13 @@ dw_file:
 dw_colors:
 	$(cc) -c $(cflags) $(src)dw_colors.c
 
-resources: resources.c
+resources.c:
 	glib-compile-resources --target=resources.c --generate-source src/gresources.xml
 
 clean:
 	rm *.o
 	rm dw_gui
+	rm resources.c
 
 install:
 	cp dw_gui /usr/local/bin
