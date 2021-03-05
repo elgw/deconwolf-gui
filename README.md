@@ -3,6 +3,8 @@
 <img src="resources/screenshot_20210217.png">
 A GUI for deconwolf (to be released) written in GTK 3.24.23.
 
+See the [TODO](TODO.md) for current status.
+
 ## Build and Install
 
 ### On Ubuntu

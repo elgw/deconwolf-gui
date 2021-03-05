@@ -207,8 +207,11 @@ GtkWidget * create_file_frame()
                                                     G_TYPE_STRING);   /* Channel */
 
     GtkWidget * file_tree = gtk_tree_view_new_with_model (GTK_TREE_MODEL (file_store));
+    //GtkWidget * file_tree = (GtkWidget*) gtk_tree_model_sort_new_with_model (GTK_TREE_MODEL (file_store));
+    //gtk_tree_sortable_set_sort_column_id (GTK_TREE_SORTABLE (file_tree),
+    //                                      fFILE_COLUMN, GTK_SORT_ASCENDING);
     // Fixes performance issue
-    gtk_tree_view_set_fixed_height_mode(GTK_TREE_VIEW (file_tree), TRUE);
+    //    gtk_tree_view_set_fixed_height_mode(GTK_TREE_VIEW (file_tree), TRUE);
 
     config.file_tree = file_tree;
 
@@ -222,17 +225,20 @@ GtkWidget * create_file_frame()
     GtkTreeViewColumn * column = gtk_tree_view_column_new_with_attributes ("File", renderer,
                                                                            "text", fFILE_COLUMN,
                                                                            NULL);
+    gtk_tree_view_column_set_sort_column_id(column, fFILE_COLUMN);
 
     gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
 
     /* Add the column to the view. */
     gtk_tree_view_append_column (GTK_TREE_VIEW (file_tree), column);
 
+    //    gtk_tree_model_sort_append_column(GTK_TREE_MODEL_SORT (file_tree), column);
     renderer = gtk_cell_renderer_text_new ();
     column = gtk_tree_view_column_new_with_attributes ("Channel",
                                                        renderer,
                                                        "text", fCHANNEL_COLUMN,
                                                        NULL);
+    gtk_tree_view_column_set_sort_column_id(column, fCHANNEL_COLUMN);
     gtk_tree_view_column_set_sizing (column,
                                      GTK_TREE_VIEW_COLUMN_FIXED);
 
@@ -425,7 +431,7 @@ GtkWidget * create_channel_tree()
                                                        G_TYPE_INT);
 
     GtkWidget * channel_tree = gtk_tree_view_new_with_model (GTK_TREE_MODEL (channel_store));
-    gtk_tree_view_set_fixed_height_mode(GTK_TREE_VIEW (channel_tree), TRUE);
+    //gtk_tree_view_set_fixed_height_mode(GTK_TREE_VIEW (channel_tree), TRUE);
     config.channel_tree = channel_tree;
 
     GtkCellRenderer * renderer = gtk_cell_renderer_text_new ();
@@ -440,6 +446,8 @@ GtkWidget * create_channel_tree()
     GtkTreeViewColumn * column = gtk_tree_view_column_new_with_attributes ("Alias", renderer,
                                                                            "text", cALIAS_COLUMN,
                                                                            NULL);
+    gtk_tree_view_column_set_sort_column_id(column, 0);
+
     gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
     gtk_tree_view_append_column (GTK_TREE_VIEW (channel_tree), column);
 
@@ -448,6 +456,7 @@ GtkWidget * create_channel_tree()
                                                        renderer,
                                                        "text", cEMISSION_COLUMN,
                                                        NULL);
+    gtk_tree_view_column_set_sort_column_id(column, cEMISSION_COLUMN);
     g_object_set (renderer, "xalign", 0.5, NULL);
     gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
     gtk_tree_view_append_column (GTK_TREE_VIEW (channel_tree), column);
@@ -456,6 +465,7 @@ GtkWidget * create_channel_tree()
                                                        renderer,
                                                        "text", cNITER_COLUMN,
                                                        NULL);
+    gtk_tree_view_column_set_sort_column_id(column, cNITER_COLUMN);
     gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
     gtk_tree_view_append_column (GTK_TREE_VIEW (channel_tree), column);
 
@@ -464,6 +474,7 @@ GtkWidget * create_channel_tree()
                                                        renderer,
                                                        "text", cNAME_COLUMN,
                                                        NULL);
+    gtk_tree_view_column_set_sort_column_id(column, cNAME_COLUMN);
     gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
     gtk_tree_view_append_column (GTK_TREE_VIEW (channel_tree), column);
 
@@ -584,14 +595,11 @@ GtkWidget * create_microscope_tab()
                                                      G_TYPE_FLOAT); // dz
 
     GtkWidget * scope_tree = gtk_tree_view_new_with_model (GTK_TREE_MODEL (scope_store));
-    gtk_tree_view_set_fixed_height_mode(GTK_TREE_VIEW (scope_tree), TRUE);
+    //    gtk_tree_view_set_fixed_height_mode(GTK_TREE_VIEW (scope_tree), TRUE);
     config.scope_tree = scope_tree;
 
     GtkCellRenderer * renderer = gtk_cell_renderer_text_new ();
 
-    g_object_set (G_OBJECT (renderer),
-                  "foreground", "black",
-                  NULL);
     g_object_set(G_OBJECT (renderer), "editable", FALSE, NULL);
 
     /* Create a column, associating the "text" attribute of the
@@ -599,6 +607,7 @@ GtkWidget * create_microscope_tab()
     GtkTreeViewColumn * column = gtk_tree_view_column_new_with_attributes ("Name", renderer,
                                                                            "text", sNAME_COLUMN,
                                                                            NULL);
+    gtk_tree_view_column_set_sort_column_id(column, sNAME_COLUMN);
     gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
     gtk_tree_view_append_column (GTK_TREE_VIEW (scope_tree), column);
 
@@ -607,6 +616,7 @@ GtkWidget * create_microscope_tab()
                                                        renderer,
                                                        "text", sNA_COLUMN,
                                                        NULL);
+    gtk_tree_view_column_set_sort_column_id(column, sNA_COLUMN);
     gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
     gtk_tree_view_append_column (GTK_TREE_VIEW (scope_tree), column);
 
@@ -614,6 +624,7 @@ GtkWidget * create_microscope_tab()
                                                        renderer,
                                                        "text", sNI_COLUMN,
                                                        NULL);
+    gtk_tree_view_column_set_sort_column_id(column, sNI_COLUMN);
     gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
     gtk_tree_view_append_column (GTK_TREE_VIEW (scope_tree), column);
 
@@ -622,6 +633,7 @@ GtkWidget * create_microscope_tab()
                                                        renderer,
                                                        "text", sDX_COLUMN,
                                                        NULL);
+    gtk_tree_view_column_set_sort_column_id(column, sDX_COLUMN);
     gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
     gtk_tree_view_append_column (GTK_TREE_VIEW (scope_tree), column);
 
@@ -629,6 +641,7 @@ GtkWidget * create_microscope_tab()
                                                        renderer,
                                                        "text", sDZ_COLUMN,
                                                        NULL);
+    gtk_tree_view_column_set_sort_column_id(column, sDZ_COLUMN);
     gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
     gtk_tree_view_append_column (GTK_TREE_VIEW (scope_tree), column);
 
