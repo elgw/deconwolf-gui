@@ -388,7 +388,7 @@ char * get_psfname(char * dir, char * channel)
     return name;
 }
 
-char * get_channel_name(const char *fname0)
+char * get_channel_name_regexp(const char *fname0)
 {
     char * fname = strdup(fname0);
     char * ret = NULL;
@@ -434,6 +434,58 @@ char * get_channel_name(const char *fname0)
         sprintf(ret, "?");
     }
     return ret;
+}
+
+char * get_channel_name_alias(const char * fname0)
+{
+    if(fname0 == NULL)
+    {
+        return NULL;
+    }
+    if(strlen(fname0) == 0)
+    {
+        return NULL;
+    }
+
+    char * fname = strdup(fname0);
+    for(int kk = 0; kk<strlen(fname); kk++)
+    {
+        fname[kk] = toupper(fname[kk]);
+    }
+
+    char * channel = NULL;
+    // Compare the file name to the aliases and return the first match
+    DwChannel ** channels = dw_channels_get_from_gtk_tree_view((GtkTreeView*) config.channel_tree);
+    DwChannel ** channelsp = channels;
+    for( ; *channelsp && channel == NULL; channelsp++)
+    {
+        if(strstr(fname, channelsp[0]->alias) != NULL)
+        {
+            printf("Matches %s\n", channelsp[0]->alias);
+            channel = strdup(channelsp[0]->alias);
+        }
+
+    }
+
+    dw_channels_free(channels);
+    return channel;
+}
+
+char * get_channel_name(const char *fname)
+{
+    char * cname_reg = get_channel_name_regexp(fname);
+    if(cname_reg != NULL)
+    {
+        return cname_reg;
+    }
+
+    char * cname_alias = get_channel_name_alias(fname);
+    if(cname_alias != NULL)
+    {
+        return cname_alias;
+    }
+
+    return NULL;
 }
 
 gboolean add_channel(char * alias, char * name, float emission, int iter)
@@ -622,7 +674,7 @@ save_scopes_cb (GtkWidget *widget,
 {
     UNUSED(widget);
     UNUSED(user_data);
-    // Save list of channels to ini file.
+    // Save list of microscopes to ini file.
 
     // First, figure out where:
     char * cfile = get_configuration_file("microscopes");
@@ -852,10 +904,7 @@ drag_data_cb(GtkWidget *wgt, GdkDragContext *context, int x, int y,
 
         if(file != NULL)
         {
-
-
                 file_tree_append_dnd_file(file);
-
         }
         while( file != NULL)
         {

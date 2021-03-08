@@ -35,6 +35,9 @@ void file_tree_append_dnd_file(const char * file);
 void file_tree_append(const char * fname);
 
 // Parse the name of a channel from a file
+// First tries to use the regular expression
+// If that does not work, compare to the aliases
+// of the configured channels
 char * get_channel_name(const char *);
 
 // Remove selected items from the treeviews:
