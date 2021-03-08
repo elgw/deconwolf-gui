@@ -7,6 +7,7 @@ DwConf * dw_conf_new()
     conf->nthreads = 4;
     conf->tilesize = 3000;
     conf->outformat = DW_CONF_OUTFORMAT_UINT16;
+    conf->border_quality = DW_CONF_BORDER_QUALITY_BEST;
     return conf;
 }
 
@@ -85,6 +86,7 @@ DwConf * dw_conf_new_from_file(char * file)
         conf->overwrite = overwrite;
     }
 
+    // Parse output format
     gint outformat =  g_key_file_get_boolean(key_file, group, "outformat", &error);
     if( error != NULL )
     {
@@ -95,19 +97,38 @@ DwConf * dw_conf_new_from_file(char * file)
         conf->outformat = outformat;
     }
 
+    // Parse border quality
+    gint bq =  g_key_file_get_boolean(key_file, group, "border_quality", &error);
+    if( error != NULL )
+    {
+        g_clear_error(&error);
+    }
+    else
+    {
+        conf->border_quality = bq;
+    }
+
+    // Free up
     g_strfreev(groups);
     g_key_file_free(key_file);
     return conf;
 }
+
 void dw_conf_save_to_file(DwConf * conf, char * file)
 {
     GKeyFile * key_file = g_key_file_new();
     GError * error = NULL;
 
-    g_key_file_set_integer(key_file, "deconwolf", "nthreads", conf->nthreads);
-    g_key_file_set_integer(key_file, "deconwolf", "tilesize", conf->tilesize);
-    g_key_file_set_boolean(key_file, "deconwolf", "overwrite", conf->overwrite);
-    g_key_file_set_integer(key_file, "deconwolf", "outformat", conf->outformat);
+    g_key_file_set_integer(key_file, "deconwolf",
+                           "nthreads", conf->nthreads);
+    g_key_file_set_integer(key_file, "deconwolf",
+                           "tilesize", conf->tilesize);
+    g_key_file_set_boolean(key_file, "deconwolf",
+                           "overwrite", conf->overwrite);
+    g_key_file_set_integer(key_file, "deconwolf",
+                           "outformat", conf->outformat);
+    g_key_file_set_integer(key_file, "deconwolf",
+                           "border_quality", conf->border_quality);
 
     if (!g_key_file_save_to_file (key_file, file, &error))
     {

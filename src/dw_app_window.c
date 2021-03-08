@@ -25,6 +25,10 @@ typedef struct {
     gboolean has_dw;
     char * default_open_uri; // Where to open files
     char * regexp_channel; // Regular expression to identify channels
+
+    GtkToggleButton* bq_best;
+    GtkToggleButton* bq_good;
+    GtkToggleButton* bq_bad;
 } GlobConf;
 
 GlobConf config;
@@ -79,6 +83,18 @@ DwConf * parse_dw_conf()
     {
         conf->outformat = DW_CONF_OUTFORMAT_FLOAT32;
     }
+
+    if(gtk_toggle_button_get_active(config.bq_best)){
+        conf->border_quality = DW_CONF_BORDER_QUALITY_BEST;
+    }
+    if(gtk_toggle_button_get_active(config.bq_good)){
+        conf->border_quality = DW_CONF_BORDER_QUALITY_GOOD;
+    }
+    if(gtk_toggle_button_get_active(config.bq_bad)){
+        conf->border_quality = DW_CONF_BORDER_QUALITY_BAD;
+    }
+
+
     return conf;
 }
 
@@ -150,6 +166,33 @@ GtkWidget * create_deconwolf_frame()
         gtk_toggle_button_set_active( (GtkToggleButton*) out_float32, TRUE);
     }
 
+    GtkWidget * lBorder = gtk_label_new("Border quality");
+    GtkWidget * bq_best = gtk_radio_button_new_with_label(NULL, "Best (Default)");
+    GtkWidget * bq_good = gtk_radio_button_new_with_label(NULL, "Good");
+    GtkWidget * bq_bad = gtk_radio_button_new_with_label(NULL, "Bad (fastest)");
+    config.bq_best = (GtkToggleButton*) bq_best;
+    config.bq_good = (GtkToggleButton*) bq_good;
+    config.bq_bad = (GtkToggleButton*) bq_bad;
+
+    gtk_radio_button_join_group(
+        (GtkRadioButton*) bq_best,
+        (GtkRadioButton*) bq_good);
+    gtk_radio_button_join_group(
+        (GtkRadioButton*) bq_bad,
+        (GtkRadioButton*) bq_good);
+    switch(dwconf->border_quality)
+    {
+    case DW_CONF_BORDER_QUALITY_BEST:
+        gtk_toggle_button_set_active( (GtkToggleButton*) bq_best, TRUE);
+        break;
+    case DW_CONF_BORDER_QUALITY_GOOD:
+        gtk_toggle_button_set_active( (GtkToggleButton*) bq_good, TRUE);
+        break;
+    case DW_CONF_BORDER_QUALITY_BAD:
+        gtk_toggle_button_set_active( (GtkToggleButton*) bq_bad, TRUE);
+        break;
+    }
+
     GtkWidget * grid = gtk_grid_new();
     gtk_grid_set_row_spacing ((GtkGrid*) grid , 5);
     gtk_grid_set_column_spacing ((GtkGrid*) grid , 5);
@@ -160,9 +203,15 @@ GtkWidget * create_deconwolf_frame()
     gtk_grid_attach((GtkGrid*) grid, vOverwrite, 2, 3, 1, 1);
     gtk_grid_attach((GtkGrid*) grid, lTile, 1, 5, 1, 2);
     gtk_grid_attach((GtkGrid*) grid, vTile, 2, 5, 2, 2);
-    gtk_grid_attach((GtkGrid*) grid, lFormat, 1, 8, 1, 2);
-    gtk_grid_attach((GtkGrid*) grid, out_uint16, 2, 8, 2, 1);
-    gtk_grid_attach((GtkGrid*) grid, out_float32, 2, 9, 2, 1);
+    // Output format
+    gtk_grid_attach((GtkGrid*) grid, lFormat, 1, 9, 1, 2);
+    gtk_grid_attach((GtkGrid*) grid, out_uint16, 2, 9, 2, 1);
+    gtk_grid_attach((GtkGrid*) grid, out_float32, 2, 10, 2, 1);
+    // Border quality
+    gtk_grid_attach((GtkGrid*) grid, lBorder, 1, 12, 1, 3);
+    gtk_grid_attach((GtkGrid*) grid, bq_best, 2, 12, 1, 1);
+    gtk_grid_attach((GtkGrid*) grid, bq_good, 2, 13, 1, 1);
+    gtk_grid_attach((GtkGrid*) grid, bq_bad, 2, 14, 1, 1);
 
     gtk_widget_set_halign((GtkWidget*) grid, GTK_ALIGN_CENTER);
     gtk_widget_set_valign((GtkWidget*) grid, GTK_ALIGN_CENTER);
@@ -1143,6 +1192,19 @@ void update_cmd()
     if(dwconf->outformat == DW_CONF_OUTFORMAT_FLOAT32)
     {
         sprintf(fstring, " --float");
+    }
+
+    switch(dwconf->border_quality)
+    {
+    case DW_CONF_BORDER_QUALITY_BAD:
+        sprintf(fstring, " --bq 0");
+        break;
+    case DW_CONF_BORDER_QUALITY_GOOD:
+        sprintf(fstring, " --bq 1");
+        break;
+    case DW_CONF_BORDER_QUALITY_BEST:
+        sprintf(fstring, " --bq 2");
+        break;
     }
 
     /* Generate the list of commands to run */
