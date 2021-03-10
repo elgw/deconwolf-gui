@@ -971,14 +971,24 @@ void runscript(const char * name_in)
     char * name = malloc(strlen(name_in) + 3);
     sprintf(name, "'%s'", name_in);
 
+    printf("Trying to run ->%s<-\n", name);
+
+    GError *err = NULL;
     appinfo = g_app_info_create_from_commandline(name,
                                                  NULL,
                                                  G_APP_INFO_CREATE_NEEDS_TERMINAL,
-                                                 NULL);
+                                                 &err);
+    if(err != NULL)
+    {
+        fprintf(stderr, "Unable to run %s. Error: %s\n", name, err->message);
+        goto done;
+    }
+
     g_assert(appinfo != NULL); // TODO error handling is not implemented.
 
     ret = g_app_info_launch(appinfo, NULL, NULL, NULL);
     g_assert(ret == TRUE); // TODO error handling is not implemented.
+ done:
     free(name);
 }
 
