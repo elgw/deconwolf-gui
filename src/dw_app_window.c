@@ -968,11 +968,12 @@ void runscript(const char * name_in)
     gboolean ret = FALSE;
 
     // 'quote' the name
-    char * name = malloc(strlen(name_in) + 3);
-    sprintf(name, "'%s'", name_in);
+    //    char * name = malloc(strlen(name_in) + 3);
+    //    sprintf(name, "'%s'", name_in);
+
+    gchar * name = g_shell_quote(name_in);
 
     printf("Trying to run ->%s<-\n", name);
-
     GError *err = NULL;
     appinfo = g_app_info_create_from_commandline(name, // command line
                                                  NULL, // To use command line
@@ -981,19 +982,35 @@ void runscript(const char * name_in)
     if(err != NULL)
     {
         fprintf(stderr, "Unable to run %s. Error: %s\n", name, err->message);
-        goto done;
+        goto exit1;
     }
 
     if(appinfo == NULL)
     {
         fprintf(stderr, "g_app_info_create_from_commandline returned NULL, unable to launch dw\n");
-        goto done;
+        goto exit1;
     }
 
-    ret = g_app_info_launch(appinfo, NULL, NULL, NULL);
-    g_assert(ret == TRUE); // TODO error handling is not implemented.
- done:
-    free(name);
+    ret = g_app_info_launch(appinfo,
+                            NULL,
+                            NULL,
+                            &err);
+
+    if(ret == FALSE)
+    {
+        fprintf(stderr, "g_app_info_launch returned FALSE\n");
+    }
+    if(err != NULL)
+    {
+        fprintf(stderr, "g_app_info_launch failed. Error: %s\n", err->message);
+        goto exit2;
+    }
+
+ exit2:
+    g_object_unref (appinfo);
+
+ exit1:
+    g_free(name);
 }
 
 
