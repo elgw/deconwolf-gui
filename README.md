@@ -19,7 +19,7 @@ Once it is built, the gui can be launched by `./dw_gui` To install it system wid
 ``` shell
 sudo make install_linux
 # to remove
-# sudo make uninstall
+# sudo make uninstall_linux
 ```
 
 or, if you prefer to install it as a package:
