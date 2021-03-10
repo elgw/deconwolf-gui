@@ -962,6 +962,20 @@ dw_app_window_class_init (DwAppWindowClass *class)
 }
 
 
+#ifdef __APPLE__
+
+void runscript(const char * name_in)
+{
+    gchar * name = g_shell_quote(name_in);
+
+    char * cmd = malloc(strlen(name) + 100);
+    sprintf(cmd, "open -a terminal.app %s", name);
+    int ret = system("open -a terminal.app /path/to/script");
+    printf("Return value from system(): %d\n");
+    g_free(name);
+}
+
+#else
 void runscript(const char * name_in)
 {
     GAppInfo *appinfo = NULL;
@@ -973,6 +987,7 @@ void runscript(const char * name_in)
 
     printf("Trying to run ->%s<-\n", name);
     GError *err = NULL;
+    // TODO: appinfo always returns NULL on osx
     appinfo = g_app_info_create_from_commandline(name, // command line
                                                  NULL, // To use command line
                                                  G_APP_INFO_CREATE_NEEDS_TERMINAL,
@@ -1011,7 +1026,7 @@ void runscript(const char * name_in)
  exit1:
     g_free(name);
 }
-
+#endif
 
 gboolean save_cmd(GtkWindow * parent_window, char ** savename)
 /* Save the command-queue to disk. Returns true on success and sets savename
