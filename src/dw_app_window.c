@@ -1277,7 +1277,7 @@ void update_cmd()
         if(ch != NULL)
         {
             gchar * fdir = g_path_get_dirname(files[kk]->name);
-            fdir = dirname(fdir);
+            //fdir = dirname(fdir);
             char * psf = get_psfname(fdir, files[kk]->channel);
             sprintf(buff, "mkdir '%s/PSFBW/'\n", fdir);
             gtk_text_buffer_insert(buffer, &titer, buff, -1);
