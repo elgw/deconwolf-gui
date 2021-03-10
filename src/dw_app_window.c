@@ -448,7 +448,7 @@ char * get_channel_name_alias(const char * fname0)
     }
 
     char * fname = strdup(fname0);
-    for(int kk = 0; kk<strlen(fname); kk++)
+    for(size_t kk = 0; kk<strlen(fname); kk++)
     {
         fname[kk] = toupper(fname[kk]);
     }
@@ -459,11 +459,20 @@ char * get_channel_name_alias(const char * fname0)
     DwChannel ** channelsp = channels;
     for( ; *channelsp && channel == NULL; channelsp++)
     {
-        if(strstr(fname, channelsp[0]->alias) != NULL)
+        char * ualias = strdup(channelsp[0]->alias);
+        for(size_t kk = 0; kk<strlen(ualias); kk++)
         {
-            printf("Matches %s\n", channelsp[0]->alias);
-            channel = strdup(channelsp[0]->alias);
+            ualias[kk] = toupper(ualias[kk]);
         }
+        if(strstr(fname, ualias) != NULL)
+        {
+
+            // printf("Matches %s\n", ualias);
+            channel = strdup(channelsp[0]->alias);
+        } else {
+            // printf("%s != %s\n", fname, ualias );
+        }
+        free(ualias);
 
     }
 
