@@ -1790,7 +1790,13 @@ GtkWidget * create_drop_frame()
     g_signal_connect(frame_drop, "drag_data_received",
                      G_CALLBACK(drag_data_cb), NULL);
 
+#ifdef __APPLE__
+    GtkWidget * label = gtk_label_new(" ! "
+    "Drag and Drop does currently not work on OSX,"
+    " please add files from the 'Files' tab.");
+#else
     GtkWidget * label = gtk_label_new("Drag and Drop images here");
+#endif
     gtk_widget_set_halign((GtkWidget* ) label, GTK_ALIGN_CENTER);
     gtk_widget_set_valign((GtkWidget* ) label, GTK_ALIGN_CENTER);
     gtk_widget_show(label);
