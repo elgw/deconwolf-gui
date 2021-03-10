@@ -1763,6 +1763,21 @@ void populate_microscopes()
     return;
 }
 
+static void
+drag_motion_cb (GtkWidget *widget,
+             GdkDragContext *context,
+             gint x,
+             gint y,
+             guint time)
+{
+    GList * targets =
+        gdk_drag_context_list_targets(context);
+    if(targets == NULL)
+        printf("Targets == NULL\n");
+
+    printf("Drag motion\n");
+}
+
 GtkWidget * create_drop_frame()
 {
 
@@ -1789,11 +1804,13 @@ GtkWidget * create_drop_frame()
                       GDK_ACTION_COPY | GDK_ACTION_MOVE | GDK_ACTION_LINK);
     g_signal_connect(frame_drop, "drag_data_received",
                      G_CALLBACK(drag_data_cb), NULL);
+    g_signal_connect(frame_drop, "drag-motion",
+                     G_CALLBACK(drag_motion_cb), NULL);
 
 #ifdef __APPLE__
-    GtkWidget * label = gtk_label_new(" ! "
-    "Drag and Drop does currently not work on OSX,"
-    " please add files from the 'Files' tab.");
+    GtkWidget * label = gtk_label_new("Drag and Drop"
+    "does not work on OSX at the moment.\n"
+    "Please add files from the 'Files' tab.");
 #else
     GtkWidget * label = gtk_label_new("Drag and Drop images here");
 #endif
