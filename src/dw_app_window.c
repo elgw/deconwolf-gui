@@ -967,10 +967,8 @@ void runscript(const char * name_in)
     GAppInfo *appinfo = NULL;
     gboolean ret = FALSE;
 
-    // 'quote' the name
-    //    char * name = malloc(strlen(name_in) + 3);
-    //    sprintf(name, "'%s'", name_in);
-
+    // Quote the command to run,
+    // it might contain white spaces
     gchar * name = g_shell_quote(name_in);
 
     printf("Trying to run ->%s<-\n", name);
@@ -1000,6 +998,7 @@ void runscript(const char * name_in)
     {
         fprintf(stderr, "g_app_info_launch returned FALSE\n");
     }
+
     if(err != NULL)
     {
         fprintf(stderr, "g_app_info_launch failed. Error: %s\n", err->message);
@@ -1104,7 +1103,7 @@ gboolean save_dw_cb(GtkWidget * widget, gpointer user_data)
                 g_error_free (err);
 
             } else {
-                int chmod_ok = g_chmod(filename, S_IXUSR | S_IWUSR | S_IRUSR );
+                int chmod_ok = g_chmod(filename, S_IXUSR | S_IRGRP | S_IXGRP );
                 g_assert(chmod_ok == 0);
             }
         }

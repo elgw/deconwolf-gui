@@ -17,7 +17,7 @@ make
 Once it is built, the gui can be launched by `./dw_gui` To install it system wide so that it is accessible from gnome, perform:
 
 ``` shell
-sudo make install
+sudo make install_linux
 # to remove
 # sudo make uninstall
 ```
@@ -50,6 +50,8 @@ or
 ``` shell
 make -B
 ```
+
+There is currently no direct way to install it on the system, i.e., `dw_gui` has to be launched from its folder.
 
 ## Usage notes:
  - Usage should be quite straight forward:

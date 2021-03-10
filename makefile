@@ -37,12 +37,12 @@ clean:
 	rm dw_gui
 	rm resources.c
 
-install:
+install_linux:
 	cp dw_gui /usr/local/bin
-	cp resources/deconwolf.desktop /usr/share/applications
+	cp resources/deconwolf.desktop /usr/share/applications/
 	cp resources/deconwolf.png /usr/share/icons/hicolor/48x48/apps/
 
-uninstall:
+uninstall_linux:
 	rm /usr/local/bin/dw_gui
 	rm /usr/share/applications/deconwolf.desktop
 	rm /usr/share/icons/hicolor/48x48/apps/deconwolf.png
