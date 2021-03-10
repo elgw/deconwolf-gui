@@ -1276,7 +1276,7 @@ void update_cmd()
         DwChannel * ch = dw_channels_get_by_alias(channels, files[kk]->channel);
         if(ch != NULL)
         {
-            char * fdir = strdup(files[kk]->name);
+            gchar * fdir = g_path_get_dirname(files[kk]->name);
             fdir = dirname(fdir);
             char * psf = get_psfname(fdir, files[kk]->channel);
             sprintf(buff, "mkdir '%s/PSFBW/'\n", fdir);
@@ -1294,7 +1294,8 @@ void update_cmd()
                     files[kk]->name, psf);
             gtk_text_buffer_insert(buffer, &titer, buff, -1);
 
-            free(fdir);
+            //free(fdir);
+            g_free(fdir);
             free(psf);
         } else {
             sprintf(buff, "# Missing channel for: %s\n", files[kk]->name);
