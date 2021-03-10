@@ -354,7 +354,7 @@ GtkWidget * create_file_frame()
          { "text/uri-list", 0, TARGET_URL },
         };
     gtk_drag_dest_set(file_frame, GTK_DEST_DEFAULT_ALL, targetentries, 3,
-                      GDK_ACTION_COPY | GDK_ACTION_MOVE | GDK_ACTION_LINK);
+                      GDK_ACTION_COPY );
     g_signal_connect(file_frame, "drag_data_received",
                      G_CALLBACK(drag_data_cb), NULL);
 
@@ -1801,7 +1801,7 @@ GtkWidget * create_drop_frame()
         };
 
     gtk_drag_dest_set(frame_drop, GTK_DEST_DEFAULT_ALL, targetentries, 3,
-                      GDK_ACTION_COPY | GDK_ACTION_MOVE | GDK_ACTION_LINK);
+                      GDK_ACTION_COPY);
     g_signal_connect(frame_drop, "drag_data_received",
                      G_CALLBACK(drag_data_cb), NULL);
     //g_signal_connect(frame_drop, "drag-motion",
