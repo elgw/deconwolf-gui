@@ -974,8 +974,8 @@ void runscript(const char * name_in)
     printf("Trying to run ->%s<-\n", name);
 
     GError *err = NULL;
-    appinfo = g_app_info_create_from_commandline(name,
-                                                 NULL,
+    appinfo = g_app_info_create_from_commandline(name, // command line
+                                                 NULL, // To use command line
                                                  G_APP_INFO_CREATE_NEEDS_TERMINAL,
                                                  &err);
     if(err != NULL)
@@ -984,7 +984,11 @@ void runscript(const char * name_in)
         goto done;
     }
 
-    g_assert(appinfo != NULL); // TODO error handling is not implemented.
+    if(appinfo == NULL)
+    {
+        fprintf(stderr, "g_app_info_create_from_commandline returned NULL, unable to launch dw\n");
+        goto done;
+    }
 
     ret = g_app_info_launch(appinfo, NULL, NULL, NULL);
     g_assert(ret == TRUE); // TODO error handling is not implemented.
