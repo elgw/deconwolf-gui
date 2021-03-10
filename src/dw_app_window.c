@@ -970,8 +970,8 @@ void runscript(const char * name_in)
 
     char * cmd = malloc(strlen(name) + 100);
     sprintf(cmd, "open -a terminal.app %s", name);
-    int ret = system("open -a terminal.app /path/to/script");
-    printf("Return value from system(): %d\n");
+    int ret = system(cmd);
+    printf("Return value from system(): %d\n", ret);
     g_free(name);
 }
 
