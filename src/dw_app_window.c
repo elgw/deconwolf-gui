@@ -985,7 +985,7 @@ void runscript(const char * name_in)
     // it might contain white spaces
     gchar * name = g_shell_quote(name_in);
 
-    printf("Trying to run ->%s<-\n", name);
+    //printf("Trying to run ->%s<-\n", name);
     GError *err = NULL;
     // TODO: appinfo always returns NULL on osx
     appinfo = g_app_info_create_from_commandline(name, // command line
@@ -1175,7 +1175,7 @@ gboolean run_dw_cb(GtkWidget * widget, gpointer user_data)
 
 
         // Run it
-        printf("To run: %s\n", filename);
+        //printf("To run: %s\n", filename);
         runscript(filename);
         free(filename);
     }
