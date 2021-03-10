@@ -1804,8 +1804,8 @@ GtkWidget * create_drop_frame()
                       GDK_ACTION_COPY | GDK_ACTION_MOVE | GDK_ACTION_LINK);
     g_signal_connect(frame_drop, "drag_data_received",
                      G_CALLBACK(drag_data_cb), NULL);
-    g_signal_connect(frame_drop, "drag-motion",
-                     G_CALLBACK(drag_motion_cb), NULL);
+    //g_signal_connect(frame_drop, "drag-motion",
+    //                 G_CALLBACK(drag_motion_cb), NULL);
 
 #ifdef __APPLE__
     GtkWidget * label = gtk_label_new("Drag and Drop"
