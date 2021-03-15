@@ -49,10 +49,22 @@ Interactive debugging with gtk
 GTK_DEBUG=interactive ./dw_gui
 ```
 
-Real debuggin
+Debug on linux
 ``` shell
 make DEBUG=1 -B
 G_DEBUG=fatal_warnings ./dw_gui
 coredumpctl gdb -1
 # then bt or whatever
+```
+
+Debug on mac
+
+``` shell
+make DEBUG=1 -B
+lldb ./dw_gui
+# in lldb, set up break points ...
+b malloc_error_break
+run
+# and if it crashes
+bf
 ```

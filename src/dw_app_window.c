@@ -1248,6 +1248,7 @@ void update_cmd()
     DwChannel ** channels = dw_channels_get_from_gtk_tree_view((GtkTreeView*) config.channel_tree);
     DwFile ** files = dw_files_get_from_gtk_tree_view((GtkTreeView*) config.file_tree);
     DwConf * dwconf = parse_dw_conf();
+    //printf("dwconf->outformat %d\n", dwconf->outformat);
 
     // Update the suggested folder to save the script to
     if(config.savefolder != NULL)
@@ -1300,13 +1301,13 @@ void update_cmd()
     switch(dwconf->border_quality)
     {
     case DW_CONF_BORDER_QUALITY_BAD:
-        sprintf(fstring, " --bq 0");
+        sprintf(fstring + strlen(fstring), " --bq 0");
         break;
     case DW_CONF_BORDER_QUALITY_GOOD:
-        sprintf(fstring, " --bq 1");
+        sprintf(fstring + strlen(fstring), " --bq 1");
         break;
     case DW_CONF_BORDER_QUALITY_BEST:
-        sprintf(fstring, " --bq 2");
+        sprintf(fstring + strlen(fstring), " --bq 2");
         break;
     }
 
