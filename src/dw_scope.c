@@ -6,16 +6,21 @@ void dw_scope_free(DwScope * scope)
         return;
 
     if(scope->name != NULL)
+    {
         free(scope->name);
+    }
+    if(scope->flatfield_image != NULL)
+    {
+        free(scope->flatfield_image);
+    }
     free(scope);
 }
 
 DwScope * dw_scope_get_from_model(GtkTreeModel * model, GtkTreeIter * iter)
 {
-    DwScope * scope = malloc(sizeof(DwScope));
-    scope->name = NULL;
+    DwScope * scope = dw_scope_new();
 
-    gchar *name;
+    gchar *name, *flatfield_image;
     gfloat NA, ni, xy_nm, z_nm;
 
     // Make sure you terminate calls to gtk_tree_model_get() with a “-1” value
@@ -25,6 +30,7 @@ DwScope * dw_scope_get_from_model(GtkTreeModel * model, GtkTreeIter * iter)
                         sNI_COLUMN, &ni,
                         sDX_COLUMN, &xy_nm,
                         sDZ_COLUMN, &z_nm,
+                        sFF_COLUMN, &flatfield_image,
                         -1);
 
     scope->name = strdup(name);
@@ -33,17 +39,14 @@ DwScope * dw_scope_get_from_model(GtkTreeModel * model, GtkTreeIter * iter)
     scope->ni = ni;
     scope->xy_nm = xy_nm;
     scope->z_nm = z_nm;
+    scope->flatfield_image = flatfield_image;
     return scope;
 }
 
 
 DwScope ** dw_scopes_get_from_gtk_tree_view(GtkTreeView * tv)
 {
-    // Get a list of all the channels.
-    // 1, Count the number of channels
-    // 2, Allocate the list
-    // 3, Populate the list
-    // Get Model
+    // Get a NULL-terminted list of all the scopes in the GtkTreeView
 
     GtkTreeModel * model = gtk_tree_view_get_model (tv);
 
@@ -57,7 +60,6 @@ DwScope ** dw_scopes_get_from_gtk_tree_view(GtkTreeView * tv)
     // Figure out how many rows there are
     gint nscopes = gtk_tree_model_iter_n_children(GTK_TREE_MODEL(model), NULL);
 
-    //printf("There are %d channels\n", nchan); fflush(stdout);
     if(nscopes < 1)
     {
         return NULL;
@@ -66,7 +68,7 @@ DwScope ** dw_scopes_get_from_gtk_tree_view(GtkTreeView * tv)
     DwScope ** slist = malloc( (nscopes+1) * sizeof(DwScope*));
     slist[nscopes] = NULL; // A null terminates the list
 
-    // Get all files and add to list.
+    // Get all scopes and add to the list
     gint pos = 0;
     while (valid)
     {
@@ -110,6 +112,11 @@ void dw_scope_to_key_file(DwScope * scope, GKeyFile * kf)
     g_key_file_set_double(kf, name, "ni", (double) scope->ni);
     g_key_file_set_double(kf, name, "DX_NM", (double) scope->xy_nm);
     g_key_file_set_double(kf, name, "DZ_NM", (double) scope->z_nm);
+    if(scope->flatfield_image != NULL)
+    {
+        g_key_file_set_string(kf, name, "flatfield_image", scope->flatfield_image);
+    }
+
     return;
 }
 
@@ -160,6 +167,7 @@ DwScope * dw_scope_new()
     scope->ni=0;
     scope->xy_nm=0;
     scope->z_nm = 0;
+    scope->flatfield_image = NULL;
     return scope;
 }
 
@@ -207,6 +215,9 @@ DwScope ** dw_scopes_from_disk(char * fname)
      scope->xy_nm = dx;
      gdouble dz = g_key_file_get_double(key_file, group, "DZ_NM", &error);
      scope->z_nm = dz;
+     gchar * flatfield_image = g_key_file_get_string(key_file, group,
+                                                     "flatfield_image", &error);
+     scope->flatfield_image = flatfield_image;
 
  }
  g_assert(scopes[length] == NULL);
@@ -257,6 +268,8 @@ dw_scope_edit_dlg(GtkWindow *parent, DwScope * old_scope)
  GtkWidget * edx = gtk_entry_new();
  GtkWidget * ldz = gtk_label_new("Distance between planes, dz [nm]");
  GtkWidget * edz = gtk_entry_new();
+ GtkWidget * lff = gtk_label_new("Flat Field image");
+ GtkWidget * eff = gtk_entry_new();
 
  if(old_scope != NULL)
  {
@@ -270,7 +283,13 @@ dw_scope_edit_dlg(GtkWindow *parent, DwScope * old_scope)
      gtk_entry_set_text((GtkEntry*) edx, buff);
      sprintf(buff, "%f", old_scope->z_nm);
      gtk_entry_set_text((GtkEntry*) edz, buff);
+     if(old_scope->flatfield_image != NULL)
+     {
+         sprintf(buff, "%s", old_scope->flatfield_image);
+         gtk_entry_set_text((GtkEntry*) eff, buff);
+     }
      free(buff);
+
  }
 
 GtkWidget * grid = gtk_grid_new();
@@ -287,6 +306,9 @@ gtk_grid_attach((GtkGrid*) grid, ldx, 1, 4, 1, 1);
 gtk_grid_attach((GtkGrid*) grid, edx, 2, 4, 1, 1);
 gtk_grid_attach((GtkGrid*) grid, ldz, 1, 5, 1, 1);
 gtk_grid_attach((GtkGrid*) grid, edz, 2, 5, 1, 1);
+gtk_grid_attach((GtkGrid*) grid, lff, 1, 6, 1, 1);
+gtk_grid_attach((GtkGrid*) grid, eff, 2, 6, 1, 1);
+
 
 GtkWidget * hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
 GtkWidget * im = gtk_image_new_from_resource("/images/Compound_Microscope_(cropped).jpeg");
@@ -317,6 +339,11 @@ gtk_widget_set_valign((GtkWidget*) hbox, GTK_ALIGN_CENTER);
      scope->ni = atof(gtk_entry_get_text((GtkEntry*) eni));
      scope->xy_nm = atof(gtk_entry_get_text((GtkEntry*) edx));
      scope->z_nm = atof(gtk_entry_get_text((GtkEntry*) edz));
+     if(scope ->flatfield_image != NULL)
+     {
+         free(scope->flatfield_image);
+     }
+     scope->flatfield_image = strdup(gtk_entry_get_text((GtkEntry*) eff));
      break;
  default:
      // do_nothing_since_dialog_was_cancelled ();
@@ -336,6 +363,7 @@ void dw_scope_to_gtk_tree_store(DwScope * scope, GtkTreeStore* model, GtkTreeIte
                        sNI_COLUMN, scope->ni,
                        sDX_COLUMN, scope->xy_nm,
                        sDZ_COLUMN, scope->z_nm,
+                       sFF_COLUMN, scope->flatfield_image,
                        -1);
     return;
 }

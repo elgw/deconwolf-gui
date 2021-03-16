@@ -11,6 +11,7 @@ typedef struct {
     float ni;
     float xy_nm;
     float z_nm;
+    char * flatfield_image;
 } DwScope;
 
 // Columns for the scopes
@@ -21,7 +22,8 @@ enum
     sNI_COLUMN,
     sDX_COLUMN,
     sDZ_COLUMN,
-    sSN_COLUMNS
+    sFF_COLUMN,
+    sSN_COLUMNS, // Number of columns, keep last
 };
 
 DwScope * dw_scope_new();

@@ -642,9 +642,20 @@ GtkWidget * create_channel_tree()
 
 
 
-gboolean add_scope(char * name, float na, float ni, float dx, float dz)
+gboolean add_scope(char * name, float na, float ni, float dx, float dz, char * ff)
 /* Add another microscope to the list of microscopes */
 {
+
+    // Flat field file
+    char * fff = NULL;
+    if(ff == NULL)
+    {
+        fff = malloc(5);
+        fff[0] = '\0';
+    } else {
+        fff = strdup(ff);
+    }
+
     GtkTreeStore * scope_store = (GtkTreeStore*) gtk_tree_view_get_model((GtkTreeView*) config.scope_tree);
     GtkTreeIter iter1;  /* Parent iter */
     gtk_tree_store_append (scope_store, &iter1, NULL);  /* Acquire a top-level iterator */
@@ -654,7 +665,9 @@ gboolean add_scope(char * name, float na, float ni, float dx, float dz)
                         sNI_COLUMN, ni,
                         sDX_COLUMN, dx,
                         sDZ_COLUMN, dz,
+                        sFF_COLUMN, fff,
                         -1);
+    free(fff);
     return TRUE;
 }
 
@@ -670,7 +683,12 @@ new_scope_cb (GtkWidget *widget,
     DwScope * scope = dw_scope_edit_dlg((GtkWindow*) config.window, NULL);
     if(scope != NULL)
     {
-        add_scope(scope->name, scope->NA, scope->ni, scope->xy_nm, scope->z_nm);
+        add_scope(scope->name,
+                  scope->NA,
+                  scope->ni,
+                  scope->xy_nm,
+                  scope->z_nm,
+                  scope->flatfield_image);
         free(scope);
     }
 
@@ -702,7 +720,8 @@ GtkWidget * create_microscope_tab()
                                                      G_TYPE_FLOAT,// na
                                                      G_TYPE_FLOAT, // ni
                                                      G_TYPE_FLOAT, // dx
-                                                     G_TYPE_FLOAT); // dz
+                                                     G_TYPE_FLOAT, // dz
+                                                     G_TYPE_STRING);
 
     GtkWidget * scope_tree = gtk_tree_view_new_with_model (GTK_TREE_MODEL (scope_store));
     //    gtk_tree_view_set_fixed_height_mode(GTK_TREE_VIEW (scope_tree), TRUE);
@@ -754,6 +773,15 @@ GtkWidget * create_microscope_tab()
     gtk_tree_view_column_set_sort_column_id(column, sDZ_COLUMN);
     gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
     gtk_tree_view_append_column (GTK_TREE_VIEW (scope_tree), column);
+
+    column = gtk_tree_view_column_new_with_attributes ("Flat Field Image",
+                                                       renderer,
+                                                       "text", sFF_COLUMN,
+                                                       NULL);
+    gtk_tree_view_column_set_sort_column_id(column, sFF_COLUMN);
+    gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
+    gtk_tree_view_append_column (GTK_TREE_VIEW (scope_tree), column);
+
 
     GtkWidget * btnNew = gtk_button_new_from_icon_name("list-add",
                                                        GTK_ICON_SIZE_SMALL_TOOLBAR);
@@ -1435,7 +1463,7 @@ void edit_selected_scope()
     if(gtk_tree_selection_get_selected (selection, &model, &iter))
     {
         // Get what we need from the mode
-        gchar * sname;
+        gchar * sname, *flatfield_image;
         gfloat sNA;
         gfloat sNI;
         gfloat sDX;
@@ -1447,6 +1475,7 @@ void edit_selected_scope()
                            sNI_COLUMN, &sNI,
                            sDX_COLUMN, &sDX,
                            sDZ_COLUMN, &sDZ,
+                           sFF_COLUMN, &flatfield_image,
                            -1);
         DwScope * current_scope = malloc(sizeof(DwScope));
         current_scope->name = strdup(sname);
@@ -1454,6 +1483,7 @@ void edit_selected_scope()
         current_scope->ni = sNI;
         current_scope->xy_nm = sDX;
         current_scope->z_nm = sDZ;
+        current_scope->flatfield_image = flatfield_image;
         DwScope * scope = dw_scope_edit_dlg((GtkWindow*) config.window, current_scope);
         if(scope != NULL)
         {
@@ -1751,15 +1781,20 @@ void populate_microscopes()
         while(scopes[pos] != NULL)
         {
             DwScope * scope = scopes[pos++];
-            add_scope(scope->name, scope->NA, scope->ni, scope->xy_nm, scope->z_nm);
+            add_scope(scope->name,
+                      scope->NA,
+                      scope->ni,
+                      scope->xy_nm,
+                      scope->z_nm,
+                      scope->flatfield_image);
         }
         dw_scopes_free(scopes);
     }
     else
     {
-        add_scope("Bicroscope-1, 100X", 1.45, 1.515, 130, 250);
-        add_scope("Bicroscope-1, 60X", 1.40, 1.515, 216, 350);
-        add_scope("Bicroscope-2, 100X", 1.40, 1.515, 65, 250);
+        add_scope("Bicroscope-1, 100X", 1.45, 1.515, 130, 250, NULL);
+        add_scope("Bicroscope-1, 60X", 1.40, 1.515, 216, 350, NULL);
+        add_scope("Bicroscope-2, 100X", 1.40, 1.515, 65, 250, NULL);
     }
     return;
 }
