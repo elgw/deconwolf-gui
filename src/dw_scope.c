@@ -215,14 +215,23 @@ DwScope ** dw_scopes_from_disk(char * fname)
      scope->xy_nm = dx;
      gdouble dz = g_key_file_get_double(key_file, group, "DZ_NM", &error);
      scope->z_nm = dz;
+
+     g_clear_error(&error);
+
      gchar * flatfield_image = g_key_file_get_string(key_file, group,
                                                      "flatfield_image", &error);
-     scope->flatfield_image = flatfield_image;
+     if(error == NULL)
+     {
+         scope->flatfield_image = flatfield_image;
+     } else {
+         g_clear_error(&error);
+     }
 
  }
  g_assert(scopes[length] == NULL);
  g_strfreev(groups);
  g_key_file_free(key_file);
+ g_clear_error(&error);
  return scopes;
 }
 

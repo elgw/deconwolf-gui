@@ -436,6 +436,27 @@ char * get_channel_name_regexp(const char *fname0)
     return ret;
 }
 
+int strrstr(const char * haystack, const char * needle)
+{
+    // Return the last position where needle is found in haystack or -1 if
+    // if not found
+    int pos = -1;
+    char * ptr = strstr(haystack, needle);
+    while( ptr != NULL )
+    {
+        //printf("pos: %d, Needle: %s, haystack: %s (%s)\n", pos, needle, haystack, ptr);
+        pos = (int) (ptr - haystack);
+        if(strlen(ptr) > 1)
+        {
+            ptr = strstr(ptr+1, needle);
+        } else {
+            ptr = NULL;
+        }
+    }
+
+    return pos;
+}
+
 char * get_channel_name_alias(const char * fname0)
 {
     if(fname0 == NULL)
@@ -457,23 +478,34 @@ char * get_channel_name_alias(const char * fname0)
     // Compare the file name to the aliases and return the first match
     DwChannel ** channels = dw_channels_get_from_gtk_tree_view((GtkTreeView*) config.channel_tree);
     DwChannel ** channelsp = channels;
-    for( ; *channelsp && channel == NULL; channelsp++)
+    int bestpos = -1;
+    char * bestchannel = NULL;
+
+    for( ; *channelsp ; channelsp++)
     {
         char * ualias = strdup(channelsp[0]->alias);
         for(size_t kk = 0; kk<strlen(ualias); kk++)
         {
             ualias[kk] = toupper(ualias[kk]);
         }
-        if(strstr(fname, ualias) != NULL)
-        {
 
-            // printf("Matches %s\n", ualias);
-            channel = strdup(channelsp[0]->alias);
+        int pos = strrstr(fname, ualias);
+        if(pos > bestpos)
+        {
+            bestpos = pos;
+            bestchannel = channelsp[0]->alias;
+            //printf("Matches %s\n", ualias);
+
         } else {
             // printf("%s != %s\n", fname, ualias );
         }
         free(ualias);
 
+    }
+
+    if(bestpos > -1)
+    {
+        channel = strdup(bestchannel);
     }
 
     dw_channels_free(channels);
@@ -482,6 +514,10 @@ char * get_channel_name_alias(const char * fname0)
 
 char * get_channel_name(const char *fname)
 {
+    /* Determine channel name from file name
+     * Try 1/ Use the regular expression
+     * and if that fails, simply compare the file name
+     * to the aliases available */
     char * cname_reg = get_channel_name_regexp(fname);
     if(cname_reg != NULL)
     {
@@ -877,6 +913,7 @@ void file_tree_append(const char * fname)
         goto done;
     }
 
+    // Determine channel name from file name
     char * cname = get_channel_name(fname);
     gtk_tree_store_append (filetm, &iter1, NULL);  /* Acquire a top-level iterator */
     gtk_tree_store_set (filetm, &iter1,
@@ -1477,6 +1514,7 @@ void edit_selected_scope()
                            sDZ_COLUMN, &sDZ,
                            sFF_COLUMN, &flatfield_image,
                            -1);
+
         DwScope * current_scope = malloc(sizeof(DwScope));
         current_scope->name = strdup(sname);
         current_scope->NA = sNA;
