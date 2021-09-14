@@ -1,0 +1,1 @@
+ - `gen_valid_file_names.py` generate empty tif files with strange but valid names (utf8) to see that the gui handles them with drag and drop.
