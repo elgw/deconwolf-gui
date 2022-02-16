@@ -1,9 +1,12 @@
 ## TODO
  - [ ] Have a way to create batch jobs (append to another job script?).
  - [ ] A simpler dialog/mode for single files.
- - [ ] Create installers. [.dmg installer](https://mesonbuild.com/Creating-OSX-packages.html) file for OSX (or alternatively a [HomeBrew Formula](https://medium.com/@tharun208/creating-a-homebrew-formula-f76da25b79e4)) etc...
+ - [ ] Create installers.
+ [.dmg installer](https://mesonbuild.com/Creating-OSX-packages.html)
+ file for OSX (or alternatively a [HomeBrew Formula](https://medium.com/@tharun208/creating-a-homebrew-formula-f76da25b79e4)) etc...
  - [ ] Refuse to create channels with empty alias.
- - [ ] Rescan the list of files to identify channel names again when the channel list is changed or the regexp is changed.
+ - [ ] Rescan the list of files to identify channel names again when
+ the channel list is changed or the regexp is changed.
  - [ ] Allow to manually set the channel of multiple selected files.
 
 ### Future:
@@ -17,6 +20,8 @@
  - [ ] Decouple the views from the data. As it is now the values are truncated when parsing from the TreeViews.
 
 ### Done
+ - [x] Using **g_shell_quote** for file names. Now supports names containing
+       single quotes.
  - [x] Tries to figure out the channel name from the available channel aliases when the regexp does not match.
  - [x] Allow custom regexp for channel identification. However this setting is just temporary.
  - [x] 'Add files' - button and 'Remove file' - button.

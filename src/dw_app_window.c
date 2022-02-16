@@ -1323,24 +1323,42 @@ void update_cmd()
         if(ch != NULL)
         {
             gchar * fdir = g_path_get_dirname(files[kk]->name);
-            //fdir = dirname(fdir);
             char * psf = get_psfname(fdir, files[kk]->channel);
-            sprintf(buff, "mkdir '%s/PSFBW/'\n", fdir);
+
+            /* Shell quoted version of the file names, allows files to contain
+               single quotes in their names and avoids "accidental" mixing file
+               names with commands :)
+            */
+            char * outdir = malloc(strlen(fdir) + 100);
+            sprintf(outdir, "%s/PSFBW/", fdir);
+            gchar * q_outdir = g_shell_quote(outdir);
+            gchar * q_psfname = g_shell_quote(psf);
+            gchar * q_filename = g_shell_quote(files[kk]->name);
+
+
+            sprintf(buff, "mkdir %s\n", q_outdir);
             gtk_text_buffer_insert(buffer, &titer, buff, -1);
-            sprintf(buff, "dw_bw %s--lambda %f --NA %f --ni %f --threads %d --resxy %f --resz %f '%s'\n",
+            sprintf(buff, "dw_bw %s --lambda %f --NA %.3f --ni %.3f --threads %d"
+                    " --resxy %.1f --resz %.1f %s\n",
                     ostring,
-                    ch->lambda, scope->NA, scope->ni, nthreads, scope->xy_nm, scope->z_nm,
-                    psf);
+                    ch->lambda, scope->NA, scope->ni, nthreads,
+                    scope->xy_nm, scope->z_nm,
+                    q_psfname);
+
             //        printf("%s", buff);
             gtk_text_buffer_insert(buffer, &titer, buff, -1);
-            sprintf(buff, "dw %s %s --tilesize %d --iter %d --threads %d '%s' '%s'\n",
+            sprintf(buff, "dw %s %s --tilesize %d --iter %d --threads %d %s %s\n",
                     ostring,
                     fstring,
                     tilesize, ch->niter, nthreads,
-                    files[kk]->name, psf);
+                    q_filename, q_psfname);
             gtk_text_buffer_insert(buffer, &titer, buff, -1);
 
-            //free(fdir);
+            g_free(q_filename);
+            g_free(q_psfname);
+            g_free(q_outdir);
+            free(outdir);
+
             g_free(fdir);
             free(psf);
         } else {
@@ -1764,20 +1782,6 @@ void populate_microscopes()
     return;
 }
 
-static void
-drag_motion_cb (GtkWidget *widget,
-             GdkDragContext *context,
-             gint x,
-             gint y,
-             guint time)
-{
-    GList * targets =
-        gdk_drag_context_list_targets(context);
-    if(targets == NULL)
-        printf("Targets == NULL\n");
-
-    printf("Drag motion\n");
-}
 
 GtkWidget * create_drop_frame()
 {
