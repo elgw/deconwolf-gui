@@ -28,7 +28,7 @@ or, if you prefer to install it as a package:
 ./deb_make.sh
 sudo dpkg -i dwgui*deb
 # to remove
-# sudo dpkg -r dwgui
+# sudo dpkg -r dwgui2
 ```
 
 ### OSX

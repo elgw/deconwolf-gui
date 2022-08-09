@@ -1,6 +1,11 @@
+# Usage:
+# meson setup builddir
+# cd builddir
+
 project('dwgui', 'c',
-  version : '0.1',
+  version : '0.0.2',
   default_options : ['warning_level=3'])
+  
 gtkdeps = [dependency('gtk+-3.0'),
 meson.get_compiler('c').find_library('m', required: false),
 ]
