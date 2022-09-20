@@ -1,7 +1,10 @@
 # Deconwolf GUI (dwgui)
 
-<img src="resources/screenshot_20210217.png">
-A GUI for deconwolf (to be released) written in GTK 3.24.23.
+<img src="resources/screenshot_20210217.png"> A GUI for
+[deconwolf](https://github.com/elgw/deconwolf) (link does not work
+yet, deconwolf is to be released) written in GTK 3.24.23.
+
+Please note: this is useless without deconwolf.
 
 See the [TODO](TODO.md) for current status.
 
