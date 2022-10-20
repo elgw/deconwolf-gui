@@ -119,7 +119,6 @@ DwConf * dw_conf_new_from_file(char * file)
     }
     else
     {
-        //printf("conf->use_gpu = %d\n", gpu);
         conf->use_gpu = gpu;
     }
 

@@ -215,16 +215,12 @@ GtkWidget * create_deconwolf_frame()
         (GtkRadioButton*) hw_cpu,
         (GtkRadioButton*) hw_gpu);
 
-    switch(dwconf->use_gpu)
+    if(dwconf->use_gpu)
     {
-    case 1:
         gtk_toggle_button_set_active( (GtkToggleButton*) hw_gpu, TRUE);
-        break;
-    default:
-        gtk_toggle_button_set_active( (GtkToggleButton*) hw_gpu, FALSE);
-        break;
+    } else {
+        gtk_toggle_button_set_active( (GtkToggleButton*) hw_cpu, TRUE);
     }
-
 
     GtkWidget * grid = gtk_grid_new();
     gtk_grid_set_row_spacing ((GtkGrid*) grid , 5);
