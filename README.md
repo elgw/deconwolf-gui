@@ -28,7 +28,7 @@ sudo make install_linux
 or, if you prefer to install it as a package:
 
 ``` shell
-./deb_make.sh
+./mkdeb_ubuntu_2204.sh
 sudo dpkg -i dwgui*deb
 # to remove
 # sudo dpkg -r dwgui2

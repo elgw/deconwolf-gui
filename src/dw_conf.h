@@ -16,6 +16,7 @@ typedef struct{
     gint tilesize;
     gint outformat; // DW_CONF_OUTFORMAT_ ...
     gint border_quality; // DW_CONF_BORDER_QUALITY_ ...
+    gint use_gpu;
 } DwConf;
 
 DwConf * dw_conf_new();

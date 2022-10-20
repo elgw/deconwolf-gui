@@ -29,6 +29,10 @@ typedef struct {
     GtkToggleButton* bq_best;
     GtkToggleButton* bq_good;
     GtkToggleButton* bq_bad;
+
+    GtkToggleButton* hw_cpu;
+    GtkToggleButton* hw_gpu;
+
 } GlobConf;
 
 GlobConf config;
@@ -94,6 +98,11 @@ DwConf * parse_dw_conf()
         conf->border_quality = DW_CONF_BORDER_QUALITY_BAD;
     }
 
+    if(gtk_toggle_button_get_active(config.hw_gpu)){
+        conf->use_gpu = 1;
+    } else {
+        conf->use_gpu = 0;
+    }
 
     return conf;
 }
@@ -169,7 +178,7 @@ GtkWidget * create_deconwolf_frame()
     GtkWidget * lBorder = gtk_label_new("Border quality");
     GtkWidget * bq_best = gtk_radio_button_new_with_label(NULL, "Best (Default)");
     GtkWidget * bq_good = gtk_radio_button_new_with_label(NULL, "Good");
-    GtkWidget * bq_bad = gtk_radio_button_new_with_label(NULL, "Bad (fastest)");
+    GtkWidget * bq_bad = gtk_radio_button_new_with_label(NULL, "Periodic (fastest)");
     config.bq_best = (GtkToggleButton*) bq_best;
     config.bq_good = (GtkToggleButton*) bq_good;
     config.bq_bad = (GtkToggleButton*) bq_bad;
@@ -180,6 +189,7 @@ GtkWidget * create_deconwolf_frame()
     gtk_radio_button_join_group(
         (GtkRadioButton*) bq_bad,
         (GtkRadioButton*) bq_good);
+
     switch(dwconf->border_quality)
     {
     case DW_CONF_BORDER_QUALITY_BEST:
@@ -192,6 +202,29 @@ GtkWidget * create_deconwolf_frame()
         gtk_toggle_button_set_active( (GtkToggleButton*) bq_bad, TRUE);
         break;
     }
+
+    /* CPU / GPU */
+    GtkWidget * lHardware = gtk_label_new("Hardware");
+    GtkWidget * hw_cpu = gtk_radio_button_new_with_label(NULL, "CPU (Default)");
+    GtkWidget * hw_gpu = gtk_radio_button_new_with_label(NULL, "GPU (read the docs!)");
+
+    config.hw_cpu = (GtkToggleButton*) hw_cpu;
+    config.hw_gpu = (GtkToggleButton*) hw_gpu;
+
+    gtk_radio_button_join_group(
+        (GtkRadioButton*) hw_cpu,
+        (GtkRadioButton*) hw_gpu);
+
+    switch(dwconf->use_gpu)
+    {
+    case 1:
+        gtk_toggle_button_set_active( (GtkToggleButton*) hw_gpu, TRUE);
+        break;
+    default:
+        gtk_toggle_button_set_active( (GtkToggleButton*) hw_gpu, FALSE);
+        break;
+    }
+
 
     GtkWidget * grid = gtk_grid_new();
     gtk_grid_set_row_spacing ((GtkGrid*) grid , 5);
@@ -207,11 +240,15 @@ GtkWidget * create_deconwolf_frame()
     gtk_grid_attach((GtkGrid*) grid, lFormat, 1, 9, 1, 2);
     gtk_grid_attach((GtkGrid*) grid, out_uint16, 2, 9, 2, 1);
     gtk_grid_attach((GtkGrid*) grid, out_float32, 2, 10, 2, 1);
-    // Border quality
+    /* Border option */
     gtk_grid_attach((GtkGrid*) grid, lBorder, 1, 12, 1, 3);
     gtk_grid_attach((GtkGrid*) grid, bq_best, 2, 12, 1, 1);
     gtk_grid_attach((GtkGrid*) grid, bq_good, 2, 13, 1, 1);
     gtk_grid_attach((GtkGrid*) grid, bq_bad, 2, 14, 1, 1);
+    /* Hardware option */
+    gtk_grid_attach((GtkGrid*) grid, lHardware, 1, 16, 1, 1);
+    gtk_grid_attach((GtkGrid*) grid, hw_cpu, 2, 16, 1, 1);
+    gtk_grid_attach((GtkGrid*) grid, hw_gpu, 2, 17, 1, 1);
 
     gtk_widget_set_halign((GtkWidget*) grid, GTK_ALIGN_CENTER);
     gtk_widget_set_valign((GtkWidget*) grid, GTK_ALIGN_CENTER);
@@ -1309,6 +1346,11 @@ void update_cmd()
     case DW_CONF_BORDER_QUALITY_BEST:
         sprintf(fstring + strlen(fstring), " --bq 2");
         break;
+    }
+
+    if(dwconf->use_gpu == 1)
+    {
+        sprintf(fstring + strlen(fstring), " --method shbcl2");
     }
 
     /* Generate the list of commands to run */

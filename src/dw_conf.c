@@ -8,6 +8,7 @@ DwConf * dw_conf_new()
     conf->tilesize = 3000;
     conf->outformat = DW_CONF_OUTFORMAT_UINT16;
     conf->border_quality = DW_CONF_BORDER_QUALITY_BEST;
+    conf->use_gpu = 0;
     return conf;
 }
 
@@ -108,6 +109,22 @@ DwConf * dw_conf_new_from_file(char * file)
         conf->border_quality = bq;
     }
 
+    gint gpu =  g_key_file_get_boolean(key_file,
+                                       group,
+                                       "use_gpu",
+                                       &error);
+    if( error != NULL )
+    {
+        g_clear_error(&error);
+    }
+    else
+    {
+        //printf("conf->use_gpu = %d\n", gpu);
+        conf->use_gpu = gpu;
+    }
+
+
+
     // Free up
     g_strfreev(groups);
     g_key_file_free(key_file);
@@ -129,6 +146,9 @@ void dw_conf_save_to_file(DwConf * conf, char * file)
                            "outformat", conf->outformat);
     g_key_file_set_integer(key_file, "deconwolf",
                            "border_quality", conf->border_quality);
+    g_key_file_set_integer(key_file, "deconwolf",
+                           "use_gpu", conf->use_gpu);
+
 
     if (!g_key_file_save_to_file (key_file, file, &error))
     {
