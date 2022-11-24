@@ -2,14 +2,11 @@
 #define __dw_colors_h
 
 /**
- * A simple library build to convert wavelengths in nanometers
+ * Purpose: Convert wavelengths in nanometers
  * to sRGB colors
  * It uses the `CIE 1964 supplementary standard colorimetric observer`
  * for this purpose, and then a linear transformation from XYZ to RBG.
  *
- * TODO:
- * Would be nice to interpolate the CIE table, not just pick the closest
- * row.
  */
 
 #include <math.h>
