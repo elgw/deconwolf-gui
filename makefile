@@ -1,33 +1,40 @@
-cflags=-march=x86-64 `pkg-config --cflags gtk+-3.0` -Wall
-ldflags=`pkg-config --libs gtk+-3.0` -lm
 cc=gcc
+
+cflags=-Wall -Wextra -std=c11
+ldflags=-flto
+
 
 DEBUG?=0
 ifeq ($(DEBUG),1)
-cflags += -g3 -DDEBUG
+cflags += -g3
 else
-cflags += -O3 -flto
+cflags += -O3
 endif
 
-src=src/
+# math library
+ldflags=-lm
 
-dw_gui: resources.c dw_channel dw_scope dw_conf dw_file dw_colors
-	$(cc) $(cflags) resources.c $(src)dw_app.c $(src)dw_app_window.c $(src)dw_gui.c dw_channel.o dw_scope.o dw_conf.o dw_file.o dw_colors.o $(ldflags) -o dw_gui
+# GTK3.0
+cflags+=`pkg-config --cflags gtk+-3.0`
+ldflags+=`pkg-config --libs gtk+-3.0`
 
-dw_channel:
-	$(cc) -c $(cflags) $(src)dw_channel.c
 
-dw_scope:
-	$(cc) -c $(cflags) $(src)dw_scope.c
+dw_gui_files=src/dw_gui.c \
+src/dw_app.c \
+src/dw_app_runner.c \
+src/dw_app_window.c \
+resources.c \
+dw_channel.o \
+dw_scope.o \
+dw_conf.o \
+dw_file.o \
+dw_colors.o
 
-dw_conf:
-	$(cc) -c $(cflags) $(src)dw_conf.c
+dw_gui: $(dw_gui_files)
+	$(cc) $(cflags) $(dw_gui_files) $(ldflags) -o dw_gui
 
-dw_file:
-	$(cc) -c $(cflags) $(src)dw_file.c
-
-dw_colors:
-	$(cc) -c $(cflags) $(src)dw_colors.c
+%.o: src/%.c
+	$(cc) -c $(cflags) $<
 
 resources.c:
 	glib-compile-resources --target=resources.c --generate-source src/gresources.xml

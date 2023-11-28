@@ -2,7 +2,7 @@
 
 DwChannel * dw_channel_new()
 {
-    DwChannel * chan = malloc(sizeof(DwChannel));
+    DwChannel * chan = g_malloc0(sizeof(DwChannel));
     chan->name = NULL;
     chan->alias = NULL;
     return chan;
@@ -13,11 +13,9 @@ void dw_channel_free(DwChannel * chan)
     if(chan == NULL)
         return;
 
-    if(chan->name != NULL)
-        free(chan->name);
-    if(chan->alias != NULL)
-        free(chan->alias);
-    free(chan);
+    g_free(chan->name);
+    g_free(chan->alias);
+    g_free(chan);
 }
 
 void dw_channels_free(DwChannel ** channels)
@@ -32,7 +30,7 @@ void dw_channels_free(DwChannel ** channels)
         dw_channel_free(channels[pos]);
         pos++;
     }
-    free(channels);
+    g_free(channels);
 }
 
 
@@ -62,7 +60,7 @@ DwChannel ** dw_channels_get_from_gtk_tree_view(GtkTreeView * tv)
         return NULL;
     }
 
-    DwChannel ** clist = malloc( (nchan+1) * sizeof(DwChannel*));
+    DwChannel ** clist = g_malloc0( (nchan+1) * sizeof(DwChannel*));
     clist[nchan] = NULL; // A null terminates the list
 
     // Get all files and add to list.
@@ -82,9 +80,9 @@ DwChannel ** dw_channels_get_from_gtk_tree_view(GtkTreeView * tv)
                             cEMISSION_COLUMN, &lambda,
                             -1);
 
-        clist[pos] = malloc(sizeof(DwChannel));
-        clist[pos]->name = strdup(name);
-        clist[pos]->alias = strdup(alias);
+        clist[pos] = g_malloc0(sizeof(DwChannel));
+        clist[pos]->name = g_strdup(name);
+        clist[pos]->alias = g_strdup(alias);
         clist[pos]->lambda = atof(lambda);
         clist[pos]->niter = (int) niter;
         if(0){
@@ -112,7 +110,7 @@ DwChannel * dw_channels_get_by_alias(DwChannel ** channels, char * alias)
     int pos = 0;
     while(channels[pos] != NULL)
     {
-        if(strcasecmp(alias, channels[pos]->alias) == 0)
+        if(strcmp(alias, channels[pos]->alias) == 0)
         {
             return channels[pos];
         }
@@ -163,7 +161,7 @@ DwChannel ** dw_channels_from_disk(char * fname)
         return NULL;
     }
 
-    DwChannel ** channels = malloc((length+1)*sizeof(DwChannel*));
+    DwChannel ** channels = g_malloc0((length+1)*sizeof(DwChannel*));
     channels[length] = NULL; // End of array
 
     for(gsize kk = 0; kk < length; kk++)
@@ -171,7 +169,7 @@ DwChannel ** dw_channels_from_disk(char * fname)
         channels[kk] = dw_channel_new();
         DwChannel * chan = channels[kk];
         gchar * group = groups[kk]; // I.e. Alias
-        chan->alias = strdup(group);
+        chan->alias = g_strdup(group);
 
         // Read name
         gchar *val = g_key_file_get_string (key_file, group, "Name", &error);
@@ -179,8 +177,8 @@ DwChannel ** dw_channels_from_disk(char * fname)
         {
             val = g_strdup ("Give me a name");
         }
-        chan->name = strdup(val);
-        free(val);
+        chan->name = g_strdup(val);
+        g_free(val);
         gint niter = g_key_file_get_integer(key_file, group, "iter", &error);
         chan->niter = niter;
 
@@ -203,7 +201,7 @@ color_draw_cb (GtkWidget    *widget,
     double * lambda = (double*) user_data;
     DwRGB * C = dw_RGB_new_from_lambda(lambda[0]);
     cairo_set_source_rgb (cr, C->R, C->G, C->B);
-    free(C);
+    g_free(C);
     cairo_paint (cr);
     return TRUE;
 }
@@ -238,7 +236,7 @@ dw_channel_edit_dlg(GtkWindow *parent, DwChannel * old_channel)
     flags = GTK_DIALOG_DESTROY_WITH_PARENT;
     double lambda = 0;
 
-    char * msg = malloc(1024);
+    char * msg = g_malloc0(1024);
     if(old_channel == NULL)
     {
         sprintf(msg, "Add a new channel");
@@ -255,7 +253,7 @@ dw_channel_edit_dlg(GtkWindow *parent, DwChannel * old_channel)
                                           "Ok",
                                           GTK_RESPONSE_ACCEPT,
                                           NULL);
-    free(msg);
+    g_free(msg);
     content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
 
     GtkWidget * lAlias = gtk_label_new("Alias");
@@ -280,7 +278,7 @@ dw_channel_edit_dlg(GtkWindow *parent, DwChannel * old_channel)
 
     if(old_channel != NULL)
     {
-        char * buff = malloc(1024);
+        char * buff = g_malloc0(1024);
         gtk_entry_set_text((GtkEntry*) eName, old_channel->name);
         gtk_entry_set_text((GtkEntry*) eAlias, old_channel->alias);
 
@@ -288,7 +286,7 @@ dw_channel_edit_dlg(GtkWindow *parent, DwChannel * old_channel)
         gtk_entry_set_text((GtkEntry*) eNiter, buff);
         sprintf(buff, "%f", old_channel->lambda);
         gtk_entry_set_text((GtkEntry*) eLambda, buff);
-        free(buff);
+        g_free(buff);
     }
 
     GtkWidget * grid = gtk_grid_new();
@@ -327,9 +325,9 @@ dw_channel_edit_dlg(GtkWindow *parent, DwChannel * old_channel)
     switch (result)
     {
     case GTK_RESPONSE_ACCEPT:
-        channel = malloc(sizeof(DwChannel));
-        channel->name = strdup(gtk_entry_get_text((GtkEntry*) eName));
-        channel->alias = strdup(gtk_entry_get_text((GtkEntry*) eAlias));
+        channel = g_malloc0(sizeof(DwChannel));
+        channel->name = g_strdup(gtk_entry_get_text((GtkEntry*) eName));
+        channel->alias = g_strdup(gtk_entry_get_text((GtkEntry*) eAlias));
         channel->lambda = atof(gtk_entry_get_text((GtkEntry*) eLambda));
         channel->niter = atoi(gtk_entry_get_text((GtkEntry*) eNiter));
         break;

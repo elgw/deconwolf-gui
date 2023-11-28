@@ -15,7 +15,7 @@ JobData * job_data_new(char * cmd,
                        GtkProgressBar * pb1, GtkProgressBar * pb2,
                        GtkTextView * status)
 {
-    JobData * j = malloc(sizeof(JobData));
+    JobData * j = g_malloc0(sizeof(JobData));
     j->cmd = cmd;
     j->pb1 = pb1;
     j->pb2 = pb2;
@@ -123,6 +123,6 @@ g_thread_join(runthread);
 
 
  gtk_widget_destroy (dialog);
- free(job_data); // Something with reference counting goes bananas with this.
+ g_free(job_data); // Something with reference counting goes bananas with this.
 
 }

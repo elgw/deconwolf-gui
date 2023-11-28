@@ -1,5 +1,4 @@
-#ifndef __dw_chan_h
-#define __dw_chan_h
+#pragma once
 
 #include <gtk/gtk.h>
 #include <ctype.h>
@@ -40,5 +39,3 @@ void dw_chan_to_key_file(DwChannel * , GKeyFile *);
 /* Open a dialog box that blocks parent and get/edit a dw_channel */
 DwChannel *
 dw_channel_edit_dlg(GtkWindow *parent, DwChannel * old_channel);
-
-#endif

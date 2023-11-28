@@ -102,7 +102,7 @@ static float CIE_data[] =
 
 DwXYZ * dw_XYZ_new()
 {
-    DwXYZ * C = malloc(sizeof(DwXYZ));
+    DwXYZ * C = g_malloc0(sizeof(DwXYZ));
     C->X = 0;
     C->Y = 0;
     C->Z = 0;
@@ -112,7 +112,7 @@ DwRGB * dw_RGB_new_from_lambda(double lambda)
 {
     DwXYZ * C1 = dw_XYZ_new_from_lambda(lambda);
     DwRGB * C2 = dw_RGB_new_from_dw_XYZ(C1);
-    free(C1);
+    g_free(C1);
     return C2;
 }
 
@@ -136,7 +136,7 @@ double gamma_corr(double x)
 
 DwRGB * dw_RGB_new_from_dw_XYZ(DwXYZ * C)
 {
-    DwRGB * O = malloc(sizeof(DwRGB));
+    DwRGB * O = g_malloc0(sizeof(DwRGB));
     // Linear conversion from XYZ to RGB
     O->R =  3.2404542*C->X - 1.5371385*C->Y - 0.4985314*C->Z;
     O->G = -0.9692660*C->X + 1.8760108*C->Y + 0.0415560*C->Z;

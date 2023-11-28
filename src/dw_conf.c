@@ -2,7 +2,7 @@
 
 DwConf * dw_conf_new()
 {
-    DwConf * conf = malloc(sizeof(DwConf));
+    DwConf * conf = g_malloc0(sizeof(DwConf));
     conf->overwrite = FALSE;
     conf->nthreads = 4;
     conf->tilesize = 3000;
@@ -16,7 +16,7 @@ void dw_conf_free(DwConf * conf)
 {
     if(conf == NULL)
         return;
-    free(conf);
+    g_free(conf);
 }
 
 DwConf * dw_conf_new_from_file(char * file)

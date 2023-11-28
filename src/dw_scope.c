@@ -6,13 +6,13 @@ void dw_scope_free(DwScope * scope)
         return;
 
     if(scope->name != NULL)
-        free(scope->name);
-    free(scope);
+        g_free(scope->name);
+    g_free(scope);
 }
 
 DwScope * dw_scope_get_from_model(GtkTreeModel * model, GtkTreeIter * iter)
 {
-    DwScope * scope = malloc(sizeof(DwScope));
+    DwScope * scope = g_malloc0(sizeof(DwScope));
     scope->name = NULL;
 
     gchar *name;
@@ -27,7 +27,7 @@ DwScope * dw_scope_get_from_model(GtkTreeModel * model, GtkTreeIter * iter)
                         sDZ_COLUMN, &z_nm,
                         -1);
 
-    scope->name = strdup(name);
+    scope->name = g_strdup(name);
     g_free(name);
     scope->NA = NA;
     scope->ni = ni;
@@ -63,7 +63,7 @@ DwScope ** dw_scopes_get_from_gtk_tree_view(GtkTreeView * tv)
         return NULL;
     }
 
-    DwScope ** slist = malloc( (nscopes+1) * sizeof(DwScope*));
+    DwScope ** slist = g_malloc0( (nscopes+1) * sizeof(DwScope*));
     slist[nscopes] = NULL; // A null terminates the list
 
     // Get all files and add to list.
@@ -146,7 +146,7 @@ void dw_scopes_free(DwScope ** scopes)
         dw_scope_free(scopes[pos]);
         pos++;
     }
-    free(scopes);
+    g_free(scopes);
     return;
 }
 
@@ -154,7 +154,7 @@ void dw_scopes_free(DwScope ** scopes)
 
 DwScope * dw_scope_new()
 {
-    DwScope * scope = malloc(sizeof(DwScope));
+    DwScope * scope = g_malloc0(sizeof(DwScope));
     scope->name = NULL;
     scope->NA = 0;
     scope->ni=0;
@@ -189,7 +189,7 @@ DwScope ** dw_scopes_from_disk(char * fname)
      return NULL;
  }
 
- DwScope ** scopes = malloc((length+1)*sizeof(DwScope*));
+ DwScope ** scopes = g_malloc0((length+1)*sizeof(DwScope*));
  scopes[length] = NULL; // End of array
 
  for(gsize kk = 0; kk<length; kk++)
@@ -197,7 +197,7 @@ DwScope ** dw_scopes_from_disk(char * fname)
      scopes[kk] = dw_scope_new();
      DwScope * scope = scopes[kk];
      gchar * group = groups[kk]; // I.e. Alias
-     scope->name = strdup(group);
+     scope->name = g_strdup(group);
 
      gdouble NA = g_key_file_get_double(key_file, group, "NA", &error);
      scope->NA = NA;
@@ -223,7 +223,7 @@ dw_scope_edit_dlg(GtkWindow *parent, DwScope * old_scope)
  GtkDialogFlags flags;
 
 
- char * msg = malloc(1024);
+ char * msg = g_malloc0(1024);
  if(old_scope == NULL)
  {
      sprintf(msg, "Add a new microscope/objective");
@@ -242,7 +242,7 @@ dw_scope_edit_dlg(GtkWindow *parent, DwScope * old_scope)
                                        "Ok",
                                        GTK_RESPONSE_ACCEPT,
                                        NULL);
- free(msg);
+ g_free(msg);
  content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
 
 
@@ -260,7 +260,7 @@ dw_scope_edit_dlg(GtkWindow *parent, DwScope * old_scope)
 
  if(old_scope != NULL)
  {
-     char * buff = malloc(1024);
+     char * buff = g_malloc0(1024);
      gtk_entry_set_text((GtkEntry*) eName, old_scope->name);
      sprintf(buff, "%f", old_scope->NA);
      gtk_entry_set_text((GtkEntry*) eNA, buff);
@@ -270,7 +270,7 @@ dw_scope_edit_dlg(GtkWindow *parent, DwScope * old_scope)
      gtk_entry_set_text((GtkEntry*) edx, buff);
      sprintf(buff, "%f", old_scope->z_nm);
      gtk_entry_set_text((GtkEntry*) edz, buff);
-     free(buff);
+     g_free(buff);
  }
 
 GtkWidget * grid = gtk_grid_new();
@@ -311,8 +311,8 @@ gtk_widget_set_valign((GtkWidget*) hbox, GTK_ALIGN_CENTER);
  switch (result)
  {
  case GTK_RESPONSE_ACCEPT:
-     scope = malloc(sizeof(DwScope));
-     scope->name = strdup(gtk_entry_get_text((GtkEntry*) eName));
+     scope = g_malloc0(sizeof(DwScope));
+     scope->name = g_strdup(gtk_entry_get_text((GtkEntry*) eName));
      scope->NA = atof(gtk_entry_get_text((GtkEntry*) eNA));
      scope->ni = atof(gtk_entry_get_text((GtkEntry*) eni));
      scope->xy_nm = atof(gtk_entry_get_text((GtkEntry*) edx));

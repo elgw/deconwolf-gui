@@ -1,11 +1,12 @@
-#include <gtk/gtk.h>
-#include "dw_app.h"
-#include "dw_app_window.h"
-#include <libgen.h>
-#include <locale.h>
 #include <assert.h>
 #include <glib.h>
 #include <glib/gstdio.h>
+#include <gtk/gtk.h>
+#include <libgen.h>
+#include <locale.h>
+
+#include "dw_app.h"
+#include "dw_app_window.h"
 
 // Global settings for this app
 typedef struct {
@@ -32,19 +33,13 @@ typedef struct {
 
     GtkToggleButton* hw_cpu;
     GtkToggleButton* hw_gpu;
-
 } GlobConf;
 
 GlobConf config;
 
 gboolean has_dw()
 {
-    int ret = system("dw --version > /dev/null 2>&1"); //The redirect to /dev/null ensures that your program does not produce the output of these commands.
-    if (ret == 0) {
-        //The executable was found.
-        return TRUE;
-    }
-    return FALSE;
+    return !system("dw --version > /dev/null 2>&1");
 }
 
 /* Forward declarations */
@@ -59,12 +54,12 @@ char * get_configuration_file(char * name)
 {
 
     // Set up the configuration folder
-    char * cfile = malloc(1024);
+    char * cfile = g_malloc0(1024);
     sprintf(cfile, "%s/%s/", g_get_user_config_dir(), "deconwolf");
     if(g_mkdir_with_parents(cfile, S_IXUSR | S_IWUSR | S_IRUSR) == -1)
     {
         printf("Unable to access %s\n", cfile);
-        free(cfile);
+        g_free(cfile);
         return NULL;
     }
 
@@ -116,7 +111,7 @@ save_dw_settings_cb (GtkWidget *widget,
     DwConf * conf = parse_dw_conf();
     char * cfile = get_configuration_file("deconwolf");
     dw_conf_save_to_file(conf, cfile);
-    free(cfile);
+    g_free(cfile);
 
     return TRUE;
 }
@@ -138,7 +133,7 @@ GtkWidget * create_deconwolf_frame()
 
     char * cfile = get_configuration_file("deconwolf");
     DwConf * dwconf = dw_conf_new_from_file(cfile);
-    free(cfile);
+    g_free(cfile);
 
     GtkAdjustment * adjThreads =
         gtk_adjustment_new (dwconf->nthreads, 1, 1024, 1, 1, 1);
@@ -184,11 +179,11 @@ GtkWidget * create_deconwolf_frame()
     config.bq_bad = (GtkToggleButton*) bq_bad;
 
     gtk_radio_button_join_group(
-        (GtkRadioButton*) bq_best,
-        (GtkRadioButton*) bq_good);
+                                (GtkRadioButton*) bq_best,
+                                (GtkRadioButton*) bq_good);
     gtk_radio_button_join_group(
-        (GtkRadioButton*) bq_bad,
-        (GtkRadioButton*) bq_good);
+                                (GtkRadioButton*) bq_bad,
+                                (GtkRadioButton*) bq_good);
 
     switch(dwconf->border_quality)
     {
@@ -212,8 +207,8 @@ GtkWidget * create_deconwolf_frame()
     config.hw_gpu = (GtkToggleButton*) hw_gpu;
 
     gtk_radio_button_join_group(
-        (GtkRadioButton*) hw_cpu,
-        (GtkRadioButton*) hw_gpu);
+                                (GtkRadioButton*) hw_cpu,
+                                (GtkRadioButton*) hw_gpu);
 
     if(dwconf->use_gpu)
     {
@@ -276,7 +271,7 @@ GtkWidget * create_deconwolf_frame()
                         TRUE,
                         TRUE,
                         5);
-    free(dwconf);
+    g_free(dwconf);
     return A;
 
 }
@@ -376,15 +371,15 @@ GtkWidget * create_file_frame()
 
     /* Set up Drag and Drop */
     enum
-    {
-     TARGET_STRING,
-     TARGET_URL
-    };
+        {
+            TARGET_STRING,
+            TARGET_URL
+        };
     static GtkTargetEntry targetentries[] =
         {
-         { "STRING",        0, TARGET_STRING },
-         { "text/plain",    0, TARGET_STRING },
-         { "text/uri-list", 0, TARGET_URL },
+            { "STRING",        0, TARGET_STRING },
+            { "text/plain",    0, TARGET_STRING },
+            { "text/uri-list", 0, TARGET_URL },
         };
     gtk_drag_dest_set(file_frame, GTK_DEST_DEFAULT_ALL, targetentries, 3,
                       GDK_ACTION_COPY );
@@ -416,14 +411,14 @@ int is_tif_file_name(const char * fname)
 char * get_psfname(char * dir, char * channel)
 {
     int len = strlen(dir) + strlen(channel);
-    char * name = malloc(len+20);
+    char * name = g_malloc0(len+20);
     sprintf(name, "%s/PSFBW/%s.tif", dir, channel);
     return name;
 }
 
 char * get_channel_name_regexp(const char *fname0)
 {
-    char * fname = strdup(fname0);
+    char * fname = g_strdup(fname0);
     char * ret = NULL;
 
     for(size_t kk = 0 ; kk<strlen(fname); kk++)
@@ -450,7 +445,7 @@ char * get_channel_name_regexp(const char *fname0)
         //g_print ("Found: %s\n", word);
         if(ret == NULL)
         {
-            ret = strdup(word);
+            ret = g_strdup(word);
         } else {
             printf("Warning: duplicate channel match in %s\n", fname0);
         }
@@ -459,11 +454,11 @@ char * get_channel_name_regexp(const char *fname0)
     }
     g_match_info_free (match_info);
     g_regex_unref (regex);
-    free(fname);
+    g_free(fname);
 
     if(ret == NULL)
     {
-        char * ret = malloc(5);
+        char * ret = g_malloc0(5);
         sprintf(ret, "?");
     }
     return ret;
@@ -480,7 +475,7 @@ char * get_channel_name_alias(const char * fname0)
         return NULL;
     }
 
-    char * fname = strdup(fname0);
+    char * fname = g_strdup(fname0);
     for(size_t kk = 0; kk<strlen(fname); kk++)
     {
         fname[kk] = toupper(fname[kk]);
@@ -492,7 +487,7 @@ char * get_channel_name_alias(const char * fname0)
     DwChannel ** channelsp = channels;
     for( ; *channelsp && channel == NULL; channelsp++)
     {
-        char * ualias = strdup(channelsp[0]->alias);
+        char * ualias = g_strdup(channelsp[0]->alias);
         for(size_t kk = 0; kk<strlen(ualias); kk++)
         {
             ualias[kk] = toupper(ualias[kk]);
@@ -501,11 +496,11 @@ char * get_channel_name_alias(const char * fname0)
         {
 
             // printf("Matches %s\n", ualias);
-            channel = strdup(channelsp[0]->alias);
+            channel = g_strdup(channelsp[0]->alias);
         } else {
             // printf("%s != %s\n", fname, ualias );
         }
-        free(ualias);
+        g_free(ualias);
 
     }
 
@@ -535,7 +530,7 @@ gboolean add_channel(char * alias, char * name, float emission, int iter)
     GtkTreeStore * channel_store = (GtkTreeStore*) gtk_tree_view_get_model((GtkTreeView*) config.channel_tree);
     GtkTreeIter iter1;  /* Parent iter */
 
-    char * emission_str = malloc(1024);
+    char * emission_str = g_malloc0(1024);
     sprintf(emission_str, "%.2f", emission);
     gtk_tree_store_append (channel_store, &iter1, NULL);  /* Acquire a top-level iterator */
     gtk_tree_store_set (channel_store, &iter1,
@@ -544,7 +539,7 @@ gboolean add_channel(char * alias, char * name, float emission, int iter)
                         cNITER_COLUMN, iter,
                         cEMISSION_COLUMN, emission_str,
                         -1);
-    free(emission_str);
+    g_free(emission_str);
     return TRUE;
 }
 
@@ -704,7 +699,7 @@ new_scope_cb (GtkWidget *widget,
     if(scope != NULL)
     {
         add_scope(scope->name, scope->NA, scope->ni, scope->xy_nm, scope->z_nm);
-        free(scope);
+        g_free(scope);
     }
 
     return TRUE;
@@ -723,7 +718,7 @@ save_scopes_cb (GtkWidget *widget,
     DwScope ** scopes = dw_scopes_get_from_gtk_tree_view((GtkTreeView*) config.scope_tree);
     dw_scopes_to_disk(scopes, cfile);
     dw_scopes_free(scopes);
-    free(cfile);
+    g_free(cfile);
     return TRUE;
 }
 
@@ -868,12 +863,12 @@ void file_tree_append_dnd_file(const char * file)
 
     //printf("fname: \n>%s<\n", fname);
     file_tree_append(fname);
-    free(fname);
+    g_free(fname);
     return;
 }
 
 void file_tree_append(const char * fname)
-    {
+{
     GtkTreeStore * filetm = (GtkTreeStore*) gtk_tree_view_get_model((GtkTreeView*) config.file_tree);
     GtkTreeIter iter1;  /* Parent iter */
 
@@ -889,9 +884,9 @@ void file_tree_append(const char * fname)
                         fCHANNEL_COLUMN, cname,
                         -1);
 
-    free(cname);
+    g_free(cname);
 
-    done:
+ done:
     return;
 }
 
@@ -928,9 +923,9 @@ drag_data_cb(GtkWidget *wgt, GdkDragContext *context, int x, int y,
 
     gchar ** uris =  gtk_selection_data_get_uris(seldata);
     for (gchar **uris_iter = uris; uris_iter && *uris_iter; ++uris_iter)
-        {
-            printf("--%s--\n", *uris_iter);
-        }
+    {
+        printf("--%s--\n", *uris_iter);
+    }
     g_strfreev(uris);
     // Use g_uri_to_string() or similar here
 
@@ -940,13 +935,13 @@ drag_data_cb(GtkWidget *wgt, GdkDragContext *context, int x, int y,
     /* Append to file tree, need to split the data first */
     if(strlen( (char *) data) > 0)
     {
-        char * dnd = strdup( (char *) data);
+        char * dnd = g_strdup( (char *) data);
         char delim = '\n';
         char * file = strtok(dnd, &delim);
 
         if(file != NULL)
         {
-                file_tree_append_dnd_file(file);
+            file_tree_append_dnd_file(file);
         }
         while( file != NULL)
         {
@@ -958,7 +953,7 @@ drag_data_cb(GtkWidget *wgt, GdkDragContext *context, int x, int y,
         }
         if(dnd != NULL)
         {
-            free(dnd);
+            g_free(dnd);
         }
     }
 
@@ -1001,7 +996,7 @@ void runscript(const char * name_in)
 {
     gchar * name = g_shell_quote(name_in);
 
-    char * cmd = malloc(strlen(name) + 100);
+    char * cmd = g_malloc0(strlen(name) + 100);
     sprintf(cmd, "open -a terminal.app %s", name);
     int ret = system(cmd);
     printf("Return value from system(): %d\n", ret);
@@ -1096,7 +1091,7 @@ gboolean save_cmd(GtkWindow * parent_window, char ** savename)
         gtk_file_chooser_set_current_folder (chooser, config.savefolder);
     }
 
-    char * suggname = malloc(1024);
+    char * suggname = g_malloc0(1024);
     sprintf(suggname, "dw_script");
     gtk_file_chooser_set_current_name (chooser, suggname);
 
@@ -1104,7 +1099,7 @@ gboolean save_cmd(GtkWindow * parent_window, char ** savename)
     if (res == GTK_RESPONSE_ACCEPT)
     {
         char * filename = gtk_file_chooser_get_filename (chooser);
-        char * sname = strdup(filename);
+        char * sname = g_strdup(filename);
         savename[0] = sname;
 
         // save_to_file (filename);
@@ -1156,7 +1151,7 @@ gboolean save_dw_cb(GtkWidget * widget, gpointer user_data)
             }
         }
         g_free (text);
-        free(filename);
+        g_free(filename);
     }
     return TRUE;
 }
@@ -1210,7 +1205,7 @@ gboolean run_dw_cb(GtkWidget * widget, gpointer user_data)
         // Run it
         //printf("To run: %s\n", filename);
         runscript(filename);
-        free(filename);
+        g_free(filename);
     }
     return TRUE;
 }
@@ -1286,7 +1281,7 @@ void update_cmd()
     // Update the suggested folder to save the script to
     if(config.savefolder != NULL)
     {
-        free(config.savefolder);
+        g_free(config.savefolder);
     }
 
     if(files != NULL)
@@ -1306,7 +1301,7 @@ void update_cmd()
         return;
     }
 
-    char * buff = malloc(1024*1024);
+    char * buff = g_malloc0(1024*1024);
     sprintf(buff, "# Microscope: '%s'\n", scope->name);
     gtk_text_buffer_insert(buffer, &titer, buff, -1);
     //sprintf(buff, "# %d channels available\n", nchan);
@@ -1317,14 +1312,14 @@ void update_cmd()
     int nthreads = dwconf->nthreads;
     int tilesize = dwconf->tilesize;
 
-    char * ostring = malloc(1024);
+    char * ostring = g_malloc0(1024);
     ostring[0] = '\0';
     if(dwconf->overwrite)
     {
         sprintf(ostring, " --overwrite ");
     }
 
-    char * fstring = malloc(1024);
+    char * fstring = g_malloc0(1024);
     fstring[0] = '\0';
     if(dwconf->outformat == DW_CONF_OUTFORMAT_FLOAT32)
     {
@@ -1367,7 +1362,7 @@ void update_cmd()
                single quotes in their names and avoids "accidental" mixing file
                names with commands :)
             */
-            char * outdir = malloc(strlen(fdir) + 100);
+            char * outdir = g_malloc0(strlen(fdir) + 100);
             sprintf(outdir, "%s/PSFBW/", fdir);
             gchar * q_outdir = g_shell_quote(outdir);
             gchar * q_psfname = g_shell_quote(psf);
@@ -1395,10 +1390,10 @@ void update_cmd()
             g_free(q_filename);
             g_free(q_psfname);
             g_free(q_outdir);
-            free(outdir);
+            g_free(outdir);
 
             g_free(fdir);
-            free(psf);
+            g_free(psf);
         } else {
             sprintf(buff, "# Missing channel for: %s\n", files[kk]->name);
             gtk_text_buffer_insert(buffer, &titer, buff, -1);
@@ -1410,9 +1405,9 @@ void update_cmd()
     gtk_text_view_set_buffer (cmd,
                               buffer);
 
-    free(buff);
-    free(ostring);
-    free(fstring);
+    g_free(buff);
+    g_free(ostring);
+    g_free(fstring);
 
     dw_conf_free(dwconf);
     dw_files_free(files);
@@ -1504,20 +1499,26 @@ void edit_selected_scope()
                            sDX_COLUMN, &sDX,
                            sDZ_COLUMN, &sDZ,
                            -1);
-        DwScope * current_scope = malloc(sizeof(DwScope));
-        current_scope->name = strdup(sname);
+        DwScope * current_scope = g_malloc0(sizeof(DwScope));
+        if(sname != NULL)
+        {
+            current_scope->name = g_strdup(sname);
+        }
         current_scope->NA = sNA;
         current_scope->ni = sNI;
         current_scope->xy_nm = sDX;
         current_scope->z_nm = sDZ;
+        g_free(sname);
+
         DwScope * scope = dw_scope_edit_dlg((GtkWindow*) config.window, current_scope);
         if(scope != NULL)
         {
             dw_scope_to_gtk_tree_store(scope, (GtkTreeStore*) model, &iter);
-            free(scope);
+            dw_scope_free(scope);
         }
-        free(current_scope);
+        dw_scope_free(current_scope);
     }
+    return;
 }
 
 
@@ -1545,16 +1546,23 @@ void edit_selected_channel()
                            cEMISSION_COLUMN, &clambda,
                            cNITER_COLUMN, &cniter,
                            -1);
-        DwChannel * curr = malloc(sizeof(DwChannel));
-        curr->name = strdup(cname);
-        curr->alias = strdup(calias);
+        DwChannel * curr = g_malloc0(sizeof(DwChannel));
+        assert(cname != NULL);
+        curr->name = g_strdup(cname);
+        assert(calias != NULL);
+        curr->alias = g_strdup(calias);
         curr->lambda = atof(clambda);
         curr->niter = cniter;
+
+        /* Free return values from gtk_tree_model_get */
+        g_free(calias);
+        g_free(cname);
+        g_free(clambda);
 
         DwChannel * new = dw_channel_edit_dlg((GtkWindow*) config.window, curr);
         if(new != NULL)
         {
-            char * lambdastr = malloc(1024);
+            char * lambdastr = g_malloc0(1024);
             sprintf(lambdastr, "%.2f", new->lambda);
             gtk_tree_store_set((GtkTreeStore*) model, &iter,
                                cALIAS_COLUMN, new->alias,
@@ -1562,10 +1570,10 @@ void edit_selected_channel()
                                cEMISSION_COLUMN, lambdastr,
                                cNITER_COLUMN, new->niter,
                                -1);
-            free(lambdastr);
-            free(new);
+            g_free(lambdastr);
+            dw_channel_free(new);
         }
-        free(curr);
+        dw_channel_free(curr);
     }
 
 }
@@ -1614,12 +1622,15 @@ gboolean save_channels_cb(GtkWidget * w, gpointer p)
     DwChannel ** channels = dw_channels_get_from_gtk_tree_view((GtkTreeView*) config.channel_tree);
     dw_channels_to_disk(channels, cfile);
     dw_channels_free(channels);
-    free(cfile);
+    g_free(cfile);
     return TRUE;
 }
 
 gboolean add_files_cb(GtkWidget * w, gpointer p)
 {
+    UNUSED(w);
+    UNUSED(p);
+
     GtkWidget *dialog;
     GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_OPEN;
     gint res;
@@ -1649,7 +1660,7 @@ gboolean add_files_cb(GtkWidget * w, gpointer p)
 
         if(config.default_open_uri != NULL)
         {
-            free(config.default_open_uri);
+            g_free(config.default_open_uri);
         }
         config.default_open_uri = gtk_file_chooser_get_current_folder_uri( (GtkFileChooser *) dialog );
 
@@ -1661,7 +1672,8 @@ gboolean add_files_cb(GtkWidget * w, gpointer p)
             //printf("File: %s\n", (char *) iter->data);
             file_tree_append((char *) iter->data);
         }
-        g_slist_free(filenames);
+        /* Free both the nodes and the file names that they point to */
+        g_slist_free_full(filenames, g_free);
     }
 
     gtk_widget_destroy (dialog);
@@ -1738,8 +1750,8 @@ gboolean microscope_tree_keypress (GtkWidget *tree_view, GdkEventKey *event, gpo
 }
 
 gboolean channel_tree_buttonpress(GtkWidget *tree_view,
-                                     GdkEventButton * event,
-                                     gpointer p)
+                                  GdkEventButton * event,
+                                  gpointer p)
 {
     UNUSED(tree_view);
     UNUSED(p);
@@ -1771,7 +1783,7 @@ void populate_channels()
     if(cfile != NULL)
     {
         channels = dw_channels_from_disk(cfile);
-        free(cfile);
+        g_free(cfile);
     }
 
     int pos = 0;
@@ -1799,7 +1811,7 @@ void populate_microscopes()
 {
     char * cfile = get_configuration_file("microscopes");
     DwScope ** scopes = dw_scopes_from_disk(cfile);
-    free(cfile);
+    g_free(cfile);
 
     int pos = 0;
     if(scopes != NULL)
@@ -1831,16 +1843,16 @@ GtkWidget * create_drop_frame()
 
     /* Set up Drag and Drop */
     enum
-    {
-     TARGET_STRING,
-     TARGET_URL
-    };
+        {
+            TARGET_STRING,
+            TARGET_URL
+        };
 
     static GtkTargetEntry targetentries[] =
         {
-         { "STRING",        0, TARGET_STRING },
-         { "text/plain",    0, TARGET_STRING },
-         { "text/uri-list", 0, TARGET_URL },
+            { "STRING",        0, TARGET_STRING },
+            { "text/plain",    0, TARGET_STRING },
+            { "text/uri-list", 0, TARGET_URL },
         };
 
     gtk_drag_dest_set(frame_drop, GTK_DEST_DEFAULT_ALL, targetentries, 3,
@@ -1852,8 +1864,8 @@ GtkWidget * create_drop_frame()
 
 #ifdef __APPLE__
     GtkWidget * label = gtk_label_new("Drag and Drop"
-    "does not work on OSX at the moment.\n"
-    "Please add files from the 'Files' tab.");
+                                      "does not work on OSX at the moment.\n"
+                                      "Please add files from the 'Files' tab.");
 #else
     GtkWidget * label = gtk_label_new("Drag and Drop images here");
 #endif
@@ -1868,8 +1880,8 @@ GtkWidget * create_drop_frame()
 
 static void
 about_activated(GSimpleAction *simple,
-               GVariant      *parameter,
-               gpointer       p)
+                GVariant      *parameter,
+                gpointer       p)
 {
     UNUSED(simple);
     UNUSED(parameter);
@@ -1939,40 +1951,46 @@ edit_global_config(void)
     gtk_widget_destroy (dialog);
 
     return;
-
 }
 
+
 static void
- configuration_activated(GSimpleAction *simple,
-                      GVariant      *parameter,
-                      gpointer       p)
+configuration_activated(GSimpleAction *simple,
+                        GVariant      *parameter,
+                        gpointer       p)
 {
     UNUSED(simple);
     UNUSED(parameter);
     UNUSED(p);
     edit_global_config();
-    //printf("configuration...\n");
-
+    return;
 }
+
 
 static GActionEntry main_menu_actions[] =
     {
-     { "about", about_activated, NULL, NULL, NULL },
-     { "configuration", configuration_activated, NULL, NULL, NULL }
+        { "about", about_activated, NULL, NULL, NULL, {0,0,0} },
+        { "configuration", configuration_activated, NULL, NULL, NULL, {0,0,0} }
     };
+
 
 void warn_no_dw(GtkWindow * parent)
 {
     GtkDialogFlags flags = GTK_DIALOG_DESTROY_WITH_PARENT;
-    GtkWidget * dialog = gtk_message_dialog_new (parent,
-                                     flags,
-                                     GTK_MESSAGE_ERROR,
-                                     GTK_BUTTONS_CLOSE,
-                                     "Could not locate deconwolf (i.e, the command 'dw'). You will not be able to run anything from this GUI!"
-                                     );
+    GtkWidget * dialog = gtk_message_dialog_new
+        (parent,
+         flags,
+         GTK_MESSAGE_ERROR,
+         GTK_BUTTONS_CLOSE,
+         "Could not locate deconwolf (i.e, the command 'dw'). "
+         "You will not be able to run anything from this GUI!"
+         );
+
     gtk_dialog_run (GTK_DIALOG (dialog));
     gtk_widget_destroy (dialog);
+    return;
 }
+
 
 DwAppWindow *
 dw_app_window_new (DwApp *app)
@@ -1982,7 +2000,7 @@ dw_app_window_new (DwApp *app)
     config.default_open_uri = NULL;
     config.savefolder = NULL;
     config.has_dw = has_dw();
-    config.regexp_channel = malloc(1024);
+    config.regexp_channel = g_malloc0(1024);
     sprintf(config.regexp_channel, "([A-Z0-9]*)\\_[0-9]*\\.TIFF?");
 
     // Set up a fallback icon
@@ -2077,8 +2095,8 @@ dw_app_window_new (DwApp *app)
     g_action_map_add_action_entries (G_ACTION_MAP (group),
                                      main_menu_actions, G_N_ELEMENTS (main_menu_actions),
                                      NULL);
-    gtk_widget_insert_action_group((GtkWidget*) hbar, "menu1", (GActionGroup*) group);
 
+    gtk_widget_insert_action_group((GtkWidget*) hbar, "menu1", (GActionGroup*) group);
 
     if(config.has_dw)
     {
@@ -2088,7 +2106,6 @@ dw_app_window_new (DwApp *app)
     }
 
     return window;
-
 }
 
 void
@@ -2097,4 +2114,5 @@ dw_app_window_open (DwAppWindow *win,
 {
     UNUSED(win);
     UNUSED(file);
+    return;
 }

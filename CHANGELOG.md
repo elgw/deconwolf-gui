@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.0.6, 2023-11-28
+ - Cleaned up to not have any compilation warnings.
+ - Compiles without gnu extensions and with clang.
+ - Simplified makefile.
+ - Fixed a few minor memory leaks.
+
 ## v0.0.5
  - Added the option to select GPU for processing (adding the flag `--method shbcl2`).
 

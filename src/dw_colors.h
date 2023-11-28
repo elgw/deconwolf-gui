@@ -1,5 +1,4 @@
-#ifndef __dw_colors_h
-#define __dw_colors_h
+#pragma once
 
 /**
  * A simple library build to convert wavelengths in nanometers
@@ -14,6 +13,7 @@
 
 #include <math.h>
 #include <stdlib.h>
+#include <gtk/gtk.h>
 
 /** @struct DwRGB
  * A struct to represent an RGB triple.
@@ -37,5 +37,3 @@ DwXYZ * dw_XYZ_new();
 DwRGB * dw_RGB_new_from_lambda(double lambda);
 DwRGB * dw_RGB_new_from_dw_XYZ(DwXYZ * C);
 DwXYZ * dw_XYZ_new_from_lambda(double lambda);
-
-#endif

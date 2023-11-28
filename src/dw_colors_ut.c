@@ -7,7 +7,7 @@ void show(double lambda)
 {
     DwRGB * C = dw_RGB_new_from_lambda(lambda);
     DwXYZ * C2 = dw_XYZ_new_from_lambda(lambda);
-    DwRGB * nC = malloc(sizeof(DwRGB));
+    DwRGB * nC = g_malloc0(sizeof(DwRGB));
     memcpy(nC, C, sizeof(DwRGB));
 
     assert(nC->R <= 1);
@@ -18,8 +18,8 @@ void show(double lambda)
            C2->X, C2->Y, C2->Z,
            C->R, C->G, C->B,
            nC->R, nC->G, nC->B);
-    free(C2);
-    free(C);
+    g_free(C2);
+    g_free(C);
     return;
 }
 

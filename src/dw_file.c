@@ -2,7 +2,7 @@
 
 DwFile * dw_file_new()
 {
-    DwFile * file = malloc(sizeof(DwFile));
+    DwFile * file = g_malloc0(sizeof(DwFile));
     file->name = NULL;
     file->channel = NULL;
     return file;
@@ -15,13 +15,13 @@ void dw_file_free(DwFile * file)
 
     if(file->name != NULL)
     {
-        free(file->name);
+        g_free(file->name);
     }
     if(file->channel != NULL)
     {
-        free(file->channel);
+        g_free(file->channel);
     }
-    free(file);
+    g_free(file);
 }
 
 void dw_files_free(DwFile ** files)
@@ -37,7 +37,7 @@ void dw_files_free(DwFile ** files)
         dw_file_free(files[pos]);
         pos++;
     }
-    free(files);
+    g_free(files);
 }
 
 DwFile ** dw_files_get_from_gtk_tree_view(GtkTreeView * tv)
@@ -58,7 +58,7 @@ DwFile ** dw_files_get_from_gtk_tree_view(GtkTreeView * tv)
     // Figure out how many rows there are
     gint nfiles_list = gtk_tree_model_iter_n_children(GTK_TREE_MODEL(model), NULL);
 
-    DwFile ** flist = malloc( (nfiles_list+1) * sizeof(DwFile*));
+    DwFile ** flist = g_malloc0( (nfiles_list+1) * sizeof(DwFile*));
     flist[nfiles_list] = NULL;
 
     // Get all files and add to list.
@@ -75,13 +75,13 @@ DwFile ** dw_files_get_from_gtk_tree_view(GtkTreeView * tv)
                             fCHANNEL_COLUMN, &channel,
                             -1);
         flist[pos] = dw_file_new();
-        flist[pos]->name = strdup(file);
+        flist[pos]->name = g_strdup(file);
         if(channel == NULL)
         {
-            flist[pos]->channel = strdup("_UNKNOWN");
+            flist[pos]->channel = g_strdup("_UNKNOWN");
         }
         else {
-        flist[pos]->channel = strdup(channel);
+        flist[pos]->channel = g_strdup(channel);
         }
         //        printf("%s %s\n", flist[pos]->name, flist[pos]->channel);
 
