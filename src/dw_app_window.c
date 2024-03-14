@@ -8,6 +8,8 @@
 #include "dw_app.h"
 #include "dw_app_window.h"
 
+#define titlestr "BiCroLab deconwolf GUI, 2021-2024 v0.1"
+
 // Global settings for this app
 typedef struct {
     DwAppWindow * window; // main window
@@ -179,11 +181,11 @@ GtkWidget * create_deconwolf_frame()
     config.bq_bad = (GtkToggleButton*) bq_bad;
 
     gtk_radio_button_join_group(
-                                (GtkRadioButton*) bq_best,
-                                (GtkRadioButton*) bq_good);
+        (GtkRadioButton*) bq_best,
+        (GtkRadioButton*) bq_good);
     gtk_radio_button_join_group(
-                                (GtkRadioButton*) bq_bad,
-                                (GtkRadioButton*) bq_good);
+        (GtkRadioButton*) bq_bad,
+        (GtkRadioButton*) bq_good);
 
     switch(dwconf->border_quality)
     {
@@ -207,8 +209,8 @@ GtkWidget * create_deconwolf_frame()
     config.hw_gpu = (GtkToggleButton*) hw_gpu;
 
     gtk_radio_button_join_group(
-                                (GtkRadioButton*) hw_cpu,
-                                (GtkRadioButton*) hw_gpu);
+        (GtkRadioButton*) hw_cpu,
+        (GtkRadioButton*) hw_gpu);
 
     if(dwconf->use_gpu)
     {
@@ -886,7 +888,7 @@ void file_tree_append(const char * fname)
 
     g_free(cname);
 
- done:
+done:
     return;
 }
 
@@ -959,7 +961,7 @@ drag_data_cb(GtkWidget *wgt, GdkDragContext *context, int x, int y,
 
 
 
- done:
+done:
     gtk_drag_finish (context,
                      TRUE, // success,
                      FALSE, // delete original
@@ -1048,10 +1050,10 @@ void runscript(const char * name_in)
         goto exit2;
     }
 
- exit2:
+exit2:
     g_object_unref (appinfo);
 
- exit1:
+exit1:
     g_free(name);
 }
 #endif
@@ -1401,7 +1403,7 @@ void update_cmd()
         kk++;
     }
 
- nofiles:
+nofiles:
     gtk_text_view_set_buffer (cmd,
                               buffer);
 
@@ -1862,6 +1864,8 @@ GtkWidget * create_drop_frame()
     //g_signal_connect(frame_drop, "drag-motion",
     //                 G_CALLBACK(drag_motion_cb), NULL);
 
+
+
 #ifdef __APPLE__
     GtkWidget * label = gtk_label_new("Drag and Drop"
                                       "does not work on OSX at the moment.\n"
@@ -1871,6 +1875,12 @@ GtkWidget * create_drop_frame()
 #endif
     gtk_widget_set_halign((GtkWidget* ) label, GTK_ALIGN_CENTER);
     gtk_widget_set_valign((GtkWidget* ) label, GTK_ALIGN_CENTER);
+
+    gchar * markup =
+        g_strdup_printf("<span foreground='#ffffff'><b>Drag and Drop images here</b></span>");
+
+    gtk_label_set_markup(GTK_LABEL(label),markup);
+    g_free(markup);
     gtk_widget_show(label);
     gtk_container_add (GTK_CONTAINER (overlay), image);
     gtk_overlay_add_overlay((GtkOverlay*) overlay, label);
@@ -1968,10 +1978,10 @@ configuration_activated(GSimpleAction *simple,
 
 
 static GActionEntry main_menu_actions[] =
-    {
-        { "about", about_activated, NULL, NULL, NULL, {0,0,0} },
-        { "configuration", configuration_activated, NULL, NULL, NULL, {0,0,0} }
-    };
+{
+    { "about", about_activated, NULL, NULL, NULL, {0,0,0} },
+    { "configuration", configuration_activated, NULL, NULL, NULL, {0,0,0} }
+};
 
 
 void warn_no_dw(GtkWindow * parent)
@@ -1984,7 +1994,7 @@ void warn_no_dw(GtkWindow * parent)
          GTK_BUTTONS_CLOSE,
          "Could not locate deconwolf (i.e, the command 'dw'). "
          "You will not be able to run anything from this GUI!"
-         );
+            );
 
     gtk_dialog_run (GTK_DIALOG (dialog));
     gtk_widget_destroy (dialog);
@@ -2064,7 +2074,7 @@ dw_app_window_new (DwApp *app)
     /* Create the window */
     DwAppWindow * window = g_object_new (DW_APP_WINDOW_TYPE, "application", app, NULL);
     config.window = window;
-    gtk_window_set_title (GTK_WINDOW (window), "BiCroLab deconwolf GUI, 2021 v0.1");
+    gtk_window_set_title (GTK_WINDOW (window), titlestr);
 
     /* Pack components */
     gtk_container_add (GTK_CONTAINER (frame_channels), channel_tree);
@@ -2084,7 +2094,7 @@ dw_app_window_new (DwApp *app)
     GtkWidget * mbtn = gtk_menu_button_new();
     gtk_menu_button_set_menu_model((GtkMenuButton*) mbtn, (GMenuModel*) menu);
     GtkWidget * hbar = gtk_header_bar_new();
-    gtk_header_bar_set_title((GtkHeaderBar*) hbar, "BiCroLab deconwolf GUI, 2021");
+    gtk_header_bar_set_title((GtkHeaderBar*) hbar, titlestr);
     gtk_header_bar_set_show_close_button((GtkHeaderBar*) hbar, TRUE);
     gtk_header_bar_pack_end((GtkHeaderBar*) hbar, mbtn);
     gtk_window_set_titlebar((GtkWindow*) window, hbar);
