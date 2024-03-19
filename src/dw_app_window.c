@@ -8,7 +8,8 @@
 #include "dw_app.h"
 #include "dw_app_window.h"
 
-#define titlestr "BiCroLab deconwolf GUI, 2021-2024 v0.1"
+#define titlestr "BiCroLab deconwolf GUI, 2021-2024"
+
 
 // Global settings for this app
 typedef struct {
@@ -2074,7 +2075,6 @@ dw_app_window_new (DwApp *app)
     /* Create the window */
     DwAppWindow * window = g_object_new (DW_APP_WINDOW_TYPE, "application", app, NULL);
     config.window = window;
-    gtk_window_set_title (GTK_WINDOW (window), titlestr);
 
     /* Pack components */
     gtk_container_add (GTK_CONTAINER (frame_channels), channel_tree);
@@ -2094,7 +2094,11 @@ dw_app_window_new (DwApp *app)
     GtkWidget * mbtn = gtk_menu_button_new();
     gtk_menu_button_set_menu_model((GtkMenuButton*) mbtn, (GMenuModel*) menu);
     GtkWidget * hbar = gtk_header_bar_new();
-    gtk_header_bar_set_title((GtkHeaderBar*) hbar, titlestr);
+    char * wintitle = calloc(strlen(titlestr)+100, 1);
+    sprintf(wintitle, "%s %s", titlestr, DW_GUI_VERSION);
+    gtk_header_bar_set_title((GtkHeaderBar*) hbar, wintitle);
+    free(wintitle);
+    //gtk_header_bar_set_title((GtkHeaderBar*) hbar, titlestr);
     gtk_header_bar_set_show_close_button((GtkHeaderBar*) hbar, TRUE);
     gtk_header_bar_pack_end((GtkHeaderBar*) hbar, mbtn);
     gtk_window_set_titlebar((GtkWindow*) window, hbar);
