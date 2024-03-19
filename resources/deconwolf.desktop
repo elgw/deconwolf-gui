@@ -3,4 +3,4 @@ Type=Application
 Name=deconwolf 0.1
 Icon=/usr/share/icons/hicolor/48x48/apps/deconwolf.png
 StartupNotify=true
-Exec=/usr/local/bin/dw_gui
+Exec=dw_gui
