@@ -236,9 +236,5 @@ install(FILES "${CMAKE_SOURCE_DIR}/resources/deconwolf.png"
 SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "Erik Wernersson") #required
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON) # resolve dependencies automatically
 set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://www.github.com/elgw/deconwolf-gui/")
-
+SET(CPACK_DEBIAN_PACKAGE_SECTION "science")
 INCLUDE(CPack)
-
-# The produced deb files are not perfectly portable,
-# dpkg -I ./deconwolf-0.3.8-Linux.deb
-# reveals ocl-icd-libopencl1-amdgpu-pro
