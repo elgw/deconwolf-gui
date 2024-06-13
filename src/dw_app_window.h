@@ -26,7 +26,7 @@ GtkWidget * create_deconwolf_tab();
 
 void edit_selected_channel();
 
-gboolean file_tree_keypress (GtkWidget *tree_view, GdkEventKey *event, gpointer data);
+gboolean file_tree_keypress (GtkWidget *tree_view, GdkEvent *event, gpointer data);
 void del_selected_file();
 
 // Clean upp DND formatting, then add to file tree

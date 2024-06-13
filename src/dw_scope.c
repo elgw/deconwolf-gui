@@ -248,7 +248,7 @@ dw_scope_edit_dlg(GtkWindow *parent, DwScope * old_scope)
 
  GtkWidget * lName = gtk_label_new("Name");
  GtkWidget * eName = gtk_entry_new();
- gtk_entry_set_text((GtkEntry*) eName, "Manufacturer, Floor, Room, etc");
+ gtk_entry_buffer_set_text((GtkEntry*) eName, "Manufacturer, Floor, Room, etc", -1);
  GtkWidget * lNA = gtk_label_new("Numerical aperture");
  GtkWidget * eNA = gtk_entry_new();
  GtkWidget * lni = gtk_label_new("Refractive index of immersion");
@@ -261,15 +261,15 @@ dw_scope_edit_dlg(GtkWindow *parent, DwScope * old_scope)
  if(old_scope != NULL)
  {
      char * buff = g_malloc0(1024);
-     gtk_entry_set_text((GtkEntry*) eName, old_scope->name);
+     gtk_entry_buffer_set_text(gtk_entry_get_buffer(eName), old_scope->name, -1);
      sprintf(buff, "%f", old_scope->NA);
-     gtk_entry_set_text((GtkEntry*) eNA, buff);
+     gtk_entry_buffer_set_text(gtk_entry_get_buffer(eNA), buff, -1);
      sprintf(buff, "%f", old_scope->ni);
-     gtk_entry_set_text((GtkEntry*) eni, buff);
+     gtk_entry_buffer_set_text(gtk_entry_get_buffer(eni), buff, -1);
      sprintf(buff, "%f", old_scope->xy_nm);
-     gtk_entry_set_text((GtkEntry*) edx, buff);
+     gtk_entry_buffer_set_text(gtk_entry_get_buffer(edx), buff, -1);
      sprintf(buff, "%f", old_scope->z_nm);
-     gtk_entry_set_text((GtkEntry*) edz, buff);
+     gtk_entry_buffer_set_text(gtk_entry_get_buffer(edz), buff, -1);
      g_free(buff);
  }
 
@@ -294,37 +294,42 @@ GtkWidget * im = gtk_image_new_from_resource("/images/Compound_Microscope_(cropp
 gtk_widget_set_margin_bottom((GtkWidget*) im, 20);
 gtk_widget_set_margin_top((GtkWidget*) im, 20);
 
-gtk_box_pack_end((GtkBox*) hbox, im, FALSE, TRUE, 5);
-gtk_box_pack_start((GtkBox*) hbox, grid, FALSE, TRUE, 5);
+gtk_box_append((GtkBox*) hbox, im);
+gtk_box_append((GtkBox*) hbox, grid);
 
 gtk_widget_set_halign((GtkWidget*) grid, GTK_ALIGN_CENTER);
 gtk_widget_set_valign((GtkWidget*) grid, GTK_ALIGN_CENTER);
 gtk_widget_set_halign((GtkWidget*) hbox, GTK_ALIGN_CENTER);
 gtk_widget_set_valign((GtkWidget*) hbox, GTK_ALIGN_CENTER);
- gtk_container_add (GTK_CONTAINER (content_area),  hbox);
+gtk_grid_attach (content_area,  hbox, 0, 0, 1, 1);
 
 
+ #ifdef GTK3
  gtk_widget_show_all(content_area);
-
  int result = gtk_dialog_run (GTK_DIALOG (dialog));
+
  DwScope * scope = NULL;
  switch (result)
  {
  case GTK_RESPONSE_ACCEPT:
      scope = g_malloc0(sizeof(DwScope));
-     scope->name = g_strdup(gtk_entry_get_text((GtkEntry*) eName));
-     scope->NA = atof(gtk_entry_get_text((GtkEntry*) eNA));
-     scope->ni = atof(gtk_entry_get_text((GtkEntry*) eni));
-     scope->xy_nm = atof(gtk_entry_get_text((GtkEntry*) edx));
-     scope->z_nm = atof(gtk_entry_get_text((GtkEntry*) edz));
+     scope->name = g_strdup(gtk_entry_buffer_get_text((GtkEntry*) eName));
+     scope->NA = atof(gtk_entry_buffer_get_text((GtkEntry*) eNA));
+     scope->ni = atof(gtk_entry_buffer_get_text((GtkEntry*) eni));
+     scope->xy_nm = atof(gtk_entry_buffer_get_text((GtkEntry*) edx));
+     scope->z_nm = atof(gtk_entry_buffer_get_text((GtkEntry*) edz));
      break;
  default:
      // do_nothing_since_dialog_was_cancelled ();
      break;
  }
- gtk_widget_destroy (dialog);
 
+ gtk_widget_destroy (dialog);
  return scope;
+#else
+ return NULL;
+ #endif
+
 }
 
 

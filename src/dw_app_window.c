@@ -46,11 +46,19 @@ gboolean has_dw()
 }
 
 /* Forward declarations */
+static gboolean
+on_drop (GtkDropTarget *target,
+         const GValue  *value,
+         double         x,
+         double         y,
+         gpointer       data);
+
+#ifdef GTK3
 static  void
 drag_data_cb(GtkWidget *wgt, GdkDragContext *context, int x, int y,
              GtkSelectionData *seldata, guint info, guint time,
              gpointer userdata);
-
+#endif
 
 char * get_configuration_file(char * name)
 /* Return the name for the configuration file */
@@ -77,7 +85,7 @@ DwConf * parse_dw_conf()
     conf->nthreads = (int) round(gtk_adjustment_get_value(config.dwc_nthreads));
     conf->tilesize = (int) round(gtk_adjustment_get_value(config.dwc_tilesize));
     conf->overwrite = gtk_switch_get_state(config.dwc_overwrite);
-    if( gtk_toggle_button_get_active(config.dwc_outformat_uint16))
+    if( gtk_check_button_get_active(config.dwc_outformat_uint16))
     {
         conf->outformat = DW_CONF_OUTFORMAT_UINT16;
     }
@@ -86,17 +94,17 @@ DwConf * parse_dw_conf()
         conf->outformat = DW_CONF_OUTFORMAT_FLOAT32;
     }
 
-    if(gtk_toggle_button_get_active(config.bq_best)){
+    if(gtk_check_button_get_active(config.bq_best)){
         conf->border_quality = DW_CONF_BORDER_QUALITY_BEST;
     }
-    if(gtk_toggle_button_get_active(config.bq_good)){
+    if(gtk_check_button_get_active(config.bq_good)){
         conf->border_quality = DW_CONF_BORDER_QUALITY_GOOD;
     }
-    if(gtk_toggle_button_get_active(config.bq_bad)){
+    if(gtk_check_button_get_active(config.bq_bad)){
         conf->border_quality = DW_CONF_BORDER_QUALITY_BAD;
     }
 
-    if(gtk_toggle_button_get_active(config.hw_gpu)){
+    if(gtk_check_button_get_active(config.hw_gpu)){
         conf->use_gpu = 1;
     } else {
         conf->use_gpu = 0;
@@ -133,7 +141,7 @@ next_page_cb (GtkWidget *widget,
 
 GtkWidget * create_deconwolf_frame()
 {
-
+    printf("create_deconwolf_frame\n");
     char * cfile = get_configuration_file("deconwolf");
     DwConf * dwconf = dw_conf_new_from_file(cfile);
     g_free(cfile);
@@ -160,64 +168,65 @@ GtkWidget * create_deconwolf_frame()
     GtkWidget * vTile = gtk_spin_button_new(adjTile, 10, 0);
 
     GtkWidget * lFormat = gtk_label_new("Output format:");
-    GtkWidget * out_uint16 = gtk_radio_button_new_with_label(NULL, "unsigned 16-bit");
-    GtkWidget * out_float32 = gtk_radio_button_new_with_label(NULL, "32 bit floating point");
-    gtk_radio_button_join_group((GtkRadioButton*) out_float32, (GtkRadioButton*) out_uint16);
+    GtkWidget * out_uint16 = gtk_check_button_new_with_label("unsigned 16-bit");
+    GtkWidget * out_float32 = gtk_check_button_new_with_label("32 bit floating point");
+    gtk_check_button_set_group((GtkCheckButton*) out_float32, (GtkCheckButton*) out_uint16);
     config.dwc_outformat_uint16 = (GtkToggleButton*) out_uint16;
     if(dwconf->outformat == DW_CONF_OUTFORMAT_UINT16)
     {
-        gtk_toggle_button_set_active( (GtkToggleButton*) out_uint16, TRUE);
+        gtk_check_button_set_active( (GtkToggleButton*) out_uint16, TRUE);
     }
     else
     {
-        gtk_toggle_button_set_active( (GtkToggleButton*) out_float32, TRUE);
+        gtk_check_button_set_active( (GtkToggleButton*) out_float32, TRUE);
     }
 
     GtkWidget * lBorder = gtk_label_new("Border quality");
-    GtkWidget * bq_best = gtk_radio_button_new_with_label(NULL, "Best (Default)");
-    GtkWidget * bq_good = gtk_radio_button_new_with_label(NULL, "Good");
-    GtkWidget * bq_bad = gtk_radio_button_new_with_label(NULL, "Periodic (fastest)");
+    GtkWidget * bq_best = gtk_check_button_new_with_label("Best (Default)");
+    GtkWidget * bq_good = gtk_check_button_new_with_label("Good");
+    GtkWidget * bq_bad = gtk_check_button_new_with_label("Periodic (fastest)");
     config.bq_best = (GtkToggleButton*) bq_best;
     config.bq_good = (GtkToggleButton*) bq_good;
     config.bq_bad = (GtkToggleButton*) bq_bad;
 
-    gtk_radio_button_join_group(
-        (GtkRadioButton*) bq_best,
-        (GtkRadioButton*) bq_good);
-    gtk_radio_button_join_group(
-        (GtkRadioButton*) bq_bad,
-        (GtkRadioButton*) bq_good);
+    gtk_check_button_set_group(
+                               (GtkCheckButton*) bq_best,
+                               (GtkCheckButton*) bq_good);
+    gtk_check_button_set_group(
+                               (GtkCheckButton*) bq_bad,
+                               (GtkCheckButton*) bq_good);
+
 
     switch(dwconf->border_quality)
     {
     case DW_CONF_BORDER_QUALITY_BEST:
-        gtk_toggle_button_set_active( (GtkToggleButton*) bq_best, TRUE);
+        gtk_check_button_set_active( (GtkToggleButton*) bq_best, TRUE);
         break;
     case DW_CONF_BORDER_QUALITY_GOOD:
-        gtk_toggle_button_set_active( (GtkToggleButton*) bq_good, TRUE);
+        gtk_check_button_set_active( (GtkToggleButton*) bq_good, TRUE);
         break;
     case DW_CONF_BORDER_QUALITY_BAD:
-        gtk_toggle_button_set_active( (GtkToggleButton*) bq_bad, TRUE);
+        gtk_check_button_set_active( (GtkToggleButton*) bq_bad, TRUE);
         break;
     }
-
+    printf("1\n");
     /* CPU / GPU */
     GtkWidget * lHardware = gtk_label_new("Hardware");
-    GtkWidget * hw_cpu = gtk_radio_button_new_with_label(NULL, "CPU (Default)");
-    GtkWidget * hw_gpu = gtk_radio_button_new_with_label(NULL, "GPU (read the docs!)");
+    GtkWidget * hw_cpu = gtk_check_button_new_with_label("CPU (Default)");
+    GtkWidget * hw_gpu = gtk_check_button_new_with_label("GPU (read the docs!)");
 
     config.hw_cpu = (GtkToggleButton*) hw_cpu;
     config.hw_gpu = (GtkToggleButton*) hw_gpu;
 
-    gtk_radio_button_join_group(
-        (GtkRadioButton*) hw_cpu,
-        (GtkRadioButton*) hw_gpu);
+    gtk_check_button_set_group(
+                               (GtkCheckButton*) hw_cpu,
+                               (GtkCheckButton*) hw_gpu);
 
     if(dwconf->use_gpu)
     {
-        gtk_toggle_button_set_active( (GtkToggleButton*) hw_gpu, TRUE);
+        gtk_check_button_set_active( (GtkToggleButton*) hw_gpu, TRUE);
     } else {
-        gtk_toggle_button_set_active( (GtkToggleButton*) hw_cpu, TRUE);
+        gtk_check_button_set_active( (GtkToggleButton*) hw_cpu, TRUE);
     }
 
     GtkWidget * grid = gtk_grid_new();
@@ -247,11 +256,9 @@ GtkWidget * create_deconwolf_frame()
     gtk_widget_set_halign((GtkWidget*) grid, GTK_ALIGN_CENTER);
     gtk_widget_set_valign((GtkWidget*) grid, GTK_ALIGN_CENTER);
 
-    GtkWidget * btnSave = gtk_button_new_from_icon_name("document-save",
-                                                        GTK_ICON_SIZE_SMALL_TOOLBAR);
+    GtkWidget * btnSave = gtk_button_new_from_icon_name("document-save");
+    GtkWidget * btnNext = gtk_button_new_from_icon_name("go-next");
 
-    GtkWidget * btnNext = gtk_button_new_from_icon_name("go-next",
-                                                        GTK_ICON_SIZE_SMALL_TOOLBAR);
     gtk_widget_set_tooltip_text(btnNext, "Next page");
     g_signal_connect (btnNext, "clicked", G_CALLBACK (next_page_cb), NULL);
 
@@ -263,43 +270,34 @@ GtkWidget * create_deconwolf_frame()
     gtk_action_bar_pack_end ((GtkActionBar*) Bar, btnNext);
     GtkWidget * A = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
 
-    gtk_box_pack_end ((GtkBox*) A,
-                      Bar,
-                      FALSE,
-                      TRUE,
-                      5);
 
-    gtk_box_pack_start ((GtkBox*) A,
-                        grid,
-                        TRUE,
-                        TRUE,
-                        5);
+    gtk_box_append(A, Bar);
+    gtk_box_append(A, grid);
+
     g_free(dwconf);
     return A;
-
+    printf("end create deconwolf frame\n");
 }
 
 GtkWidget * create_file_frame()
 {
-
+    printf("Setting up file frame\n");
     GtkTreeStore * file_store = gtk_tree_store_new (fN_COLUMNS,       /* Total number of columns */
                                                     G_TYPE_STRING,   /* File name */
                                                     G_TYPE_STRING);   /* Channel */
 
     GtkWidget * file_tree = gtk_tree_view_new_with_model (GTK_TREE_MODEL (file_store));
-    //GtkWidget * file_tree = (GtkWidget*) gtk_tree_model_sort_new_with_model (GTK_TREE_MODEL (file_store));
-    //gtk_tree_sortable_set_sort_column_id (GTK_TREE_SORTABLE (file_tree),
-    //                                      fFILE_COLUMN, GTK_SORT_ASCENDING);
-    // Fixes performance issue
-    //    gtk_tree_view_set_fixed_height_mode(GTK_TREE_VIEW (file_tree), TRUE);
+
+
 
     config.file_tree = file_tree;
 
     GtkCellRenderer * renderer = gtk_cell_renderer_text_new ();
+    #if 0
     g_object_set (G_OBJECT (renderer),
                   "foreground", "black",
                   NULL);
-
+#endif
     /* Create a column, associating the "text" attribute of the
      * cell_renderer to the first column of the model */
     GtkTreeViewColumn * column = gtk_tree_view_column_new_with_attributes ("File", renderer,
@@ -325,24 +323,22 @@ GtkWidget * create_file_frame()
     gtk_tree_view_append_column (GTK_TREE_VIEW (file_tree), column);
 
 
-    GtkWidget * btnNew = gtk_button_new_from_icon_name("list-add",
-                                                       GTK_ICON_SIZE_SMALL_TOOLBAR);
+
+    GtkWidget * btnNew = gtk_button_new_from_icon_name("list-add");
+
     gtk_widget_set_tooltip_text(btnNew, "Add file(s)");
 
-    GtkWidget * btnDel = gtk_button_new_from_icon_name("list-remove",
-                                                       GTK_ICON_SIZE_SMALL_TOOLBAR);
+    GtkWidget * btnDel = gtk_button_new_from_icon_name("list-remove");
     gtk_widget_set_tooltip_text(btnDel, "Remove selected file");
 
-    GtkWidget * btnClear = gtk_button_new_from_icon_name("edit-delete",
-                                                         GTK_ICON_SIZE_SMALL_TOOLBAR);
+    GtkWidget * btnClear = gtk_button_new_from_icon_name("edit-delete");
     gtk_widget_set_tooltip_text(btnClear, "Clear the list of files");
     g_signal_connect(btnClear, "clicked", G_CALLBACK (clear_files_cb), NULL);
     g_signal_connect(btnNew, "clicked", G_CALLBACK (add_files_cb), NULL);
     g_signal_connect(btnDel, "clicked", G_CALLBACK (del_file_cb), NULL);
 
 
-    GtkWidget * btnNext = gtk_button_new_from_icon_name("go-next",
-                                                        GTK_ICON_SIZE_SMALL_TOOLBAR);
+    GtkWidget * btnNext = gtk_button_new_from_icon_name("go-next");
     gtk_widget_set_tooltip_text(btnNext, "Next page");
     g_signal_connect (btnNext, "clicked", G_CALLBACK (next_page_cb), NULL);
 
@@ -353,48 +349,68 @@ GtkWidget * create_file_frame()
     gtk_action_bar_pack_start((GtkActionBar*) Bar, btnClear);
     gtk_action_bar_pack_end ((GtkActionBar*) Bar, btnNext);
 
-    GtkWidget * file_tree_scroller = gtk_scrolled_window_new (NULL, NULL);
-    gtk_container_add (GTK_CONTAINER (file_tree_scroller),
-                       file_tree);
-
+    GtkWidget * file_tree_scroller = gtk_scrolled_window_new ();
+    gtk_scrolled_window_set_child(file_tree_scroller, file_tree);
+    gtk_widget_set_vexpand(file_tree_scroller, true);
     GtkWidget * boxV = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
-    gtk_box_pack_start((GtkBox*) boxV,
-                       file_tree_scroller,
-                       TRUE, TRUE, 0);
-    gtk_box_pack_end((GtkBox*) boxV,
-                     Bar,
-                     FALSE, TRUE, 0);
+
+    gtk_box_append(boxV, Bar);
+    gtk_box_append(boxV, file_tree_scroller);
+
 
     GtkWidget * file_frame = gtk_frame_new(NULL);
-    gtk_container_add (GTK_CONTAINER (file_frame),
-                       boxV);
+    gtk_frame_set_child (file_frame, boxV);
 
+#ifdef GTK3
     g_signal_connect (G_OBJECT (file_tree), "key_press_event",
                       G_CALLBACK (file_tree_keypress), NULL);
+#endif
 
     /* Set up Drag and Drop */
+#ifdef GTK3
     enum
         {
             TARGET_STRING,
             TARGET_URL
         };
+
     static GtkTargetEntry targetentries[] =
         {
             { "STRING",        0, TARGET_STRING },
             { "text/plain",    0, TARGET_STRING },
             { "text/uri-list", 0, TARGET_URL },
         };
+
     gtk_drag_dest_set(file_frame, GTK_DEST_DEFAULT_ALL, targetentries, 3,
                       GDK_ACTION_COPY );
     g_signal_connect(file_frame, "drag_data_received",
                      G_CALLBACK(drag_data_cb), NULL);
+#endif
 
+    // 1. Set up a GtkDropTarget
+    // 2. Handle GtkDropTarget::drop
+    GtkDropTarget *target =
+        gtk_drop_target_new (G_TYPE_INVALID, GDK_ACTION_COPY);
+
+    // Note: Does only work if when specified in this order, else a
+    // list of files is detected as a single file.
+    gtk_drop_target_set_gtypes (target, (GType [2]) {
+            GDK_TYPE_FILE_LIST, G_TYPE_FILE,
+        }, 2);
+
+    g_signal_connect (target, "drop", G_CALLBACK (on_drop), file_frame);
+    gtk_widget_add_controller (GTK_WIDGET (file_frame),
+                               GTK_EVENT_CONTROLLER (target));
+
+    printf("File frame done\n");
     return file_frame;
+
 }
 
 
 int is_tif_file_name(const char * fname)
 {
+    printf("Checking %s\n", fname);
     GRegex *regex;
     GMatchInfo *match_info;
     int match = 0;
@@ -564,6 +580,7 @@ new_channel_cb(GtkWidget *widget,
 
 GtkWidget * create_channel_tree()
 {
+    printf("Create channel tree\n");
     /* Create tree-view for files */
     GtkTreeStore * channel_store = gtk_tree_store_new (cN_COLUMNS,       /* Total number of columns */
                                                        G_TYPE_STRING,
@@ -576,9 +593,11 @@ GtkWidget * create_channel_tree()
     config.channel_tree = channel_tree;
 
     GtkCellRenderer * renderer = gtk_cell_renderer_text_new ();
+    #if 0
     g_object_set (G_OBJECT (renderer),
                   "foreground", "black",
                   NULL);
+    #endif
 
     g_object_set(G_OBJECT (renderer), "editable", FALSE, NULL);
 
@@ -620,23 +639,19 @@ GtkWidget * create_channel_tree()
     gtk_tree_view_append_column (GTK_TREE_VIEW (channel_tree), column);
 
 
-    GtkWidget * btnNew = gtk_button_new_from_icon_name("list-add",
-                                                       GTK_ICON_SIZE_SMALL_TOOLBAR);
+    GtkWidget * btnNew = gtk_button_new_from_icon_name("list-add");
     gtk_widget_set_tooltip_text(btnNew, "Add another channel");
 
-    GtkWidget * btnDel = gtk_button_new_from_icon_name("list-remove",
-                                                       GTK_ICON_SIZE_SMALL_TOOLBAR);
+    GtkWidget * btnDel = gtk_button_new_from_icon_name("list-remove");
     gtk_widget_set_tooltip_text(btnDel, "Remove selected channel");
 
-    GtkWidget * btnEdit = gtk_button_new_from_icon_name("preferences-other",
-                                                        GTK_ICON_SIZE_SMALL_TOOLBAR);
+    GtkWidget * btnEdit = gtk_button_new_from_icon_name("preferences-other");
     gtk_widget_set_tooltip_text(btnEdit, "Edit selected channel");
 
-    GtkWidget * btnSave = gtk_button_new_from_icon_name("document-save",
-                                                        GTK_ICON_SIZE_SMALL_TOOLBAR);
+    GtkWidget * btnSave = gtk_button_new_from_icon_name("document-save");
     gtk_widget_set_tooltip_text(btnSave, "Save current list as default");
-    GtkWidget * btnNext = gtk_button_new_from_icon_name("go-next",
-                                                        GTK_ICON_SIZE_SMALL_TOOLBAR);
+
+    GtkWidget * btnNext = gtk_button_new_from_icon_name("go-next");
     gtk_widget_set_tooltip_text(btnNext, "Next page");
     g_signal_connect (btnNext, "clicked", G_CALLBACK (next_page_cb), NULL);
 
@@ -653,20 +668,15 @@ GtkWidget * create_channel_tree()
     gtk_action_bar_pack_end ((GtkActionBar*) Bar, btnNext);
 
     GtkWidget * boxV = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
-    gtk_box_pack_end((GtkBox*) boxV,
-                     Bar,
-                     FALSE, TRUE, 5);
+
+    gtk_box_append(boxV, Bar);
 
     // Make the list of channels scrollable
-    GtkWidget * channel_tree_scroll = gtk_scrolled_window_new (NULL, NULL);
-
-    gtk_container_add (GTK_CONTAINER (channel_tree_scroll),
-                       channel_tree);
-
-    gtk_box_pack_start((GtkBox*) boxV,
-                       channel_tree_scroll,
-                       TRUE, TRUE, 5);
-
+    GtkWidget * channel_tree_scroll = gtk_scrolled_window_new ();
+    gtk_scrolled_window_set_child (channel_tree_scroll, channel_tree);
+    gtk_widget_set_vexpand(channel_tree_scroll, true);
+    gtk_box_append(boxV, channel_tree_scroll);
+    printf("end Create channel tree\n");
     return boxV;
 }
 
@@ -727,6 +737,7 @@ save_scopes_cb (GtkWidget *widget,
 
 GtkWidget * create_microscope_tab()
 {
+    printf("Create scope tab\n");
     /* Create tree-view for microscopes */
     GtkTreeStore * scope_store = gtk_tree_store_new (sSN_COLUMNS,       /* Total number of columns */
                                                      G_TYPE_STRING,
@@ -786,21 +797,16 @@ GtkWidget * create_microscope_tab()
     gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
     gtk_tree_view_append_column (GTK_TREE_VIEW (scope_tree), column);
 
-    GtkWidget * btnNew = gtk_button_new_from_icon_name("list-add",
-                                                       GTK_ICON_SIZE_SMALL_TOOLBAR);
+    GtkWidget * btnNew = gtk_button_new_from_icon_name("list-add");
     gtk_widget_set_tooltip_text(btnNew, "Add another microscope");
-    GtkWidget * btnDel = gtk_button_new_from_icon_name("list-remove",
-                                                       GTK_ICON_SIZE_SMALL_TOOLBAR);
+    GtkWidget * btnDel = gtk_button_new_from_icon_name("list-remove");
     gtk_widget_set_tooltip_text(btnDel, "Remove selected microscope");
-    GtkWidget * btnEdit = gtk_button_new_from_icon_name("preferences-other",
-                                                        GTK_ICON_SIZE_SMALL_TOOLBAR);
+    GtkWidget * btnEdit = gtk_button_new_from_icon_name("preferences-other");
     gtk_widget_set_tooltip_text(btnEdit, "Edit selected microscope");
 
-    GtkWidget * btnSave = gtk_button_new_from_icon_name("document-save",
-                                                        GTK_ICON_SIZE_SMALL_TOOLBAR);
+    GtkWidget * btnSave = gtk_button_new_from_icon_name("document-save");
     gtk_widget_set_tooltip_text(btnSave, "Save current list as default");
-    GtkWidget * btnNext = gtk_button_new_from_icon_name("go-next",
-                                                        GTK_ICON_SIZE_SMALL_TOOLBAR);
+    GtkWidget * btnNext = gtk_button_new_from_icon_name("go-next");
     gtk_widget_set_tooltip_text(btnNext, "Next page");
     g_signal_connect (btnNext, "clicked", G_CALLBACK (next_page_cb), NULL);
 
@@ -819,17 +825,8 @@ GtkWidget * create_microscope_tab()
 
     GtkWidget * A = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
 
-    gtk_box_pack_end ((GtkBox*) A,
-                      Bar,
-                      FALSE,
-                      TRUE,
-                      5);
-
-    gtk_box_pack_start ((GtkBox*) A,
-                        scope_tree,
-                        TRUE,
-                        TRUE,
-                        5);
+    gtk_box_append(A, Bar);
+    gtk_box_append(A, scope_tree);
 
     return A;
 }
@@ -877,6 +874,7 @@ void file_tree_append(const char * fname)
 
     if(!is_tif_file_name(fname))
     {
+        printf("Not a tif file!\n");
         goto done;
     }
 
@@ -889,12 +887,52 @@ void file_tree_append(const char * fname)
 
     g_free(cname);
 
-done:
+ done:
     return;
 }
 
 
+// https://developer.gnome.org/documentation/tutorials/drag-and-drop.html
+static gboolean
+on_drop (GtkDropTarget *target,
+         const GValue  *value,
+         double         x,
+         double         y,
+         gpointer       data)
+{
+    // Call the appropriate setter depending on the type of data
+    // that we received
+    print_g_object_name(value);
 
+    if(G_VALUE_HOLDS(value, GDK_TYPE_FILE_LIST))
+    {
+        printf("Several files (GSlist ?)\n");
+        GdkFileList *file_list = g_value_get_boxed (value);
+        GSList *list = gdk_file_list_get_files (file_list);
+        for (GSList *l = list; l != NULL; l = l->next)
+        {
+            GFile* file = l->data;
+            g_print ("+ %s\n", g_file_get_path (file));
+            file_tree_append(g_file_get_path(file));
+        }
+        return true;
+    } else if (G_VALUE_HOLDS (value, G_TYPE_FILE))
+    {
+        printf("Got a file (or several)\n");
+        GFile * file = g_value_get_object (value);
+        char * t = g_file_get_path(file);
+        printf("Got %s\n", t);
+        file_tree_append(g_file_get_path(file));
+        g_free(t);
+        //my_widget_set_file (self, g_value_get_object (value));
+        return true;
+    } else {
+        printf("Got something else\n");
+        return false;
+    }
+}
+
+#ifdef GTK3
 static  void
 drag_data_cb(GtkWidget *wgt, GdkDragContext *context, int x, int y,
              GtkSelectionData *seldata, guint info, guint time,
@@ -962,7 +1000,7 @@ drag_data_cb(GtkWidget *wgt, GdkDragContext *context, int x, int y,
 
 
 
-done:
+ done:
     gtk_drag_finish (context,
                      TRUE, // success,
                      FALSE, // delete original
@@ -970,7 +1008,7 @@ done:
 
     //  printf("DnD handling done\n");
 }
-
+#endif
 
 
 struct _DwAppWindow
@@ -1051,10 +1089,10 @@ void runscript(const char * name_in)
         goto exit2;
     }
 
-exit2:
+ exit2:
     g_object_unref (appinfo);
 
-exit1:
+ exit1:
     g_free(name);
 }
 #endif
@@ -1068,40 +1106,45 @@ gboolean save_cmd(GtkWindow * parent_window, char ** savename)
     gboolean saved = FALSE;
 
     GtkWidget *dialog;
-    GtkFileChooser *chooser;
-    GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_SAVE;
+    GtkFileDialog *chooser;
+
     gint res;
 
-    dialog = gtk_file_chooser_dialog_new ("Save File",
-                                          parent_window,
-                                          action,
-                                          "_Cancel",
-                                          GTK_RESPONSE_CANCEL,
-                                          "_Save",
-                                          GTK_RESPONSE_ACCEPT,
-                                          NULL);
-    chooser = GTK_FILE_CHOOSER (dialog);
+    dialog = gtk_file_dialog_new ();
+    gtk_file_dialog_set_title(dialog, "Save File");
+    gtk_file_dialog_set_modal(dialog, true);
+
+    chooser = GTK_FILE_DIALOG (dialog);
 
     // Todo: handle "confirm-overwrite" signal to
     //       add the option "append".
     // see: https://developer.gnome.org/gtk3/stable/GtkFileChooser.html#GtkFileChooser-confirm-overwrite
 
-    gtk_file_chooser_set_do_overwrite_confirmation (chooser, TRUE);
+#ifdef GTK3
+    gtk_file_dialog_set_do_overwrite_confirmation (chooser, TRUE);
+#endif
 
     // use folder of first tif file if available
     if(config.savefolder != NULL)
     {
-        gtk_file_chooser_set_current_folder (chooser, config.savefolder);
+#ifdef GTK3
+        gtk_file_dialog_set_current_folder (chooser, config.savefolder);
+#endif
     }
 
     char * suggname = g_malloc0(1024);
     sprintf(suggname, "dw_script");
-    gtk_file_chooser_set_current_name (chooser, suggname);
+#ifdef GTK3
+    gtk_file_dialog_set_current_name (chooser, suggname);
+#endif
 
+#ifdef GTK3
     res = gtk_dialog_run (GTK_DIALOG (dialog));
+#endif
+
     if (res == GTK_RESPONSE_ACCEPT)
     {
-        char * filename = gtk_file_chooser_get_filename (chooser);
+        char * filename = gtk_file_dialog_get_filename (chooser);
         char * sname = g_strdup(filename);
         savename[0] = sname;
 
@@ -1110,7 +1153,9 @@ gboolean save_cmd(GtkWindow * parent_window, char ** savename)
         saved = TRUE;
     }
 
+#ifdef GTK3
     gtk_widget_destroy (dialog);
+#endif
     return saved;
 }
 
@@ -1224,25 +1269,23 @@ GtkWidget * create_run_frame()
 
     g_object_set(G_OBJECT(cmd), "editable", FALSE, NULL);
 
-    GtkWidget * cmd_scroll = gtk_scrolled_window_new (NULL, NULL);
+    GtkWidget * cmd_scroll = gtk_scrolled_window_new();
+    gtk_widget_set_vexpand(cmd_scroll, true);
 
-    gtk_container_add (GTK_CONTAINER (cmd_scroll),
-                       cmd);
+    gtk_scrolled_window_set_child(cmd_scroll, cmd);
 
     GtkWidget * fcmd_scroll = gtk_frame_new("Commands");
-    gtk_container_add(GTK_CONTAINER(fcmd_scroll), cmd_scroll);
+    gtk_frame_set_child( fcmd_scroll, cmd_scroll);
 
 
     GtkWidget * frame = gtk_frame_new(NULL);
-    gtk_container_add(GTK_CONTAINER (frame), fcmd_scroll);
+    gtk_frame_set_child(frame, fcmd_scroll);
 
-    GtkWidget * ButtonRun = gtk_button_new_from_icon_name("media-playback-start",
-                                                          GTK_ICON_SIZE_SMALL_TOOLBAR);
+    GtkWidget * ButtonRun = gtk_button_new_from_icon_name("media-playback-start");
 
     gtk_widget_set_tooltip_text(ButtonRun, "Save the script and run it");
 
-    GtkWidget * ButtonSaveAs = gtk_button_new_from_icon_name("document-save-as",
-                                                             GTK_ICON_SIZE_SMALL_TOOLBAR);
+    GtkWidget * ButtonSaveAs = gtk_button_new_from_icon_name("document-save-as");
     gtk_widget_set_tooltip_text(ButtonSaveAs, "Save the script to disk");
 
     GtkWidget * Bar = gtk_action_bar_new();
@@ -1254,17 +1297,9 @@ GtkWidget * create_run_frame()
 
     GtkWidget * A = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
 
-    gtk_box_pack_end ((GtkBox*) A,
-                      Bar,
-                      FALSE,
-                      TRUE,
-                      5);
 
-    gtk_box_pack_start ((GtkBox*) A,
-                        frame,
-                        TRUE,
-                        TRUE,
-                        5);
+    gtk_box_append(A, Bar);
+    gtk_box_append(A, frame);
 
     gtk_widget_show (cmd);
     return A;
@@ -1404,7 +1439,7 @@ void update_cmd()
         kk++;
     }
 
-nofiles:
+ nofiles:
     gtk_text_view_set_buffer (cmd,
                               buffer);
 
@@ -1629,60 +1664,74 @@ gboolean save_channels_cb(GtkWidget * w, gpointer p)
     return TRUE;
 }
 
+/** Callback from Open File dialogue
+ * TODO: Check if valid files
+ * TODO: Exclude folders
+ */
+void
+got_files_from_dialog (  GObject* source_object,
+                         GAsyncResult* res,
+                         gpointer data
+                         )
+{
+    UNUSED(data);
+
+    GError * error = NULL;
+    GListModel * files =
+        gtk_file_dialog_open_multiple_finish (
+                                              (GtkFileDialog*) source_object,
+                                              res,
+                                              &error
+                                              );
+    if(error != NULL)
+    {
+        // We could use the domain/code/message ...
+        printf("No files selected or an error occured\n");
+        g_error_free(error);
+        return;
+    }
+
+    // Loop over GListModel ...
+    // Should be a list of Gfile
+
+    for(int i = 0; ; i++){
+
+        GFile * file = g_list_model_get_item(files, i);
+        if(file == NULL)
+        {
+            break;
+        }
+        char * t = g_file_get_path(file);
+        file_tree_append(t);
+        //printf("%s\n", t);
+        g_free(t);
+    }
+
+    // TODO: Need to free files?
+}
+
 gboolean add_files_cb(GtkWidget * w, gpointer p)
 {
-    UNUSED(w);
     UNUSED(p);
 
-    GtkWidget *dialog;
-    GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_OPEN;
-    gint res;
-
-
-    dialog = gtk_file_chooser_dialog_new ("Open File",
-                                          (GtkWindow*) config.window,
-                                          action,
-                                          "_Cancel",
-                                          GTK_RESPONSE_CANCEL,
-                                          "_Open",
-                                          GTK_RESPONSE_ACCEPT,
-                                          NULL);
-
-    gtk_file_chooser_set_select_multiple((GtkFileChooser *) dialog, TRUE);
+    GtkWidget * dialog = gtk_file_dialog_new ();
+    gtk_file_dialog_set_title(dialog, "Open File");
+    gtk_file_dialog_set_modal(dialog, true);
 
     if(config.default_open_uri != NULL)
     {
-        gtk_file_chooser_set_current_folder_uri( (GtkFileChooser *) dialog, config.default_open_uri);
+        GFile * path = g_file_new_for_path(config.default_open_uri);
+        gtk_file_dialog_set_initial_folder( (GtkFileDialog *) dialog,
+                                            path);
+        g_object_unref(path);
     }
 
-
-
-    res = gtk_dialog_run (GTK_DIALOG (dialog));
-    if (res == GTK_RESPONSE_ACCEPT)
-    {
-
-        if(config.default_open_uri != NULL)
-        {
-            g_free(config.default_open_uri);
-        }
-        config.default_open_uri = gtk_file_chooser_get_current_folder_uri( (GtkFileChooser *) dialog );
-
-        GSList * filenames=NULL, *iter=NULL;;
-        GtkFileChooser *chooser = GTK_FILE_CHOOSER (dialog);
-        filenames = gtk_file_chooser_get_filenames(chooser);
-        for(iter = filenames; iter; iter = iter->next)
-        {
-            //printf("File: %s\n", (char *) iter->data);
-            file_tree_append((char *) iter->data);
-        }
-        /* Free both the nodes and the file names that they point to */
-        g_slist_free_full(filenames, g_free);
-    }
-
-    gtk_widget_destroy (dialog);
-
-
-
+    GCancellable* canc = g_cancellable_new();
+    gtk_file_dialog_open_multiple(GTK_FILE_DIALOG(dialog), // self
+                                  config.window, // parent
+                                  canc, // cancellable
+                                  got_files_from_dialog, // callback
+                                  NULL); // user_data
     return TRUE;
 }
 
@@ -1716,67 +1765,75 @@ gboolean del_scope_cb(GtkWidget * w, gpointer p)
     return TRUE;
 }
 
-gboolean file_tree_keypress (GtkWidget *tree_view, GdkEventKey *event, gpointer p)
+gboolean file_tree_keypress (GtkWidget *tree_view, GdkEvent *event, gpointer p)
 {
     UNUSED(tree_view);
     UNUSED(p);
-    if (event->keyval == GDK_KEY_Delete){
+    if (gdk_key_event_get_keyval(event) == GDK_KEY_Delete){
         del_selected_file();
     }
     return FALSE;
 }
 
-gboolean channel_tree_keypress (GtkWidget *tree_view, GdkEventKey *event, gpointer p)
+gboolean channel_tree_keypress (GtkWidget *tree_view, GdkEvent *event, gpointer p)
 {
     UNUSED(tree_view);
     UNUSED(p);
-    if (event->keyval == GDK_KEY_Delete){
+    if (gdk_key_event_get_keyval(event) == GDK_KEY_Delete){
         del_selected_channel();
     }
-    if (event->keyval == GDK_KEY_Return){
+    if (gdk_key_event_get_keyval(event) == GDK_KEY_Return){
         edit_selected_channel();
     }
     return FALSE;
 }
 
-gboolean microscope_tree_keypress (GtkWidget *tree_view, GdkEventKey *event, gpointer p)
+gboolean microscope_tree_keypress (GtkWidget *tree_view, GdkEvent *event, gpointer p)
 {
     UNUSED(tree_view);
     UNUSED(p);
-    if (event->keyval == GDK_KEY_Delete){
+    if (gdk_key_event_get_keyval(event) == GDK_KEY_Delete){
         del_selected_scope();
     }
-    if (event->keyval == GDK_KEY_Return){
+    if (gdk_key_event_get_keyval(event) == GDK_KEY_Return){
         edit_selected_scope();
     }
     return FALSE;
 }
 
+#ifdef GTK3
 gboolean channel_tree_buttonpress(GtkWidget *tree_view,
                                   GdkEventButton * event,
                                   gpointer p)
 {
     UNUSED(tree_view);
     UNUSED(p);
+
     if(event->type == GDK_DOUBLE_BUTTON_PRESS)
     {
         edit_selected_channel();
     }
+
     return FALSE;
 }
+#endif
 
+#ifdef GTK3
 gboolean microscope_tree_buttonpress(GtkWidget *tree_view,
                                      GdkEventButton * event,
                                      gpointer p)
 {
     UNUSED(tree_view);
     UNUSED(p);
+
     if(event->type == GDK_DOUBLE_BUTTON_PRESS)
     {
         edit_selected_scope();
     }
+
     return FALSE;
 }
+#endif
 
 void populate_channels()
 {
@@ -1844,6 +1901,7 @@ GtkWidget * create_drop_frame()
 
     GtkWidget * image = gtk_image_new_from_resource("/images/wolf1.png");
 
+#ifdef GTK3
     /* Set up Drag and Drop */
     enum
         {
@@ -1858,22 +1916,17 @@ GtkWidget * create_drop_frame()
             { "text/uri-list", 0, TARGET_URL },
         };
 
+
     gtk_drag_dest_set(frame_drop, GTK_DEST_DEFAULT_ALL, targetentries, 3,
                       GDK_ACTION_COPY);
     g_signal_connect(frame_drop, "drag_data_received",
                      G_CALLBACK(drag_data_cb), NULL);
     //g_signal_connect(frame_drop, "drag-motion",
     //                 G_CALLBACK(drag_motion_cb), NULL);
-
-
-
-#ifdef __APPLE__
-    GtkWidget * label = gtk_label_new("Drag and Drop"
-                                      "does not work on OSX at the moment.\n"
-                                      "Please add files from the 'Files' tab.");
-#else
-    GtkWidget * label = gtk_label_new("Drag and Drop images here");
 #endif
+
+    GtkWidget * label = gtk_label_new("Drag and Drop images here");
+
     gtk_widget_set_halign((GtkWidget* ) label, GTK_ALIGN_CENTER);
     gtk_widget_set_valign((GtkWidget* ) label, GTK_ALIGN_CENTER);
 
@@ -1883,9 +1936,9 @@ GtkWidget * create_drop_frame()
     gtk_label_set_markup(GTK_LABEL(label),markup);
     g_free(markup);
     gtk_widget_show(label);
-    gtk_container_add (GTK_CONTAINER (overlay), image);
+    gtk_overlay_set_child (overlay, image);
     gtk_overlay_add_overlay((GtkOverlay*) overlay, label);
-    gtk_container_add (GTK_CONTAINER (frame_drop), overlay);
+    gtk_frame_set_child (frame_drop, overlay);
     return frame_drop;
 }
 
@@ -1936,7 +1989,9 @@ edit_global_config(void)
     gtk_grid_set_column_spacing ((GtkGrid*) grid , 5);
 
     GtkWidget * lRegexp_extra = gtk_label_new("Set the regular expression used to identify channel \nnames from the file names. For example, if the \nchannel name is at the end, \ntry '[A-Z0-9]*\\_([A-Z0-9]*)\\.TIFF?'\n");
+#ifdef GTK3
     gtk_label_set_line_wrap((GtkLabel*) lRegexp_extra, TRUE);
+#endif
     gtk_label_set_selectable((GtkLabel*) lRegexp_extra, TRUE);
 
     gtk_grid_attach((GtkGrid*) grid, lRegexp_extra, 1, 1, 3, 2);
@@ -1946,9 +2001,15 @@ edit_global_config(void)
     gtk_widget_set_halign((GtkWidget*) grid, GTK_ALIGN_CENTER);
     gtk_widget_set_valign((GtkWidget*) grid, GTK_ALIGN_CENTER);
 
-    gtk_container_add (GTK_CONTAINER (content_area),  grid);
+    // TODO
+    gtk_grid_attach ( content_area,  grid, 0, 0, 1, 1);
+#ifdef GTK3
     gtk_widget_show_all(content_area);
     int result = gtk_dialog_run (GTK_DIALOG (dialog));
+#else
+    int result = -1;
+#endif
+
 
     switch (result)
     {
@@ -1959,8 +2020,9 @@ edit_global_config(void)
         // do_nothing_since_dialog_was_cancelled ();
         break;
     }
+#ifdef GTK3
     gtk_widget_destroy (dialog);
-
+#endif
     return;
 }
 
@@ -1979,10 +2041,10 @@ configuration_activated(GSimpleAction *simple,
 
 
 static GActionEntry main_menu_actions[] =
-{
-    { "about", about_activated, NULL, NULL, NULL, {0,0,0} },
-    { "configuration", configuration_activated, NULL, NULL, NULL, {0,0,0} }
-};
+    {
+        { "about", about_activated, NULL, NULL, NULL, {0,0,0} },
+        { "configuration", configuration_activated, NULL, NULL, NULL, {0,0,0} }
+    };
 
 
 void warn_no_dw(GtkWindow * parent)
@@ -1995,10 +2057,13 @@ void warn_no_dw(GtkWindow * parent)
          GTK_BUTTONS_CLOSE,
          "Could not locate deconwolf (i.e, the command 'dw'). "
          "You will not be able to run anything from this GUI!"
-            );
+         );
 
+
+#ifdef GTK3
     gtk_dialog_run (GTK_DIALOG (dialog));
     gtk_widget_destroy (dialog);
+#endif
     return;
 }
 
@@ -2006,6 +2071,7 @@ void warn_no_dw(GtkWindow * parent)
 DwAppWindow *
 dw_app_window_new (DwApp *app)
 {
+    printf("Setting up gui components\n");
     setlocale(LC_ALL,"C");
 
     config.default_open_uri = NULL;
@@ -2022,9 +2088,12 @@ dw_app_window_new (DwApp *app)
     int new_height = round(100.0 / ( (double) width) * (double) height );
     GdkPixbuf * icon = gdk_pixbuf_scale_simple(im, 100, new_height, GDK_INTERP_BILINEAR);
     g_object_unref(im);
+#ifdef GTK3
     gtk_window_set_default_icon(icon);
+#endif
     g_object_unref(icon);
 
+    printf("Creating frames\n");
     GtkWidget * frame_drop = create_drop_frame ();
     GtkWidget * frame_dw = create_deconwolf_frame();
     GtkWidget * frame_files = create_file_frame();
@@ -2032,10 +2101,13 @@ dw_app_window_new (DwApp *app)
     GtkWidget * frame_scope = gtk_frame_new (NULL);
     GtkWidget * frame_run = create_run_frame();
 
+#ifdef GTK3
     gtk_frame_set_shadow_type (GTK_FRAME (frame_drop), GTK_SHADOW_IN);
     gtk_frame_set_shadow_type (GTK_FRAME (frame_files), GTK_SHADOW_IN);
     gtk_frame_set_shadow_type (GTK_FRAME (frame_channels), GTK_SHADOW_IN);
+#endif
 
+    printf("Notebook\n");
     GtkWidget * notebook = gtk_notebook_new();
     config.notebook = (GtkNotebook*) notebook;
     gtk_notebook_append_page ((GtkNotebook*) notebook,
@@ -2060,26 +2132,33 @@ dw_app_window_new (DwApp *app)
                      G_CALLBACK(tab_change_cb), NULL);
 
     GtkWidget * channel_tree = create_channel_tree();
+#ifdef GTK3
     g_signal_connect (G_OBJECT (config.channel_tree), "key_press_event",
                       G_CALLBACK (channel_tree_keypress), NULL);
     g_signal_connect (G_OBJECT (config.channel_tree), "button_press_event",
                       G_CALLBACK (channel_tree_buttonpress), NULL);
+#endif
 
     GtkWidget * scope_tab = create_microscope_tab();
+#ifdef GTK3
     g_signal_connect (G_OBJECT (config.scope_tree), "key_press_event",
                       G_CALLBACK (microscope_tree_keypress), NULL);
     g_signal_connect (G_OBJECT (config.scope_tree), "button_press_event",
                       G_CALLBACK (microscope_tree_buttonpress), NULL);
-
+#endif
 
     /* Create the window */
     DwAppWindow * window = g_object_new (DW_APP_WINDOW_TYPE, "application", app, NULL);
     config.window = window;
 
+    printf("Packing into main window\n");
     /* Pack components */
-    gtk_container_add (GTK_CONTAINER (frame_channels), channel_tree);
-    gtk_container_add (GTK_CONTAINER (frame_scope), scope_tab);
-    gtk_container_add (GTK_CONTAINER (window), notebook);
+    gtk_frame_set_child(frame_channels, channel_tree);
+    gtk_frame_set_child(frame_scope, scope_tab);
+    printf("attaching notebook\n");
+    gtk_window_set_child (GTK_WINDOW (window), notebook);
+    //gtk_grid_attach (window, notebook, 0, 0, 1, 1);
+    printf("done\n");
 
     /* Parse saved presets */
     populate_channels();
@@ -2096,10 +2175,16 @@ dw_app_window_new (DwApp *app)
     GtkWidget * hbar = gtk_header_bar_new();
     char * wintitle = calloc(strlen(titlestr)+100, 1);
     sprintf(wintitle, "%s %s", titlestr, DW_GUI_VERSION);
+#ifdef GTK3
     gtk_header_bar_set_title((GtkHeaderBar*) hbar, wintitle);
+#else
+    // gtk_header_bar_set_title_widget
+#endif
     free(wintitle);
     //gtk_header_bar_set_title((GtkHeaderBar*) hbar, titlestr);
+#ifdef GTK3
     gtk_header_bar_set_show_close_button((GtkHeaderBar*) hbar, TRUE);
+#endif
     gtk_header_bar_pack_end((GtkHeaderBar*) hbar, mbtn);
     gtk_window_set_titlebar((GtkWindow*) window, hbar);
 

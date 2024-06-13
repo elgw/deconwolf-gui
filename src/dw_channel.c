@@ -1,5 +1,6 @@
 #include "dw_channel.h"
 
+
 DwChannel * dw_channel_new()
 {
     DwChannel * chan = g_malloc0(sizeof(DwChannel));
@@ -266,7 +267,7 @@ dw_channel_edit_dlg(GtkWindow *parent, DwChannel * old_channel)
     GtkWidget * lNiter = gtk_label_new("Number of iterations");
     GtkWidget * eNiter = gtk_entry_new();
     GtkWidget * lColor = gtk_label_new("Color:");
-    GtkWidget * eColor = gtk_event_box_new();
+    GtkWidget * eColor = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
     g_signal_connect(eColor, "draw",
                      G_CALLBACK(color_draw_cb), &lambda);
     UserData1 ud;
@@ -311,32 +312,46 @@ dw_channel_edit_dlg(GtkWindow *parent, DwChannel * old_channel)
     gtk_widget_set_margin_bottom((GtkWidget*) im, 20);
     gtk_widget_set_margin_top((GtkWidget*) im, 20);
 
+    #ifdef GTK3
     gtk_box_pack_end((GtkBox*) hbox, im, FALSE, TRUE, 5);
     gtk_box_pack_start((GtkBox*) hbox, grid, FALSE, TRUE, 5);
+#endif
 
     gtk_widget_set_halign((GtkWidget*) hbox, GTK_ALIGN_CENTER);
     gtk_widget_set_valign((GtkWidget*) hbox, GTK_ALIGN_CENTER);
 
+    #ifdef GTK3
     gtk_container_add (GTK_CONTAINER (content_area),  hbox);
+    #else
+    gtk_grid_attach (content_area,  hbox, 0, 0, 1, 1);
+    #endif
+
+    #ifdef GTK3
     gtk_widget_show_all(content_area);
 
     int result = gtk_dialog_run (GTK_DIALOG (dialog));
+#else
+    int result = -1;
+    #endif
+
     DwChannel * channel = NULL;
     switch (result)
     {
     case GTK_RESPONSE_ACCEPT:
         channel = g_malloc0(sizeof(DwChannel));
-        channel->name = g_strdup(gtk_entry_get_text((GtkEntry*) eName));
-        channel->alias = g_strdup(gtk_entry_get_text((GtkEntry*) eAlias));
-        channel->lambda = atof(gtk_entry_get_text((GtkEntry*) eLambda));
-        channel->niter = atoi(gtk_entry_get_text((GtkEntry*) eNiter));
+        channel->name = g_strdup(gtk_entry_buffer_get_text(gtk_entry_get_buffer((GtkEntry *) eName)));
+        channel->alias = g_strdup(gtk_entry_buffer_get_text(gtk_entry_get_buffer(eAlias)));
+        channel->lambda = atof(gtk_entry_buffer_get_text(gtk_entry_get_buffer(eLambda)));
+        channel->niter = atoi(gtk_entry_buffer_get_text(gtk_entry_get_buffer((eNiter))));
+
         break;
     default:
         // do_nothing_since_dialog_was_cancelled ();
         break;
     }
+    #ifdef GTK3
     gtk_widget_destroy (dialog);
-
+#endif
     return channel;
 }
 
