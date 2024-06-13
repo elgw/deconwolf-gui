@@ -24,9 +24,6 @@ dw_app_activate (GApplication *app)
   win = dw_app_window_new (DW_APP (app));
   gtk_window_present (GTK_WINDOW (win));
 
-  #ifdef GTK3
-  gtk_widget_show_all(GTK_WIDGET (win));
-  #endif
 }
 
 static void

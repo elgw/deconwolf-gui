@@ -13,6 +13,7 @@
 
 // Global settings for this app
 typedef struct {
+    GApplication *app;
     DwAppWindow * window; // main window
     GtkWidget * file_tree;
     GtkWidget * channel_tree;
@@ -367,25 +368,6 @@ GtkWidget * create_file_frame()
 #endif
 
     /* Set up Drag and Drop */
-#ifdef GTK3
-    enum
-        {
-            TARGET_STRING,
-            TARGET_URL
-        };
-
-    static GtkTargetEntry targetentries[] =
-        {
-            { "STRING",        0, TARGET_STRING },
-            { "text/plain",    0, TARGET_STRING },
-            { "text/uri-list", 0, TARGET_URL },
-        };
-
-    gtk_drag_dest_set(file_frame, GTK_DEST_DEFAULT_ALL, targetentries, 3,
-                      GDK_ACTION_COPY );
-    g_signal_connect(file_frame, "drag_data_received",
-                     G_CALLBACK(drag_data_cb), NULL);
-#endif
 
     // 1. Set up a GtkDropTarget
     // 2. Handle GtkDropTarget::drop
@@ -1895,35 +1877,22 @@ void populate_microscopes()
 
 GtkWidget * create_drop_frame()
 {
-
-    GtkWidget * frame_drop = gtk_frame_new (NULL);
+    GtkWidget * frame_drop = gtk_frame_new(NULL);
     GtkWidget * overlay = gtk_overlay_new();
 
     GtkWidget * image = gtk_image_new_from_resource("/images/wolf1.png");
 
-#ifdef GTK3
-    /* Set up Drag and Drop */
-    enum
-        {
-            TARGET_STRING,
-            TARGET_URL
-        };
+    GtkDropTarget *target =
+        gtk_drop_target_new (G_TYPE_INVALID, GDK_ACTION_COPY);
 
-    static GtkTargetEntry targetentries[] =
-        {
-            { "STRING",        0, TARGET_STRING },
-            { "text/plain",    0, TARGET_STRING },
-            { "text/uri-list", 0, TARGET_URL },
-        };
+    gtk_drop_target_set_gtypes (target, (GType [2]) {
+            GDK_TYPE_FILE_LIST, G_TYPE_FILE,
+        }, 2);
 
+    g_signal_connect (target, "drop", G_CALLBACK (on_drop), frame_drop);
+    gtk_widget_add_controller (GTK_WIDGET (frame_drop),
+                               GTK_EVENT_CONTROLLER (target));
 
-    gtk_drag_dest_set(frame_drop, GTK_DEST_DEFAULT_ALL, targetentries, 3,
-                      GDK_ACTION_COPY);
-    g_signal_connect(frame_drop, "drag_data_received",
-                     G_CALLBACK(drag_data_cb), NULL);
-    //g_signal_connect(frame_drop, "drag-motion",
-    //                 G_CALLBACK(drag_motion_cb), NULL);
-#endif
 
     GtkWidget * label = gtk_label_new("Drag and Drop images here");
 
@@ -1935,7 +1904,6 @@ GtkWidget * create_drop_frame()
 
     gtk_label_set_markup(GTK_LABEL(label),markup);
     g_free(markup);
-    gtk_widget_show(label);
     gtk_overlay_set_child (overlay, image);
     gtk_overlay_add_overlay((GtkOverlay*) overlay, label);
     gtk_frame_set_child (frame_drop, overlay);
@@ -1950,6 +1918,7 @@ about_activated(GSimpleAction *simple,
     UNUSED(simple);
     UNUSED(parameter);
     UNUSED(p);
+
     GtkWidget * about = gtk_about_dialog_new();
     gtk_about_dialog_set_program_name((GtkAboutDialog*) about, "deconwolf GUI");
     gtk_about_dialog_set_version( (GtkAboutDialog*) about, DW_GUI_VERSION);
@@ -1957,29 +1926,17 @@ about_activated(GSimpleAction *simple,
 
     //    gtk_about_dialog_set_authors((GtkAboutDialog*) about, &author);
     gtk_window_set_title((GtkWindow*) about, "About ...");
-
-
-    gtk_widget_show((GtkWidget*) about);
+    gtk_widget_show(about);
 }
 
 static void
 edit_global_config(void)
 {
+    GtkWindow * dialog = gtk_window_new();
+    gtk_window_set_modal(dialog, true);
+    gtk_window_set_title(dialog, "Edit Global Settings");
+    gtk_window_set_destroy_with_parent(dialog, true);
 
-    GtkWidget * dialog, *content_area;
-    GtkDialogFlags flags;
-
-    // Create the widgets
-    flags = GTK_DIALOG_DESTROY_WITH_PARENT;
-    dialog = gtk_dialog_new_with_buttons ("Edit global settings",
-                                          (GtkWindow*) config.window,
-                                          flags,
-                                          "Cancel",
-                                          GTK_RESPONSE_NONE,
-                                          "Ok",
-                                          GTK_RESPONSE_ACCEPT,
-                                          NULL);
-    content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
     GtkWidget * lRegexp = gtk_label_new("Regular expression");
     GtkWidget * eRegexp = gtk_entry_new();
     gtk_entry_set_text((GtkEntry*) eRegexp, config.regexp_channel);
@@ -1988,10 +1945,12 @@ edit_global_config(void)
     gtk_grid_set_row_spacing ((GtkGrid*) grid , 5);
     gtk_grid_set_column_spacing ((GtkGrid*) grid , 5);
 
-    GtkWidget * lRegexp_extra = gtk_label_new("Set the regular expression used to identify channel \nnames from the file names. For example, if the \nchannel name is at the end, \ntry '[A-Z0-9]*\\_([A-Z0-9]*)\\.TIFF?'\n");
-#ifdef GTK3
-    gtk_label_set_line_wrap((GtkLabel*) lRegexp_extra, TRUE);
-#endif
+    GtkWidget * lRegexp_extra = gtk_label_new(
+                                              "Set the regular expression used to identify channel \n"
+                                              "names from the file names. For example, if the \n"
+                                              "channel name is at the end, \n"
+                                              "try '[A-Z0-9]*\\_([A-Z0-9]*)\\.TIFF?'\n");
+
     gtk_label_set_selectable((GtkLabel*) lRegexp_extra, TRUE);
 
     gtk_grid_attach((GtkGrid*) grid, lRegexp_extra, 1, 1, 3, 2);
@@ -2000,17 +1959,12 @@ edit_global_config(void)
 
     gtk_widget_set_halign((GtkWidget*) grid, GTK_ALIGN_CENTER);
     gtk_widget_set_valign((GtkWidget*) grid, GTK_ALIGN_CENTER);
+    gtk_window_set_child(dialog, grid);
 
-    // TODO
-    gtk_grid_attach ( content_area,  grid, 0, 0, 1, 1);
-#ifdef GTK3
-    gtk_widget_show_all(content_area);
-    int result = gtk_dialog_run (GTK_DIALOG (dialog));
-#else
+    gtk_widget_show(dialog);
+
     int result = -1;
-#endif
-
-
+    // TODO: Need callback instead
     switch (result)
     {
     case GTK_RESPONSE_ACCEPT:
@@ -2020,9 +1974,6 @@ edit_global_config(void)
         // do_nothing_since_dialog_was_cancelled ();
         break;
     }
-#ifdef GTK3
-    gtk_widget_destroy (dialog);
-#endif
     return;
 }
 
@@ -2040,31 +1991,15 @@ configuration_activated(GSimpleAction *simple,
 }
 
 
-static GActionEntry main_menu_actions[] =
-    {
-        { "about", about_activated, NULL, NULL, NULL, {0,0,0} },
-        { "configuration", configuration_activated, NULL, NULL, NULL, {0,0,0} }
-    };
 
 
 void warn_no_dw(GtkWindow * parent)
 {
-    GtkDialogFlags flags = GTK_DIALOG_DESTROY_WITH_PARENT;
-    GtkWidget * dialog = gtk_message_dialog_new
-        (parent,
-         flags,
-         GTK_MESSAGE_ERROR,
-         GTK_BUTTONS_CLOSE,
+    GtkAlertDialog * dialog = gtk_alert_dialog_new(
          "Could not locate deconwolf (i.e, the command 'dw'). "
          "You will not be able to run anything from this GUI!"
          );
-
-
-#ifdef GTK3
-    gtk_dialog_run (GTK_DIALOG (dialog));
-    gtk_widget_destroy (dialog);
-#endif
-    return;
+    gtk_alert_dialog_show(dialog, parent);
 }
 
 
@@ -2074,6 +2009,7 @@ dw_app_window_new (DwApp *app)
     printf("Setting up gui components\n");
     setlocale(LC_ALL,"C");
 
+    config.app = app;
     config.default_open_uri = NULL;
     config.savefolder = NULL;
     config.has_dw = has_dw();
@@ -2153,8 +2089,8 @@ dw_app_window_new (DwApp *app)
 
     printf("Packing into main window\n");
     /* Pack components */
-    gtk_frame_set_child(frame_channels, channel_tree);
-    gtk_frame_set_child(frame_scope, scope_tab);
+    gtk_frame_set_child((GtkFrame*) frame_channels, channel_tree);
+    gtk_frame_set_child((GtkFrame*) frame_scope, scope_tab);
     printf("attaching notebook\n");
     gtk_window_set_child (GTK_WINDOW (window), notebook);
     //gtk_grid_attach (window, notebook, 0, 0, 1, 1);
@@ -2167,40 +2103,32 @@ dw_app_window_new (DwApp *app)
     // Replace the stock menu bar with a new one
     // that has a menu
     GMenu * menu = g_menu_new();
-    g_menu_insert(menu, 1, "About", "menu1.about");
-    g_menu_insert(menu, 2, "Config", "menu1.configuration");
+    g_menu_insert(menu, 1, "About", "app.about");
+    g_menu_insert(menu, 2, "Config", "app.configuration");
 
     GtkWidget * mbtn = gtk_menu_button_new();
     gtk_menu_button_set_menu_model((GtkMenuButton*) mbtn, (GMenuModel*) menu);
     GtkWidget * hbar = gtk_header_bar_new();
-    char * wintitle = calloc(strlen(titlestr)+100, 1);
-    sprintf(wintitle, "%s %s", titlestr, DW_GUI_VERSION);
-#ifdef GTK3
-    gtk_header_bar_set_title((GtkHeaderBar*) hbar, wintitle);
-#else
-    // gtk_header_bar_set_title_widget
-#endif
-    free(wintitle);
-    //gtk_header_bar_set_title((GtkHeaderBar*) hbar, titlestr);
-#ifdef GTK3
-    gtk_header_bar_set_show_close_button((GtkHeaderBar*) hbar, TRUE);
-#endif
+
     gtk_header_bar_pack_end((GtkHeaderBar*) hbar, mbtn);
     gtk_window_set_titlebar((GtkWindow*) window, hbar);
 
     // See https://stackoverflow.com/questions/22582768/connecting-a-function-to-a-gtkaction
 
-    GSimpleActionGroup * group = g_simple_action_group_new ();
-    g_action_map_add_action_entries (G_ACTION_MAP (group),
-                                     main_menu_actions, G_N_ELEMENTS (main_menu_actions),
+    static GActionEntry main_menu_actions[] =
+        {
+            { "about", about_activated, NULL, NULL, NULL, {0,0,0} },
+            { "configuration", configuration_activated, NULL, NULL, NULL, {0,0,0} }
+        };
+
+
+    g_action_map_add_action_entries (G_ACTION_MAP (config.app),
+                                     main_menu_actions,
+                                     G_N_ELEMENTS (main_menu_actions),
                                      NULL);
 
-    gtk_widget_insert_action_group((GtkWidget*) hbar, "menu1", (GActionGroup*) group);
 
-    if(config.has_dw)
-    {
-        // g_printf("Deconwolf found!\n");
-    } else {
+    if(!config.has_dw) {
         warn_no_dw((GtkWindow*) window);
     }
 
