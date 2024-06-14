@@ -386,9 +386,14 @@ dw_channel_edit_init()
     gtk_widget_set_margin_bottom((GtkWidget*) im, 20);
     gtk_widget_set_margin_top((GtkWidget*) im, 20);
 
-    gtk_box_append(GTK_BOX(hbox), grid);
-    gtk_widget_set_size_request(im, 256, 256);
+
+    gtk_widget_set_size_request(im, 200, 200);
+    g_object_set ( im,
+                   "margin-start", 50,
+                   "margin-end", 50,
+                   NULL);
     gtk_box_append(GTK_BOX(hbox), im);
+    gtk_box_append(GTK_BOX(hbox), grid);
 
     gtk_widget_set_halign(hbox, GTK_ALIGN_CENTER);
     gtk_widget_set_valign(hbox, GTK_ALIGN_CENTER);

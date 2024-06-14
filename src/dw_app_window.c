@@ -2,14 +2,12 @@
 #include <glib.h>
 #include <glib/gstdio.h>
 #include <gtk/gtk.h>
-#include <libgen.h>
 #include <locale.h>
 
 #include "dw_app.h"
 #include "dw_app_window.h"
 
 #define titlestr "BiCroLab deconwolf GUI, 2021-2024"
-
 
 // Global settings for this app
 typedef struct {
@@ -227,26 +225,56 @@ GtkWidget * create_deconwolf_frame()
     GtkWidget * grid = gtk_grid_new();
     gtk_grid_set_row_spacing ((GtkGrid*) grid , 5);
     gtk_grid_set_column_spacing ((GtkGrid*) grid , 5);
+
+    GtkWidget * sep;
+
     // x, y, w, h
-    gtk_grid_attach((GtkGrid*) grid, lThreads, 1, 1, 1, 2);
-    gtk_grid_attach((GtkGrid*) grid, vThreads, 2, 1, 2, 1);
-    gtk_grid_attach((GtkGrid*) grid, lOverwrite, 1, 3, 1, 2);
-    gtk_grid_attach((GtkGrid*) grid, vOverwrite, 2, 3, 1, 1);
-    gtk_grid_attach((GtkGrid*) grid, lTile, 1, 5, 1, 2);
-    gtk_grid_attach((GtkGrid*) grid, vTile, 2, 5, 2, 2);
+    int y = 1;
+    // Threads
+    gtk_grid_attach((GtkGrid*) grid, lThreads, 1, y, 1, 2);
+    gtk_grid_attach((GtkGrid*) grid, vThreads, 2, y, 2, 1);
+    y++;
+
+    sep = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
+    gtk_grid_attach(GTK_GRID(grid), sep, 1, y, 5, 1);
+    y++;
+
+    // Overwrite
+    gtk_grid_attach((GtkGrid*) grid, lOverwrite, 1, y, 1, 2);
+    gtk_grid_attach((GtkGrid*) grid, vOverwrite, 2, y, 1, 1);
+    y++;
+    sep = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
+    gtk_grid_attach(GTK_GRID(grid), sep, 1, y, 5, 1);
+    y++;
+    // Tile size
+    gtk_grid_attach((GtkGrid*) grid, lTile, 1, y, 1, 2);
+    gtk_grid_attach((GtkGrid*) grid, vTile, 2, y, 2, 2);
+    y++; y++;
+    sep = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
+    gtk_grid_attach(GTK_GRID(grid), sep, 1, y, 5, 1);
+    y++;
     // Output format
-    gtk_grid_attach((GtkGrid*) grid, lFormat, 1, 9, 1, 2);
-    gtk_grid_attach((GtkGrid*) grid, out_uint16, 2, 9, 2, 1);
-    gtk_grid_attach((GtkGrid*) grid, out_float32, 2, 10, 2, 1);
+    gtk_grid_attach((GtkGrid*) grid, lFormat, 1, y, 1, 2);
+    gtk_grid_attach((GtkGrid*) grid, out_uint16, 2, y, 2, 1);
+    gtk_grid_attach((GtkGrid*) grid, out_float32, 2, y+1, 2, 1);
+    y++; y++;
+    sep = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
+    gtk_grid_attach(GTK_GRID(grid), sep, 1, y, 5, 1);
+    y++;
     /* Border option */
-    gtk_grid_attach((GtkGrid*) grid, lBorder, 1, 12, 1, 3);
-    gtk_grid_attach((GtkGrid*) grid, bq_best, 2, 12, 1, 1);
-    gtk_grid_attach((GtkGrid*) grid, bq_good, 2, 13, 1, 1);
-    gtk_grid_attach((GtkGrid*) grid, bq_bad, 2, 14, 1, 1);
+    gtk_grid_attach((GtkGrid*) grid, lBorder, 1, y, 1, 3);
+    gtk_grid_attach((GtkGrid*) grid, bq_best, 2, y, 1, 1);
+    gtk_grid_attach((GtkGrid*) grid, bq_good, 2, y+1, 1, 1);
+    gtk_grid_attach((GtkGrid*) grid, bq_bad, 2, y+2, 1, 1);
+    y++; y++; y++;
+    sep = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
+    gtk_grid_attach(GTK_GRID(grid), sep, 1, y, 5, 1);
+    y++;
     /* Hardware option */
-    gtk_grid_attach((GtkGrid*) grid, lHardware, 1, 16, 1, 1);
-    gtk_grid_attach((GtkGrid*) grid, hw_cpu, 2, 16, 1, 1);
-    gtk_grid_attach((GtkGrid*) grid, hw_gpu, 2, 17, 1, 1);
+    gtk_grid_attach((GtkGrid*) grid, lHardware, 1, y, 1, 1);
+    gtk_grid_attach((GtkGrid*) grid, hw_cpu, 2, y, 1, 1);
+    gtk_grid_attach((GtkGrid*) grid, hw_gpu, 2, y+1, 1, 1);
+
 
     gtk_widget_set_halign((GtkWidget*) grid, GTK_ALIGN_CENTER);
     gtk_widget_set_valign((GtkWidget*) grid, GTK_ALIGN_CENTER);
@@ -1001,165 +1029,109 @@ void runscript(const char * name_in)
 }
 #endif
 
-gboolean save_cmd(GtkWindow * parent_window, char ** savename)
+void save_cmd_to_file(  GObject* source_object,
+                        GAsyncResult* res,
+                        gpointer data
+                        )
+{
+
+    GError * error = NULL;
+    GFile * file =
+        gtk_file_dialog_save_finish (
+                                     (GtkFileDialog*) source_object,
+                                     res,
+                                     &error
+                                     );
+    if(error != NULL)
+    {
+        // We could use the domain/code/message ...
+        printf("No files selected or an error occured\n");
+        g_error_free(error);
+        return;
+    }
+
+    char * outname = g_file_get_path(file);
+    if(outname == NULL)
+    {
+        printf("Could not get the file name");
+        return;
+    }
+    printf("Want to save to %s\n", outname);
+
+    GtkTextIter start, end;
+    GtkTextBuffer * buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (config.cmd));
+    gtk_text_buffer_get_start_iter (buffer, &start);
+    gtk_text_buffer_get_end_iter (buffer, &end);
+    gchar * text = gtk_text_buffer_get_text (buffer, &start, &end, FALSE);
+    gtk_text_buffer_set_modified (buffer, FALSE);
+
+    GError * err = NULL;
+    gboolean result = g_file_set_contents (outname, text, -1, &err);
+
+    if (result == FALSE)
+    {
+        /* error saving file, show message to user */
+        //error_message (err->message);
+        g_error_free(err);
+        goto done;
+    } else {
+        // TODO: Only add S_IXUSR to the defaults
+        int chmod_ok = g_chmod(outname, S_IXUSR | S_IRUSR | S_IWUSR | S_IRGRP | S_IXGRP );
+        g_assert(chmod_ok == 0);
+    }
+
+ done: ;
+    g_free (text);
+
+    free(outname);
+    return;
+
+#ifdef GTK3
+        // Run it
+        //printf("To run: %s\n", filename);
+        runscript(filename);
+        g_free(filename);
+#endif
+}
+
+
+
 /* Save the command-queue to disk. Returns true on success and sets savename
    to the filename that was used.
 */
+gboolean save_dw_cb(GtkWidget * widget, gpointer user_data)
 {
 
     gboolean saved = FALSE;
-
 
     GtkFileDialog *chooser;
 
     gint res;
 
+    // TODO: default folder based on some image in the list
     GtkFileDialog * dialog = gtk_file_dialog_new ();
     gtk_file_dialog_set_title(dialog, "Save File");
     gtk_file_dialog_set_modal(dialog, true);
+    gtk_file_dialog_set_initial_name(dialog, "dw_script.sh");
 
     chooser = GTK_FILE_DIALOG (dialog);
 
-    // Todo: handle "confirm-overwrite" signal to
-    //       add the option "append".
-    // see: https://developer.gnome.org/gtk3/stable/GtkFileChooser.html#GtkFileChooser-confirm-overwrite
-
-#ifdef GTK3
-    gtk_file_dialog_set_do_overwrite_confirmation (chooser, TRUE);
-#endif
-
-    // use folder of first tif file if available
-    if(config.savefolder != NULL)
-    {
-#ifdef GTK3
-        gtk_file_dialog_set_current_folder (chooser, config.savefolder);
-#endif
-    }
-
-    char * suggname = g_malloc0(1024);
-    sprintf(suggname, "dw_script");
-#ifdef GTK3
-    gtk_file_dialog_set_current_name (chooser, suggname);
-#endif
-
-#ifdef GTK3
-    res = gtk_dialog_run (GTK_DIALOG (dialog));
-
-
-    if (res == GTK_RESPONSE_ACCEPT)
-    {
-        char * filename = gtk_file_dialog_get_filename (chooser);
-        char * sname = g_strdup(filename);
-        savename[0] = sname;
-
-        // save_to_file (filename);
-        g_free (filename);
-        saved = TRUE;
-    }
-
-
-    gtk_widget_destroy (dialog);
-#endif
-    return saved;
-}
-
-gboolean save_dw_cb(GtkWidget * widget, gpointer user_data)
-{
-    UNUSED(widget);
-    UNUSED(user_data);
-    // This should by factored to remove out duplicate code in
-    // gboolean run_dw_cb(GtkWidget * widget, gpointer user_data)
-    //
-    char * filename = NULL;
-    if(save_cmd((GtkWindow*) config.window, &filename))
-    { // If we got a filename
-        // Get text from
-        // config.cmd
-        // and save to that file.
-
-        GtkTextIter start, end;
-        GtkTextBuffer * buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (config.cmd));
-        gtk_text_buffer_get_start_iter (buffer, &start);
-        gtk_text_buffer_get_end_iter (buffer, &end);
-        gchar * text = gtk_text_buffer_get_text (buffer, &start, &end, FALSE);
-        gtk_text_buffer_set_modified (buffer, FALSE);
-
-
-        /* set the contents of the file to the text from the buffer */
-        gboolean result = TRUE;;
-        GError * err = NULL;
-        if (filename != NULL)
-        {
-            result = g_file_set_contents (filename, text, -1, &err);
-            if (result == FALSE)
-            {
-                /* error saving file, show message to user */
-                //error_message (err->message);
-                g_error_free (err);
-
-            } else {
-                int chmod_ok = g_chmod(filename, S_IXUSR | S_IRGRP | S_IXGRP );
-                g_assert(chmod_ok == 0);
-            }
-        }
-        g_free (text);
-        g_free(filename);
-    }
-    return TRUE;
+    GCancellable* canc = g_cancellable_new();
+    gtk_file_dialog_save(dialog,
+                         NULL,
+                         canc,
+                         save_cmd_to_file,
+                         NULL);
 }
 
 
+/* Save and run afterwards
+* TODO: flag that it should be run ...
+*/
 gboolean run_dw_cb(GtkWidget * widget, gpointer user_data)
 {
-    UNUSED(widget);
-    UNUSED(user_data);
-    // Run deconwolf
-    // 1/ Save the script to a file
-    // 2/ Use g_app_info_create_from_commandline
-    //    to execute it
-
-    char * filename = NULL;
-    if(save_cmd((GtkWindow*) config.window, &filename)) // in dw_app_runner_simple.c
-    { // If we got a filename
-        // Get text from
-        // config.cmd
-        // and save to that file.
-
-        GtkTextIter start, end;
-        GtkTextBuffer * buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (config.cmd));
-        gtk_text_buffer_get_start_iter (buffer, &start);
-        gtk_text_buffer_get_end_iter (buffer, &end);
-        gchar * text = gtk_text_buffer_get_text (buffer, &start, &end, FALSE);
-        gtk_text_buffer_set_modified (buffer, FALSE);
-
-
-        /* set the contents of the file to the text from the buffer */
-        gboolean result;
-        GError * err = NULL;
-        if (filename != NULL)
-        {
-            result = g_file_set_contents (filename, text, -1, &err);
-
-            if (result == FALSE)
-            {
-                /* error saving file, show message to user */
-                //error_message (err->message);
-                g_error_free (err);
-
-            } else {
-                int chmod_ok = g_chmod(filename, S_IXUSR | S_IWUSR | S_IRUSR );
-                g_assert(chmod_ok == 0);
-            }
-        }
-        g_free (text);
-
-
-        // Run it
-        //printf("To run: %s\n", filename);
-        runscript(filename);
-        g_free(filename);
-    }
-    return TRUE;
+    save_dw_cb(widget, user_data);
+    return true;
 }
 
 
@@ -1185,18 +1157,17 @@ GtkWidget * create_run_frame()
     GtkWidget * frame = gtk_frame_new(NULL);
     gtk_frame_set_child(GTK_FRAME(frame), fcmd_scroll);
 
-    GtkWidget * ButtonRun = gtk_button_new_from_icon_name("media-playback-start");
-
-    gtk_widget_set_tooltip_text(ButtonRun, "Save the script and run it");
+    //GtkWidget * ButtonRun = gtk_button_new_from_icon_name("media-playback-start");
+    //gtk_widget_set_tooltip_text(ButtonRun, "Save the script and run it");
 
     GtkWidget * ButtonSaveAs = gtk_button_new_from_icon_name("document-save-as");
     gtk_widget_set_tooltip_text(ButtonSaveAs, "Save the script to disk");
 
     GtkWidget * Bar = gtk_action_bar_new();
-    gtk_action_bar_pack_end ((GtkActionBar*) Bar, ButtonRun);
+    //gtk_action_bar_pack_end ((GtkActionBar*) Bar, ButtonRun);
     gtk_action_bar_pack_end ((GtkActionBar*) Bar, ButtonSaveAs);
 
-    g_signal_connect (ButtonRun, "clicked", G_CALLBACK (run_dw_cb), NULL);
+    //g_signal_connect (ButtonRun, "clicked", G_CALLBACK (run_dw_cb), NULL);
     g_signal_connect (ButtonSaveAs, "clicked", G_CALLBACK (save_dw_cb), NULL);
 
     GtkWidget * A = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
@@ -1784,6 +1755,7 @@ GtkWidget * create_drop_frame()
     GtkWidget * overlay = gtk_overlay_new();
 
     GtkWidget * image = gtk_image_new_from_resource("/images/wolf1.png");
+    gtk_widget_set_size_request(image, 400, 400);
 
     GtkDropTarget *target =
         gtk_drop_target_new (G_TYPE_INVALID, GDK_ACTION_COPY);
@@ -1848,11 +1820,12 @@ edit_global_config(void)
     gtk_grid_set_row_spacing ((GtkGrid*) grid , 5);
     gtk_grid_set_column_spacing ((GtkGrid*) grid , 5);
 
-    GtkWidget * lRegexp_extra = gtk_label_new(
-                                              "Set the regular expression used to identify channel \n"
-                                              "names from the file names. For example, if the \n"
-                                              "channel name is at the end, \n"
-                                              "try '[A-Z0-9]*\\_([A-Z0-9]*)\\.TIFF?'\n");
+    GtkWidget * lRegexp_extra =
+        gtk_label_new(
+                      "Set the regular expression used to identify channel \n"
+                      "names from the file names. For example, if the \n"
+                      "channel name is at the end, \n"
+                      "try '[A-Z0-9]*\\_([A-Z0-9]*)\\.TIFF?'\n");
 
     gtk_label_set_selectable((GtkLabel*) lRegexp_extra, TRUE);
 
@@ -1865,7 +1838,9 @@ edit_global_config(void)
     gtk_window_set_child(dialog, grid);
 
     gtk_widget_show(GTK_WIDGET(dialog));
+    return;
 
+    #ifdef GTK3
     int result = -1;
     // TODO: Need callback instead
     switch (result)
@@ -1879,6 +1854,7 @@ edit_global_config(void)
         break;
     }
     return;
+    #endif
 }
 
 
@@ -1894,24 +1870,19 @@ configuration_activated(GSimpleAction *simple,
     return;
 }
 
-
-
-
 void warn_no_dw(GtkWindow * parent)
 {
-    GtkAlertDialog * dialog = gtk_alert_dialog_new(
-                                                   "Could not locate deconwolf (i.e, the command 'dw'). "
-                                                   "You will not be able to run anything from this GUI!"
-                                                   );
+    GtkAlertDialog * dialog =
+        gtk_alert_dialog_new(
+                             "Could not locate deconwolf (i.e, the command 'dw'). "
+                             "You will not be able to run anything from this GUI!"
+                             );
     gtk_alert_dialog_show(dialog, parent);
 }
-
-
 
 DwAppWindow *
 dw_app_window_new (DwApp *app)
 {
-    printf("Setting up gui components\n");
     setlocale(LC_ALL,"C");
 
     config.app = G_APPLICATION(app);
@@ -1988,6 +1959,7 @@ dw_app_window_new (DwApp *app)
     gtk_frame_set_child((GtkFrame*) frame_scope, scope_tab);
 
     gtk_window_set_child (GTK_WINDOW (window), notebook);
+    gtk_window_set_title( GTK_WINDOW(window), titlestr);
     //gtk_grid_attach (window, notebook, 0, 0, 1, 1);
 
     /* Parse saved presets */
