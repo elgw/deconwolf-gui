@@ -24,19 +24,19 @@ typedef struct {
 
     GtkAdjustment * dwc_nthreads;
     GtkAdjustment * dwc_tilesize;
-    GtkToggleButton * dwc_outformat_uint16;
+    GtkCheckButton * dwc_outformat_uint16;
     GtkSwitch * dwc_overwrite;
     char * savefolder; // Suggested folder to save the script in
     gboolean has_dw;
     char * default_open_uri; // Where to open files
     char * regexp_channel; // Regular expression to identify channels
 
-    GtkToggleButton* bq_best;
-    GtkToggleButton* bq_good;
-    GtkToggleButton* bq_bad;
+    GtkCheckButton* bq_best;
+    GtkCheckButton* bq_good;
+    GtkCheckButton* bq_bad;
 
-    GtkToggleButton* hw_cpu;
-    GtkToggleButton* hw_gpu;
+    GtkCheckButton* hw_cpu;
+    GtkCheckButton* hw_gpu;
 } GlobConf;
 
 GlobConf config;
@@ -54,12 +54,6 @@ on_drop (GtkDropTarget *target,
          double         y,
          gpointer       data);
 
-#ifdef GTK3
-static  void
-drag_data_cb(GtkWidget *wgt, GdkDragContext *context, int x, int y,
-             GtkSelectionData *seldata, guint info, guint time,
-             gpointer userdata);
-#endif
 
 char * get_configuration_file(char * name)
 /* Return the name for the configuration file */
@@ -142,7 +136,7 @@ next_page_cb (GtkWidget *widget,
 
 GtkWidget * create_deconwolf_frame()
 {
-    printf("create_deconwolf_frame\n");
+    //printf("create_deconwolf_frame\n");
     char * cfile = get_configuration_file("deconwolf");
     DwConf * dwconf = dw_conf_new_from_file(cfile);
     g_free(cfile);
@@ -172,23 +166,23 @@ GtkWidget * create_deconwolf_frame()
     GtkWidget * out_uint16 = gtk_check_button_new_with_label("unsigned 16-bit");
     GtkWidget * out_float32 = gtk_check_button_new_with_label("32 bit floating point");
     gtk_check_button_set_group((GtkCheckButton*) out_float32, (GtkCheckButton*) out_uint16);
-    config.dwc_outformat_uint16 = (GtkToggleButton*) out_uint16;
+    config.dwc_outformat_uint16 = GTK_CHECK_BUTTON(out_uint16);
     if(dwconf->outformat == DW_CONF_OUTFORMAT_UINT16)
     {
-        gtk_check_button_set_active( (GtkToggleButton*) out_uint16, TRUE);
+        gtk_check_button_set_active( GTK_CHECK_BUTTON(out_uint16), TRUE);
     }
     else
     {
-        gtk_check_button_set_active( (GtkToggleButton*) out_float32, TRUE);
+        gtk_check_button_set_active( GTK_CHECK_BUTTON(out_float32), TRUE);
     }
 
     GtkWidget * lBorder = gtk_label_new("Border quality");
     GtkWidget * bq_best = gtk_check_button_new_with_label("Best (Default)");
     GtkWidget * bq_good = gtk_check_button_new_with_label("Good");
     GtkWidget * bq_bad = gtk_check_button_new_with_label("Periodic (fastest)");
-    config.bq_best = (GtkToggleButton*) bq_best;
-    config.bq_good = (GtkToggleButton*) bq_good;
-    config.bq_bad = (GtkToggleButton*) bq_bad;
+    config.bq_best = GTK_CHECK_BUTTON( bq_best );
+    config.bq_good = GTK_CHECK_BUTTON( bq_good );
+    config.bq_bad = GTK_CHECK_BUTTON( bq_bad );
 
     gtk_check_button_set_group(
                                (GtkCheckButton*) bq_best,
@@ -201,23 +195,23 @@ GtkWidget * create_deconwolf_frame()
     switch(dwconf->border_quality)
     {
     case DW_CONF_BORDER_QUALITY_BEST:
-        gtk_check_button_set_active( (GtkToggleButton*) bq_best, TRUE);
+        gtk_check_button_set_active( GTK_CHECK_BUTTON( bq_best ), TRUE);
         break;
     case DW_CONF_BORDER_QUALITY_GOOD:
-        gtk_check_button_set_active( (GtkToggleButton*) bq_good, TRUE);
+        gtk_check_button_set_active( GTK_CHECK_BUTTON( bq_good ), TRUE);
         break;
     case DW_CONF_BORDER_QUALITY_BAD:
-        gtk_check_button_set_active( (GtkToggleButton*) bq_bad, TRUE);
+        gtk_check_button_set_active( GTK_CHECK_BUTTON( bq_bad ), TRUE);
         break;
     }
-    printf("1\n");
+
     /* CPU / GPU */
     GtkWidget * lHardware = gtk_label_new("Hardware");
     GtkWidget * hw_cpu = gtk_check_button_new_with_label("CPU (Default)");
     GtkWidget * hw_gpu = gtk_check_button_new_with_label("GPU (read the docs!)");
 
-    config.hw_cpu = (GtkToggleButton*) hw_cpu;
-    config.hw_gpu = (GtkToggleButton*) hw_gpu;
+    config.hw_cpu =  GTK_CHECK_BUTTON(hw_cpu);
+    config.hw_gpu =  GTK_CHECK_BUTTON(hw_gpu);
 
     gtk_check_button_set_group(
                                (GtkCheckButton*) hw_cpu,
@@ -225,9 +219,9 @@ GtkWidget * create_deconwolf_frame()
 
     if(dwconf->use_gpu)
     {
-        gtk_check_button_set_active( (GtkToggleButton*) hw_gpu, TRUE);
+        gtk_check_button_set_active( GTK_CHECK_BUTTON(hw_gpu), TRUE);
     } else {
-        gtk_check_button_set_active( (GtkToggleButton*) hw_cpu, TRUE);
+        gtk_check_button_set_active( GTK_CHECK_BUTTON(hw_cpu), TRUE);
     }
 
     GtkWidget * grid = gtk_grid_new();
@@ -271,18 +265,15 @@ GtkWidget * create_deconwolf_frame()
     gtk_action_bar_pack_end ((GtkActionBar*) Bar, btnNext);
     GtkWidget * A = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
 
-
-    gtk_box_append(A, Bar);
-    gtk_box_append(A, grid);
+    gtk_box_append(GTK_BOX(A), Bar);
+    gtk_box_append(GTK_BOX(A), grid);
 
     g_free(dwconf);
     return A;
-    printf("end create deconwolf frame\n");
 }
 
 GtkWidget * create_file_frame()
 {
-    printf("Setting up file frame\n");
     GtkTreeStore * file_store = gtk_tree_store_new (fN_COLUMNS,       /* Total number of columns */
                                                     G_TYPE_STRING,   /* File name */
                                                     G_TYPE_STRING);   /* Channel */
@@ -351,16 +342,18 @@ GtkWidget * create_file_frame()
     gtk_action_bar_pack_end ((GtkActionBar*) Bar, btnNext);
 
     GtkWidget * file_tree_scroller = gtk_scrolled_window_new ();
-    gtk_scrolled_window_set_child(file_tree_scroller, file_tree);
+    gtk_scrolled_window_set_child(
+                                  GTK_SCROLLED_WINDOW(file_tree_scroller),
+                                  file_tree);
     gtk_widget_set_vexpand(file_tree_scroller, true);
     GtkWidget * boxV = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
 
-    gtk_box_append(boxV, Bar);
-    gtk_box_append(boxV, file_tree_scroller);
+    gtk_box_append(GTK_BOX(boxV), Bar);
+    gtk_box_append(GTK_BOX(boxV), file_tree_scroller);
 
 
     GtkWidget * file_frame = gtk_frame_new(NULL);
-    gtk_frame_set_child (file_frame, boxV);
+    gtk_frame_set_child (GTK_FRAME(file_frame), boxV);
 
 #ifdef GTK3
     g_signal_connect (G_OBJECT (file_tree), "key_press_event",
@@ -384,7 +377,6 @@ GtkWidget * create_file_frame()
     gtk_widget_add_controller (GTK_WIDGET (file_frame),
                                GTK_EVENT_CONTROLLER (target));
 
-    printf("File frame done\n");
     return file_frame;
 
 }
@@ -392,7 +384,7 @@ GtkWidget * create_file_frame()
 
 int is_tif_file_name(const char * fname)
 {
-    printf("Checking %s\n", fname);
+
     GRegex *regex;
     GMatchInfo *match_info;
     int match = 0;
@@ -553,6 +545,7 @@ void add_channel_DwChannel(DwChannel * chan)
 }
 
 
+
 gboolean
 new_channel_cb(GtkWidget *widget,
                gpointer user_data)
@@ -561,10 +554,6 @@ new_channel_cb(GtkWidget *widget,
     UNUSED(user_data);
     dw_channel_edit_reset();
     dw_channel_edit_show();
-#if GTK3
-    add_channel(chan->alias, chan->name, chan->lambda, chan->niter);
-    dw_channel_free(chan);
-#endif
     return TRUE;
 }
 
@@ -572,7 +561,7 @@ new_channel_cb(GtkWidget *widget,
 /* returns a box */
 GtkWidget * create_channel_tree()
 {
-    printf("Create channel tree\n");
+
     /* Create tree-view for files */
     GtkTreeStore * channel_store = gtk_tree_store_new (cN_COLUMNS,       /* Total number of columns */
                                                        G_TYPE_STRING,
@@ -661,14 +650,14 @@ GtkWidget * create_channel_tree()
 
     GtkWidget * boxV = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
 
-    gtk_box_append(boxV, Bar);
+    gtk_box_append(GTK_BOX(boxV), Bar);
 
     // Make the list of channels scrollable
     GtkWidget * channel_tree_scroll = gtk_scrolled_window_new ();
-    gtk_scrolled_window_set_child (channel_tree_scroll, channel_tree);
+    gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW(channel_tree_scroll), channel_tree);
     gtk_widget_set_vexpand(channel_tree_scroll, true);
-    gtk_box_append(boxV, channel_tree_scroll);
-    printf("end Create channel tree\n");
+    gtk_box_append(GTK_BOX(boxV), channel_tree_scroll);
+
     return boxV;
 }
 
@@ -691,6 +680,10 @@ gboolean add_scope(char * name, float na, float ni, float dx, float dz)
     return TRUE;
 }
 
+void add_scope_DwScope(DwScope * scope)
+{
+    add_scope(scope->name, scope->NA, scope->ni, scope->xy_nm, scope->z_nm);
+}
 
 
 gboolean
@@ -700,12 +693,8 @@ new_scope_cb (GtkWidget *widget,
     UNUSED(widget);
     UNUSED(user_data);
 
-    DwScope * scope = dw_scope_edit_dlg((GtkWindow*) config.window, NULL);
-    if(scope != NULL)
-    {
-        add_scope(scope->name, scope->NA, scope->ni, scope->xy_nm, scope->z_nm);
-        g_free(scope);
-    }
+    dw_scope_edit_reset();
+    dw_scope_edit_show();
 
     return TRUE;
 }
@@ -729,7 +718,7 @@ save_scopes_cb (GtkWidget *widget,
 
 GtkWidget * create_microscope_tab()
 {
-    printf("Create scope tab\n");
+
     /* Create tree-view for microscopes */
     GtkTreeStore * scope_store = gtk_tree_store_new (sSN_COLUMNS,       /* Total number of columns */
                                                      G_TYPE_STRING,
@@ -817,8 +806,8 @@ GtkWidget * create_microscope_tab()
 
     GtkWidget * A = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
 
-    gtk_box_append(A, Bar);
-    gtk_box_append(A, scope_tree);
+    gtk_box_append(GTK_BOX(A), Bar);
+    gtk_box_append(GTK_BOX(A), scope_tree);
 
     return A;
 }
@@ -894,11 +883,10 @@ on_drop (GtkDropTarget *target,
 {
     // Call the appropriate setter depending on the type of data
     // that we received
-    print_g_object_name(value);
+    //print_g_object_name(value);
 
     if(G_VALUE_HOLDS(value, GDK_TYPE_FILE_LIST))
     {
-        printf("Several files (GSlist ?)\n");
         GdkFileList *file_list = g_value_get_boxed (value);
         GSList *list = gdk_file_list_get_files (file_list);
         for (GSList *l = list; l != NULL; l = l->next)
@@ -910,98 +898,17 @@ on_drop (GtkDropTarget *target,
         return true;
     } else if (G_VALUE_HOLDS (value, G_TYPE_FILE))
     {
-        printf("Got a file (or several)\n");
         GFile * file = g_value_get_object (value);
         char * t = g_file_get_path(file);
-        printf("Got %s\n", t);
+
         file_tree_append(g_file_get_path(file));
         g_free(t);
         //my_widget_set_file (self, g_value_get_object (value));
         return true;
     } else {
-        printf("Got something else\n");
         return false;
     }
 }
-
-#ifdef GTK3
-static  void
-drag_data_cb(GtkWidget *wgt, GdkDragContext *context, int x, int y,
-             GtkSelectionData *seldata, guint info, guint time,
-             gpointer userdata)
-{
-    UNUSED(wgt);
-    UNUSED(x);
-    UNUSED(y);
-    UNUSED(info);
-    UNUSED(userdata);
-
-    //  printf("Starting DnD callback\n"); fflush(stdout);
-    if (!seldata || !gtk_selection_data_get_data(seldata))
-    {
-        printf("DND data is weird\n");
-        goto done;
-    }
-
-    guint dformat = gtk_selection_data_get_format (seldata);
-
-    if(dformat != 8)
-    {
-        printf("Don't recognize the data format %d of the DND\n", dformat);
-        goto done;
-    }
-
-    //  printf("%d data items\n", gtk_selection_data_get_length (seldata));
-
-
-    gchar ** uris =  gtk_selection_data_get_uris(seldata);
-    for (gchar **uris_iter = uris; uris_iter && *uris_iter; ++uris_iter)
-    {
-        printf("--%s--\n", *uris_iter);
-    }
-    g_strfreev(uris);
-    // Use g_uri_to_string() or similar here
-
-    //printf("---\n%s---\n", data);
-    //fflush(stdout);
-    const guchar * data = gtk_selection_data_get_data(seldata);
-    /* Append to file tree, need to split the data first */
-    if(strlen( (char *) data) > 0)
-    {
-        char * dnd = g_strdup( (char *) data);
-        char delim = '\n';
-        char * file = strtok(dnd, &delim);
-
-        if(file != NULL)
-        {
-            file_tree_append_dnd_file(file);
-        }
-        while( file != NULL)
-        {
-            file = strtok(NULL, &delim);
-            if(file != NULL)
-            {
-                file_tree_append_dnd_file(file);
-            }
-        }
-        if(dnd != NULL)
-        {
-            g_free(dnd);
-        }
-    }
-
-
-
- done:
-    gtk_drag_finish (context,
-                     TRUE, // success,
-                     FALSE, // delete original
-                     time);
-
-    //  printf("DnD handling done\n");
-}
-#endif
-
 
 struct _DwAppWindow
 {
@@ -1097,12 +1004,12 @@ gboolean save_cmd(GtkWindow * parent_window, char ** savename)
 
     gboolean saved = FALSE;
 
-    GtkWidget *dialog;
+
     GtkFileDialog *chooser;
 
     gint res;
 
-    dialog = gtk_file_dialog_new ();
+    GtkFileDialog * dialog = gtk_file_dialog_new ();
     gtk_file_dialog_set_title(dialog, "Save File");
     gtk_file_dialog_set_modal(dialog, true);
 
@@ -1264,14 +1171,14 @@ GtkWidget * create_run_frame()
     GtkWidget * cmd_scroll = gtk_scrolled_window_new();
     gtk_widget_set_vexpand(cmd_scroll, true);
 
-    gtk_scrolled_window_set_child(cmd_scroll, cmd);
+    gtk_scrolled_window_set_child( GTK_SCROLLED_WINDOW(cmd_scroll), cmd);
 
     GtkWidget * fcmd_scroll = gtk_frame_new("Commands");
-    gtk_frame_set_child( fcmd_scroll, cmd_scroll);
+    gtk_frame_set_child( GTK_FRAME(fcmd_scroll), cmd_scroll);
 
 
     GtkWidget * frame = gtk_frame_new(NULL);
-    gtk_frame_set_child(frame, fcmd_scroll);
+    gtk_frame_set_child(GTK_FRAME(frame), fcmd_scroll);
 
     GtkWidget * ButtonRun = gtk_button_new_from_icon_name("media-playback-start");
 
@@ -1290,8 +1197,8 @@ GtkWidget * create_run_frame()
     GtkWidget * A = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
 
 
-    gtk_box_append(A, Bar);
-    gtk_box_append(A, frame);
+    gtk_box_append(GTK_BOX(A), Bar);
+    gtk_box_append(GTK_BOX(A), frame);
 
     gtk_widget_show (cmd);
     return A;
@@ -1540,12 +1447,8 @@ void edit_selected_scope()
         current_scope->z_nm = sDZ;
         g_free(sname);
 
-        DwScope * scope = dw_scope_edit_dlg((GtkWindow*) config.window, current_scope);
-        if(scope != NULL)
-        {
-            dw_scope_to_gtk_tree_store(scope, (GtkTreeStore*) model, &iter);
-            dw_scope_free(scope);
-        }
+        dw_scope_edit_set(current_scope);
+        dw_scope_edit_show();
         dw_scope_free(current_scope);
     }
     return;
@@ -1594,30 +1497,6 @@ void edit_selected_channel()
         dw_channel_free(curr);
     }
 }
-
-
-#if GTK3
-// TODO: add_new_channel or similar
-// see cb_dw_channels_ok.
-if(new != NULL)
- {
-     char * lambdastr = g_malloc0(1024);
-     sprintf(lambdastr, "%.2f", new->lambda);
-     gtk_tree_store_set((GtkTreeStore*) model, &iter,
-                        cALIAS_COLUMN, new->alias,
-                        cNAME_COLUMN, new->name,
-                        cEMISSION_COLUMN, lambdastr,
-                        cNITER_COLUMN, new->niter,
-                        -1);
-     g_free(lambdastr);
-     dw_channel_free(new);
- }
-dw_channel_free(curr);
-}
-#endif
-
-
-
 
 void del_selected_channel()
 {
@@ -1715,9 +1594,9 @@ gboolean add_files_cb(GtkWidget * w, gpointer p)
 {
     UNUSED(p);
 
-    GtkWidget * dialog = gtk_file_dialog_new ();
-    gtk_file_dialog_set_title(dialog, "Open File");
-    gtk_file_dialog_set_modal(dialog, true);
+    GtkWidget * dialog = (GtkWidget*) gtk_file_dialog_new ();
+    gtk_file_dialog_set_title(GTK_FILE_DIALOG(dialog), "Open File");
+    gtk_file_dialog_set_modal(GTK_FILE_DIALOG(dialog), true);
 
     if(config.default_open_uri != NULL)
     {
@@ -1729,7 +1608,7 @@ gboolean add_files_cb(GtkWidget * w, gpointer p)
 
     GCancellable* canc = g_cancellable_new();
     gtk_file_dialog_open_multiple(GTK_FILE_DIALOG(dialog), // self
-                                  config.window, // parent
+                                  GTK_WINDOW(config.window), // parent
                                   canc, // cancellable
                                   got_files_from_dialog, // callback
                                   NULL); // user_data
@@ -1921,11 +1800,11 @@ GtkWidget * create_drop_frame()
     gchar * markup =
         g_strdup_printf("<span foreground='#ffffff'><b>Drag and Drop images here</b></span>");
 
-    gtk_label_set_markup(GTK_LABEL(label),markup);
+    gtk_label_set_markup(GTK_LABEL(label), markup);
     g_free(markup);
-    gtk_overlay_set_child (overlay, image);
+    gtk_overlay_set_child (GTK_OVERLAY(overlay), GTK_WIDGET(image));
     gtk_overlay_add_overlay((GtkOverlay*) overlay, label);
-    gtk_frame_set_child (frame_drop, overlay);
+    gtk_frame_set_child (GTK_FRAME(frame_drop), GTK_WIDGET(overlay));
     return frame_drop;
 }
 
@@ -1951,14 +1830,14 @@ about_activated(GSimpleAction *simple,
 void
 edit_global_config(void)
 {
-    GtkWindow * dialog = gtk_window_new();
+    GtkWindow * dialog = (GtkWindow *) gtk_window_new();
     gtk_window_set_modal(dialog, true);
     gtk_window_set_title(dialog, "Edit Global Settings");
     gtk_window_set_destroy_with_parent(dialog, true);
 
     GtkWidget * lRegexp = gtk_label_new("Regular expression");
     GtkWidget * eRegexp = gtk_entry_new();
-    gtk_editable_set_text((GtkEntry*) eRegexp, config.regexp_channel);
+    gtk_editable_set_text( GTK_EDITABLE(eRegexp), config.regexp_channel);
 
     GtkWidget * grid = gtk_grid_new();
     gtk_grid_set_row_spacing ((GtkGrid*) grid , 5);
@@ -1980,14 +1859,15 @@ edit_global_config(void)
     gtk_widget_set_valign((GtkWidget*) grid, GTK_ALIGN_CENTER);
     gtk_window_set_child(dialog, grid);
 
-    gtk_widget_show(dialog);
+    gtk_widget_show(GTK_WIDGET(dialog));
 
     int result = -1;
     // TODO: Need callback instead
     switch (result)
     {
     case GTK_RESPONSE_ACCEPT:
-        sprintf(config.regexp_channel, "%s", gtk_editable_get_text((GtkEntry*) eRegexp));
+        sprintf(config.regexp_channel, "%s",
+                gtk_editable_get_text( GTK_EDITABLE(eRegexp)));
         break;
     default:
         // do_nothing_since_dialog_was_cancelled ();
@@ -2029,7 +1909,7 @@ dw_app_window_new (DwApp *app)
     printf("Setting up gui components\n");
     setlocale(LC_ALL,"C");
 
-    config.app = app;
+    config.app = G_APPLICATION(app);
     config.default_open_uri = NULL;
     config.savefolder = NULL;
     config.has_dw = has_dw();
@@ -2042,14 +1922,8 @@ dw_app_window_new (DwApp *app)
     int width = gdk_pixbuf_get_width(im);
     int height = gdk_pixbuf_get_height(im);
     int new_height = round(100.0 / ( (double) width) * (double) height );
-    GdkPixbuf * icon = gdk_pixbuf_scale_simple(im, 100, new_height, GDK_INTERP_BILINEAR);
-    g_object_unref(im);
-#ifdef GTK3
-    gtk_window_set_default_icon(icon);
-#endif
-    g_object_unref(icon);
 
-    printf("Creating frames\n");
+    //printf("Creating frames\n");
     GtkWidget * frame_drop = create_drop_frame ();
     GtkWidget * frame_dw = create_deconwolf_frame();
     GtkWidget * frame_files = create_file_frame();
@@ -2057,13 +1931,7 @@ dw_app_window_new (DwApp *app)
     GtkWidget * frame_scope = gtk_frame_new (NULL);
     GtkWidget * frame_run = create_run_frame();
 
-#ifdef GTK3
-    gtk_frame_set_shadow_type (GTK_FRAME (frame_drop), GTK_SHADOW_IN);
-    gtk_frame_set_shadow_type (GTK_FRAME (frame_files), GTK_SHADOW_IN);
-    gtk_frame_set_shadow_type (GTK_FRAME (frame_channels), GTK_SHADOW_IN);
-#endif
-
-    printf("Notebook\n");
+    //printf("Notebook\n");
     GtkWidget * notebook = gtk_notebook_new();
     config.notebook = (GtkNotebook*) notebook;
     gtk_notebook_append_page ((GtkNotebook*) notebook,
@@ -2109,14 +1977,13 @@ dw_app_window_new (DwApp *app)
     DwAppWindow * window = g_object_new (DW_APP_WINDOW_TYPE, "application", app, NULL);
     config.window = window;
 
-    printf("Packing into main window\n");
+    //printf("Packing into main window\n");
     /* Pack components */
     gtk_frame_set_child((GtkFrame*) frame_channels, channel_tree);
     gtk_frame_set_child((GtkFrame*) frame_scope, scope_tab);
-    printf("attaching notebook\n");
+
     gtk_window_set_child (GTK_WINDOW (window), notebook);
     //gtk_grid_attach (window, notebook, 0, 0, 1, 1);
-    printf("done\n");
 
     /* Parse saved presets */
     populate_channels();
@@ -2157,6 +2024,9 @@ dw_app_window_new (DwApp *app)
 
     dw_channel_edit_init();
     dw_channel_edit_set_callback(add_channel_DwChannel);
+
+    dw_scope_edit_init();
+    dw_scope_edit_set_callback(add_scope_DwScope);
 
     return window;
 }

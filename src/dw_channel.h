@@ -56,4 +56,4 @@ void dw_channel_edit_set(DwChannel *);
 void dw_channel_edit_reset();
 
 // Function to call when the user hit "ok"
-void dw_channel_edit_set_callback( void * (*callback) (DwChannel*));
+void dw_channel_edit_set_callback( void (*callback) (DwChannel*));

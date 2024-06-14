@@ -1,8 +1,6 @@
-#ifndef __dw_scope_h
-#define __dw_scope_h
-
+#pragma once
 #include <gtk/gtk.h>
-
+#define UNUSED(x) (void)(x)
 
 // Microscope
 typedef struct {
@@ -49,9 +47,15 @@ DwScope * dwscope_get_selected_from_gtk_tree_view(GtkTreeView * tv);
 
 void dw_scope_to_key_file(DwScope * scope, GKeyFile * kf);
 
+/*
+ * GUI
+ */
+
 // Function to open a dialog box with a message
-DwScope *
-dw_scope_edit_dlg(GtkWindow *parent, DwScope * old_scope);
+void dw_scope_edit_init(void);
+void dw_scope_edit_show(void);
+void dw_scope_edit_reset(void);
 
+void dw_scope_edit_set(DwScope *);
 
-#endif
+void dw_scope_edit_set_callback( void (*callback) (DwScope *));

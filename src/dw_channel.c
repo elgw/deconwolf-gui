@@ -8,10 +8,10 @@ typedef struct {
     GtkWidget * eName;
     GtkWidget * eNiter;
     GtkWidget * eColor;
-    void * (*callback) (DwChannel*);
+    void (*callback) (DwChannel*);
 } DwChannelState;
 
-DwChannelState * state;
+static DwChannelState * state = NULL;
 
 DwChannel * dw_channel_new()
 {
@@ -415,7 +415,7 @@ dw_channel_edit_init()
 /* Set the callback, i.e. where to send the information when the user
  * clicks ok
  */
-void dw_channel_edit_set_callback( void * (*callback) (DwChannel*))
+void dw_channel_edit_set_callback( void  (*callback) (DwChannel*))
 {
     state->callback = callback;
 }
