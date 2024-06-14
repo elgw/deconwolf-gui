@@ -192,50 +192,98 @@ DwChannel ** dw_channels_from_disk(char * fname)
     return channels;
 }
 
-gboolean
-color_draw_cb (GtkWidget    *widget,
-               cairo_t  * cr,
-               gpointer      user_data)
-{
-    UNUSED(widget);
 
-    double * lambda = (double*) user_data;
-    DwRGB * C = dw_RGB_new_from_lambda(lambda[0]);
+typedef struct {
+    double lambda;
+    GtkWidget * widget;
+} UserData1;
+
+
+gboolean
+color_draw_cb (
+    GtkDrawingArea* drawing_area,
+    cairo_t* cr,
+    int width,
+    int height,
+    gpointer user_data)
+{
+    UserData1 * ud = (UserData1*) user_data;
+    DwRGB * C = dw_RGB_new_from_lambda(ud->lambda);
     cairo_set_source_rgb (cr, C->R, C->G, C->B);
     g_free(C);
     cairo_paint (cr);
     return TRUE;
 }
 
-typedef struct {
-    double * lambda;
-    GtkWidget * widget;
-} UserData1;
-
+// https://docs.gtk.org/gtk4/signal.Editable.changed.html
+/* Called when the lambda is changed */
 gboolean elambda_event(GtkWidget * widget,
-                       GdkEvent  *event,
                        gpointer user_data)
 {
-    UNUSED(event);
+    GtkEntry * entry = GTK_ENTRY(widget);
     UserData1 * u = (UserData1*) user_data;
-    u->lambda[0] = atof(gtk_entry_get_text((GtkEntry*) widget));
-    // printf("Got lambda = %f\n", u->lambda[0]);
+    u->lambda = atof(gtk_editable_get_text(entry));
     // Force redraw of the box
     gtk_widget_queue_draw(u->widget);
     return FALSE; // pass on event
-
 }
 
 
-DwChannel *
+void channel_new()
+{
+    #if 0
+DwChannel * channel = NULL;
+int result = 0;
+switch (result)
+{
+case GTK_RESPONSE_ACCEPT:
+    channel = g_malloc0(sizeof(DwChannel));
+    channel->name = g_strdup(gtk_entry_buffer_get_text(gtk_entry_get_buffer((GtkEntry *) eName)));
+    channel->alias = g_strdup(gtk_entry_buffer_get_text(gtk_entry_get_buffer(eAlias)));
+    channel->lambda = atof(gtk_entry_buffer_get_text(gtk_entry_get_buffer(eLambda)));
+    channel->niter = atoi(gtk_entry_buffer_get_text(gtk_entry_get_buffer((eNiter))));
+
+    break;
+default:
+    // do_nothing_since_dialog_was_cancelled ();
+    break;
+
+}
+
+return channel;
+#endif
+}
+
+bool cb_dw_channels_ok(GtkWidget * widget, gpointer * p)
+{
+    // g_object_set_data  to store stuff associated with the window?
+    printf("TODO\n");
+    GtkWindow * window = GTK_WINDOW(p);
+    gtk_window_close(GTK_WINDOW(window));
+    return true;
+}
+
+bool cb_dw_channels_close(GtkWidget * widget, gpointer * p)
+{
+    GtkWindow * window = GTK_WINDOW(p);
+    gtk_window_close(GTK_WINDOW(window));
+    return true;
+}
+
+// This used to be a blocking thing, but there is no reason that it has to be that.
+// However if it isn't blocking it can't return a DwChannel
+// https://discourse.gnome.org/t/how-should-i-replace-a-gtk-dialog-run-in-gtk-4/35015/
+// Also we don't need to re-create it all the time. It could actually be constructed at
+// program start and shown/hidden as needed with new data.
+void
 dw_channel_edit_dlg(GtkWindow *parent, DwChannel * old_channel)
 {
-    GtkWidget *dialog, *content_area;
+    GtkWindow *dialog;
+    GtkWidget *content_area;
     GtkDialogFlags flags;
 
-    // Create the widgets
-    flags = GTK_DIALOG_DESTROY_WITH_PARENT;
-    double lambda = 0;
+    // TODO: Free this one when window close
+    UserData1 * ud = calloc(1, sizeof(UserData1));
 
     char * msg = g_malloc0(1024);
     if(old_channel == NULL)
@@ -243,23 +291,18 @@ dw_channel_edit_dlg(GtkWindow *parent, DwChannel * old_channel)
         sprintf(msg, "Add a new channel");
     } else {
         sprintf(msg, "Edit an existing channel");
-        lambda = old_channel->lambda;
+        ud->lambda = old_channel->lambda;
     }
 
-    dialog = gtk_dialog_new_with_buttons (msg,
-                                          parent,
-                                          flags,
-                                          "Cancel",
-                                          GTK_RESPONSE_NONE,
-                                          "Ok",
-                                          GTK_RESPONSE_ACCEPT,
-                                          NULL);
+
+    dialog = gtk_window_new();
+    gtk_window_set_modal(dialog, true);
+    gtk_window_set_title(dialog, msg);
     g_free(msg);
-    content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
+
 
     GtkWidget * lAlias = gtk_label_new("Alias");
     GtkWidget * eAlias = gtk_entry_new();
-
     GtkWidget * lName = gtk_label_new("Full name");
     GtkWidget * eName = gtk_entry_new();
     GtkWidget * lLambda = gtk_label_new("Emission maxima [nm]");
@@ -267,15 +310,16 @@ dw_channel_edit_dlg(GtkWindow *parent, DwChannel * old_channel)
     GtkWidget * lNiter = gtk_label_new("Number of iterations");
     GtkWidget * eNiter = gtk_entry_new();
     GtkWidget * lColor = gtk_label_new("Color:");
-    GtkWidget * eColor = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
-    g_signal_connect(eColor, "draw",
-                     G_CALLBACK(color_draw_cb), &lambda);
-    UserData1 ud;
-    ud.lambda = &lambda;
-    ud.widget = eColor;
 
-    g_signal_connect(eLambda, "key-release-event",
-                     G_CALLBACK(elambda_event), &ud);
+    GtkWidget * eColor = gtk_drawing_area_new();
+    ud->widget = eColor;
+    gtk_drawing_area_set_content_width(eColor, 100);
+    gtk_drawing_area_set_content_height(eColor, 50);
+
+
+    gtk_drawing_area_set_draw_func(eColor, (GtkDrawingAreaDrawFunc) color_draw_cb, ud, NULL);
+
+    g_signal_connect(GTK_EDITABLE(eLambda), "changed", G_CALLBACK(elambda_event), ud);
 
     if(old_channel != NULL)
     {
@@ -312,47 +356,28 @@ dw_channel_edit_dlg(GtkWindow *parent, DwChannel * old_channel)
     gtk_widget_set_margin_bottom((GtkWidget*) im, 20);
     gtk_widget_set_margin_top((GtkWidget*) im, 20);
 
-    #ifdef GTK3
-    gtk_box_pack_end((GtkBox*) hbox, im, FALSE, TRUE, 5);
-    gtk_box_pack_start((GtkBox*) hbox, grid, FALSE, TRUE, 5);
-#endif
+    gtk_box_append(hbox, grid);
+    gtk_widget_set_size_request(im, 256, 256);
+    gtk_box_append(hbox, im);
 
     gtk_widget_set_halign((GtkWidget*) hbox, GTK_ALIGN_CENTER);
     gtk_widget_set_valign((GtkWidget*) hbox, GTK_ALIGN_CENTER);
 
-    #ifdef GTK3
-    gtk_container_add (GTK_CONTAINER (content_area),  hbox);
-    #else
-    gtk_grid_attach (content_area,  hbox, 0, 0, 1, 1);
-    #endif
+    // Box with the main content in top
+    // and Ok/Cancel buttons in the bottom
+    GtkBox * vbox0 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
+    gtk_box_append(vbox0, hbox);
 
-    #ifdef GTK3
-    gtk_widget_show_all(content_area);
-
-    int result = gtk_dialog_run (GTK_DIALOG (dialog));
-#else
-    int result = -1;
-    #endif
-
-    DwChannel * channel = NULL;
-    switch (result)
-    {
-    case GTK_RESPONSE_ACCEPT:
-        channel = g_malloc0(sizeof(DwChannel));
-        channel->name = g_strdup(gtk_entry_buffer_get_text(gtk_entry_get_buffer((GtkEntry *) eName)));
-        channel->alias = g_strdup(gtk_entry_buffer_get_text(gtk_entry_get_buffer(eAlias)));
-        channel->lambda = atof(gtk_entry_buffer_get_text(gtk_entry_get_buffer(eLambda)));
-        channel->niter = atoi(gtk_entry_buffer_get_text(gtk_entry_get_buffer((eNiter))));
-
-        break;
-    default:
-        // do_nothing_since_dialog_was_cancelled ();
-        break;
-    }
-    #ifdef GTK3
-    gtk_widget_destroy (dialog);
-#endif
-    return channel;
+    GtkButton * btn_ok = gtk_button_new_with_label("Ok");
+    g_signal_connect(btn_ok, "clicked", cb_dw_channels_ok, dialog);
+    GtkButton * btn_cancel = gtk_button_new_with_label("Cancel");
+    g_signal_connect(btn_cancel, "clicked", cb_dw_channels_close, dialog);
+    GtkBox * box_btn = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
+    gtk_box_append(box_btn, btn_cancel);
+    gtk_box_append(box_btn, btn_ok);
+    gtk_box_append(vbox0, box_btn);
+    gtk_window_set_child (dialog,  vbox0);
+    gtk_widget_show(dialog);
 }
 
 

@@ -4,7 +4,7 @@ cflags= -std=c11 -Wfatal-errors
 ldflags=-flto
 
 
-DEBUG?=0
+DEBUG?=1
 ifeq ($(DEBUG),1)
 cflags += -g3
 else

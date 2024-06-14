@@ -550,7 +550,8 @@ new_channel_cb(GtkWidget *widget,
 {
     UNUSED(widget);
     UNUSED(user_data);
-    DwChannel * chan = dw_channel_edit_dlg((GtkWindow*) config.window, NULL);
+    DwChannel * chan = NULL;
+    dw_channel_edit_dlg((GtkWindow*) config.window, NULL);
     if(chan != NULL)
     {
         add_channel(chan->alias, chan->name, chan->lambda, chan->niter);
@@ -560,6 +561,7 @@ new_channel_cb(GtkWidget *widget,
 }
 
 
+/* returns a box */
 GtkWidget * create_channel_tree()
 {
     printf("Create channel tree\n");
@@ -1122,7 +1124,7 @@ gboolean save_cmd(GtkWindow * parent_window, char ** savename)
 
 #ifdef GTK3
     res = gtk_dialog_run (GTK_DIALOG (dialog));
-#endif
+
 
     if (res == GTK_RESPONSE_ACCEPT)
     {
@@ -1135,7 +1137,7 @@ gboolean save_cmd(GtkWindow * parent_window, char ** savename)
         saved = TRUE;
     }
 
-#ifdef GTK3
+
     gtk_widget_destroy (dialog);
 #endif
     return saved;
@@ -1579,7 +1581,8 @@ void edit_selected_channel()
         g_free(cname);
         g_free(clambda);
 
-        DwChannel * new = dw_channel_edit_dlg((GtkWindow*) config.window, curr);
+        DwChannel * new = NULL;
+        dw_channel_edit_dlg((GtkWindow*) config.window, curr);
         if(new != NULL)
         {
             char * lambdastr = g_malloc0(1024);
@@ -2001,6 +2004,7 @@ void warn_no_dw(GtkWindow * parent)
          );
     gtk_alert_dialog_show(dialog, parent);
 }
+
 
 
 DwAppWindow *

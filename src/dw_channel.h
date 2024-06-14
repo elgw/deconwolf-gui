@@ -36,6 +36,7 @@ DwChannel ** dw_channels_get_from_gtk_tree_view(GtkTreeView *);
 DwChannel ** dw_channels_from_disk(char * fname);
 void dw_chan_to_key_file(DwChannel * , GKeyFile *);
 
-/* Open a dialog box that blocks parent and get/edit a dw_channel */
-DwChannel *
+/* Open a modal dialog box for edit/create a channel
+ TODO: Add a callback function */
+void
 dw_channel_edit_dlg(GtkWindow *parent, DwChannel * old_channel);
