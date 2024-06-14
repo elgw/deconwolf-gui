@@ -269,7 +269,12 @@ GtkWidget * create_deconwolf_frame()
     gtk_box_append(GTK_BOX(A), grid);
 
     g_free(dwconf);
-    return A;
+
+    GtkWidget * scroller = gtk_scrolled_window_new ();
+    gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW(scroller), A);
+    gtk_widget_set_vexpand(scroller, true);
+
+    return scroller;
 }
 
 GtkWidget * create_file_frame()
