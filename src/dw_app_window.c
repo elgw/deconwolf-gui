@@ -294,7 +294,7 @@ GtkWidget * create_file_frame()
     config.file_tree = file_tree;
 
     GtkCellRenderer * renderer = gtk_cell_renderer_text_new ();
-    #if 0
+#if 0
     g_object_set (G_OBJECT (renderer),
                   "foreground", "black",
                   NULL);
@@ -526,6 +526,9 @@ char * get_channel_name(const char *fname)
     return NULL;
 }
 
+
+// TODO: Change to add or update
+// then we can use this also as the end point for "edit"
 gboolean add_channel(char * alias, char * name, float emission, int iter)
 {
     GtkTreeStore * channel_store = (GtkTreeStore*) gtk_tree_view_get_model((GtkTreeView*) config.channel_tree);
@@ -533,7 +536,7 @@ gboolean add_channel(char * alias, char * name, float emission, int iter)
 
     char * emission_str = g_malloc0(1024);
     sprintf(emission_str, "%.2f", emission);
-    gtk_tree_store_append (channel_store, &iter1, NULL);  /* Acquire a top-level iterator */
+    gtk_tree_store_append (channel_store, &iter1, NULL);
     gtk_tree_store_set (channel_store, &iter1,
                         cALIAS_COLUMN, alias,
                         cNAME_COLUMN, name,
@@ -544,19 +547,24 @@ gboolean add_channel(char * alias, char * name, float emission, int iter)
     return TRUE;
 }
 
+void add_channel_DwChannel(DwChannel * chan)
+{
+    add_channel(chan->alias, chan->name, chan->lambda, chan->niter);
+}
+
+
 gboolean
 new_channel_cb(GtkWidget *widget,
                gpointer user_data)
 {
     UNUSED(widget);
     UNUSED(user_data);
-    DwChannel * chan = NULL;
-    dw_channel_edit_dlg((GtkWindow*) config.window, NULL);
-    if(chan != NULL)
-    {
-        add_channel(chan->alias, chan->name, chan->lambda, chan->niter);
-        dw_channel_free(chan);
-    }
+    dw_channel_edit_reset();
+    dw_channel_edit_show();
+#if GTK3
+    add_channel(chan->alias, chan->name, chan->lambda, chan->niter);
+    dw_channel_free(chan);
+#endif
     return TRUE;
 }
 
@@ -577,11 +585,11 @@ GtkWidget * create_channel_tree()
     config.channel_tree = channel_tree;
 
     GtkCellRenderer * renderer = gtk_cell_renderer_text_new ();
-    #if 0
+#if 0
     g_object_set (G_OBJECT (renderer),
                   "foreground", "black",
                   NULL);
-    #endif
+#endif
 
     g_object_set(G_OBJECT (renderer), "editable", FALSE, NULL);
 
@@ -1581,25 +1589,33 @@ void edit_selected_channel()
         g_free(cname);
         g_free(clambda);
 
-        DwChannel * new = NULL;
-        dw_channel_edit_dlg((GtkWindow*) config.window, curr);
-        if(new != NULL)
-        {
-            char * lambdastr = g_malloc0(1024);
-            sprintf(lambdastr, "%.2f", new->lambda);
-            gtk_tree_store_set((GtkTreeStore*) model, &iter,
-                               cALIAS_COLUMN, new->alias,
-                               cNAME_COLUMN, new->name,
-                               cEMISSION_COLUMN, lambdastr,
-                               cNITER_COLUMN, new->niter,
-                               -1);
-            g_free(lambdastr);
-            dw_channel_free(new);
-        }
+        dw_channel_edit_set(curr);
+        dw_channel_edit_show();
         dw_channel_free(curr);
     }
-
 }
+
+
+#if GTK3
+// TODO: add_new_channel or similar
+// see cb_dw_channels_ok.
+if(new != NULL)
+ {
+     char * lambdastr = g_malloc0(1024);
+     sprintf(lambdastr, "%.2f", new->lambda);
+     gtk_tree_store_set((GtkTreeStore*) model, &iter,
+                        cALIAS_COLUMN, new->alias,
+                        cNAME_COLUMN, new->name,
+                        cEMISSION_COLUMN, lambdastr,
+                        cNITER_COLUMN, new->niter,
+                        -1);
+     g_free(lambdastr);
+     dw_channel_free(new);
+ }
+dw_channel_free(curr);
+}
+#endif
+
 
 
 
@@ -1913,7 +1929,7 @@ GtkWidget * create_drop_frame()
     return frame_drop;
 }
 
-static void
+void
 about_activated(GSimpleAction *simple,
                 GVariant      *parameter,
                 gpointer       p)
@@ -1932,7 +1948,7 @@ about_activated(GSimpleAction *simple,
     gtk_widget_show(about);
 }
 
-static void
+void
 edit_global_config(void)
 {
     GtkWindow * dialog = gtk_window_new();
@@ -1942,7 +1958,7 @@ edit_global_config(void)
 
     GtkWidget * lRegexp = gtk_label_new("Regular expression");
     GtkWidget * eRegexp = gtk_entry_new();
-    gtk_entry_set_text((GtkEntry*) eRegexp, config.regexp_channel);
+    gtk_editable_set_text((GtkEntry*) eRegexp, config.regexp_channel);
 
     GtkWidget * grid = gtk_grid_new();
     gtk_grid_set_row_spacing ((GtkGrid*) grid , 5);
@@ -1971,7 +1987,7 @@ edit_global_config(void)
     switch (result)
     {
     case GTK_RESPONSE_ACCEPT:
-        sprintf(config.regexp_channel, "%s", gtk_entry_get_text((GtkEntry*) eRegexp));
+        sprintf(config.regexp_channel, "%s", gtk_editable_get_text((GtkEntry*) eRegexp));
         break;
     default:
         // do_nothing_since_dialog_was_cancelled ();
@@ -1981,7 +1997,7 @@ edit_global_config(void)
 }
 
 
-static void
+void
 configuration_activated(GSimpleAction *simple,
                         GVariant      *parameter,
                         gpointer       p)
@@ -1999,9 +2015,9 @@ configuration_activated(GSimpleAction *simple,
 void warn_no_dw(GtkWindow * parent)
 {
     GtkAlertDialog * dialog = gtk_alert_dialog_new(
-         "Could not locate deconwolf (i.e, the command 'dw'). "
-         "You will not be able to run anything from this GUI!"
-         );
+                                                   "Could not locate deconwolf (i.e, the command 'dw'). "
+                                                   "You will not be able to run anything from this GUI!"
+                                                   );
     gtk_alert_dialog_show(dialog, parent);
 }
 
@@ -2071,13 +2087,15 @@ dw_app_window_new (DwApp *app)
     g_signal_connect(notebook, "switch-page",
                      G_CALLBACK(tab_change_cb), NULL);
 
-    GtkWidget * channel_tree = create_channel_tree();
+    GtkWidget * channel_tree = create_channel_tree(); /* The box containing it */
 #ifdef GTK3
     g_signal_connect (G_OBJECT (config.channel_tree), "key_press_event",
                       G_CALLBACK (channel_tree_keypress), NULL);
+
     g_signal_connect (G_OBJECT (config.channel_tree), "button_press_event",
                       G_CALLBACK (channel_tree_buttonpress), NULL);
 #endif
+    // gtk_widget_add_controller ... or similar
 
     GtkWidget * scope_tab = create_microscope_tab();
 #ifdef GTK3
@@ -2119,6 +2137,7 @@ dw_app_window_new (DwApp *app)
 
     // See https://stackoverflow.com/questions/22582768/connecting-a-function-to-a-gtkaction
 
+
     static GActionEntry main_menu_actions[] =
         {
             { "about", about_activated, NULL, NULL, NULL, {0,0,0} },
@@ -2135,6 +2154,9 @@ dw_app_window_new (DwApp *app)
     if(!config.has_dw) {
         warn_no_dw((GtkWindow*) window);
     }
+
+    dw_channel_edit_init();
+    dw_channel_edit_set_callback(add_channel_DwChannel);
 
     return window;
 }

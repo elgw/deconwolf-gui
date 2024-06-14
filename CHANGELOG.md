@@ -2,6 +2,9 @@
 
 ## v0.0.7
 
+UserData1 -> DwChannelState
+ud -> state
+
 Upgrade to Gtk4
 ### Before switch:
 - [x] disable drag and drop

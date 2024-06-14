@@ -1,6 +1,6 @@
 cc=gcc
 
-cflags= -std=c11 -Wfatal-errors
+cflags= -std=c11 -Wfatal-errors -Wno-deprecated -Wno-deprecated-declarations
 ldflags=-flto
 
 
