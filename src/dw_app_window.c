@@ -41,7 +41,36 @@ GlobConf config;
 
 gboolean has_dw()
 {
-    return !system("dw --version > /dev/null 2>&1");
+    gchar* dw_path =
+        g_find_program_in_path(
+            "dw"
+        );
+        if (dw_path == NULL)
+        {
+            return false;
+        }
+        g_free(dw_path);
+    return true;
+#if 0
+    printf("dw path: %s\n", dw_path);
+
+    g_char * cmd - 
+
+    gchar * c_stdout = NULL;
+    gchar * c_stderr = NULL;
+    GError * error = NULL;
+    gboolean result =
+        g_spawn_command_line_sync(
+            "dw",
+            &c_stdout,
+            &c_stderr,
+            NULL, // wait_status 
+            &error
+        );
+    printf("stdout: %s\n", c_stdout);
+    printf("stderr: %s\n", c_stderr);
+    return result;
+#endif
 }
 
 /* Forward declarations */
@@ -60,7 +89,7 @@ char * get_configuration_file(char * name)
     // Set up the configuration folder
     char * cfile = g_malloc0(1024);
     sprintf(cfile, "%s/%s/", g_get_user_config_dir(), "deconwolf");
-    if(g_mkdir_with_parents(cfile, S_IXUSR | S_IWUSR | S_IRUSR) == -1)
+    if(g_mkdir_with_parents(cfile, 0755) == -1)
     {
         printf("Unable to access %s\n", cfile);
         g_free(cfile);
@@ -1076,7 +1105,7 @@ void save_cmd_to_file(  GObject* source_object,
         goto done;
     } else {
         // TODO: Only add S_IXUSR to the defaults
-        int chmod_ok = g_chmod(outname, S_IXUSR | S_IRUSR | S_IWUSR | S_IRGRP | S_IXGRP );
+        int chmod_ok = g_chmod(outname, 0755 );
         g_assert(chmod_ok == 0);
     }
 

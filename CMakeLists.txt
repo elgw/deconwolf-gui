@@ -56,7 +56,7 @@ set (CMAKE_C_STANDARD 11)
 if(UNIX)
   add_definitions(-DUNIX)
 elseif(WIN32)
-  add_definitions(-DWINDOWS)
+  add_definitions(-DWINDOWS)  
 endif()
 
 #
@@ -159,11 +159,19 @@ endif()
 # GTK3
 #
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
-target_link_libraries(dw_gui ${GTK3_LIBRARIES})
-target_include_directories(dw_gui PRIVATE ${GTK3_INCLUDE_DIRS})
-target_link_directories(dw_gui PRIVATE ${GTK3_LIBRARY_DIRS})
+pkg_check_modules(GTK4 REQUIRED gtk4)
+target_link_libraries(dw_gui ${GTK4_LIBRARIES})
+target_include_directories(dw_gui PRIVATE ${GTK4_INCLUDE_DIRS})
+target_link_directories(dw_gui PRIVATE ${GTK4_LIBRARY_DIRS})
 
+
+#
+# Prevent terminal from popping up on windows
+#
+if(WIN32)
+target_link_options(dw_gui PRIVATE "/SUBSYSTEM:WINDOWS" "/ENTRY:mainCRTStartup")
+# target_link_options(dw_gui PRIVATE -mwindows)
+endif()
 
 
 #
