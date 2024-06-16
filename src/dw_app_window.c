@@ -1091,14 +1091,15 @@ void save_cmd_to_file(  GObject* source_object,
     GtkTextBuffer * buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (config.cmd));
     gtk_text_buffer_get_start_iter (buffer, &start);
     gtk_text_buffer_get_end_iter (buffer, &end);
-    gchar * text = gtk_text_buffer_get_text (buffer, &start, &end, FALSE);
+    char * text = gtk_text_buffer_get_text (buffer, &start, &end, FALSE);
     gtk_text_buffer_set_modified (buffer, FALSE);
 
     GError * err = NULL;
     gboolean result = g_file_set_contents (outname, text, -1, &err);
-
+    g_free(text);
+    
     if (result == FALSE)
-    {
+    {        
         /* error saving file, show message to user */
         //error_message (err->message);
         g_error_free(err);
@@ -1110,9 +1111,8 @@ void save_cmd_to_file(  GObject* source_object,
     }
 
  done: ;
-    g_free (text);
-
-    free(outname);
+       
+    g_free(outname);    
     return;
 
 #ifdef GTK3

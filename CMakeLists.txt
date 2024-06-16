@@ -169,8 +169,8 @@ target_link_directories(dw_gui PRIVATE ${GTK4_LIBRARY_DIRS})
 # Prevent terminal from popping up on windows
 #
 if(WIN32)
+# TODO: It would be good to disable the terminal only for release builds
 target_link_options(dw_gui PRIVATE "/SUBSYSTEM:WINDOWS" "/ENTRY:mainCRTStartup")
-# target_link_options(dw_gui PRIVATE -mwindows)
 endif()
 
 
@@ -206,14 +206,6 @@ set_source_files_properties(
   )
 
 add_dependencies(dw_gui dummy-resource)
-
-# Enable -flto (GCC) and similar if available, see
-# https://cmake.org/cmake/help/latest/policy/CMP0069.html
-check_ipo_supported(RESULT result)
-if(result)
-  message("Enabling IPO")
-  set_property(DIRECTORY PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
-endif()
 
 include(GNUInstallDirs)
 message("LIBEXECDIR= ${CMAKE_INSTALL_LIBEXECDIR}")
