@@ -326,6 +326,7 @@ GtkWidget * create_deconwolf_frame()
     gtk_box_append(GTK_BOX(A), grid);
 
     g_free(dwconf);
+    dwconf=NULL;
 
     GtkWidget * scroller = gtk_scrolled_window_new ();
     gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW(scroller), A);
@@ -463,14 +464,6 @@ int is_tif_file_name(const char * fname)
     return match;
 }
 
-char * get_psfname(char * dir, char * channel)
-{
-    int len = strlen(dir) + strlen(channel);
-    char * name = g_malloc0(len+20);
-    sprintf(name, "%s/PSFBW/%s.tif", dir, channel);
-    return name;
-}
-
 char * get_channel_name_regexp(const char *fname0)
 {
     char * fname = g_strdup(fname0);
@@ -505,6 +498,7 @@ char * get_channel_name_regexp(const char *fname0)
             printf("Warning: duplicate channel match in %s\n", fname0);
         }
         g_free (word);
+        word = NULL;
         g_match_info_next (match_info, NULL);
     }
     g_match_info_free (match_info);
@@ -1097,9 +1091,9 @@ void save_cmd_to_file(  GObject* source_object,
     GError * err = NULL;
     gboolean result = g_file_set_contents (outname, text, -1, &err);
     g_free(text);
-    
+
     if (result == FALSE)
-    {        
+    {
         /* error saving file, show message to user */
         //error_message (err->message);
         g_error_free(err);
@@ -1111,8 +1105,8 @@ void save_cmd_to_file(  GObject* source_object,
     }
 
  done: ;
-       
-    g_free(outname);    
+
+    g_free(outname);
     return;
 
 #ifdef GTK3
@@ -1150,6 +1144,7 @@ gboolean save_dw_cb(GtkWidget * widget, gpointer user_data)
     GtkFileDialog * dialog = gtk_file_dialog_new ();
     gtk_file_dialog_set_title(dialog, "Save File");
     gtk_file_dialog_set_modal(dialog, true);
+
     gtk_file_dialog_set_initial_name(dialog, "dw_script.sh");
 
     GCancellable* canc = g_cancellable_new();
@@ -1231,6 +1226,7 @@ void update_cmd()
     if(config.savefolder != NULL)
     {
         g_free(config.savefolder);
+        config.savefolder = NULL;
     }
 
     if(files != NULL)
@@ -1284,13 +1280,14 @@ void update_cmd()
         sprintf(fstring + strlen(fstring), " --bq 1");
         break;
     case DW_CONF_BORDER_QUALITY_BEST:
-        sprintf(fstring + strlen(fstring), " --bq 2");
+        // Default: Not needed
+        // sprintf(fstring + strlen(fstring), " --bq 2");
         break;
     }
 
     if(dwconf->use_gpu == 1)
     {
-        sprintf(fstring + strlen(fstring), " --method shbcl2");
+        sprintf(fstring + strlen(fstring), " --gpu");
     }
 
     /* Generate the list of commands to run */
@@ -1305,14 +1302,16 @@ void update_cmd()
         if(ch != NULL)
         {
             gchar * fdir = g_path_get_dirname(files[kk]->name);
-            char * psf = get_psfname(fdir, files[kk]->channel);
+            gchar * psffile = g_strjoin(NULL, files[kk]->channel, ".tif", NULL);
+            gchar * psf = g_build_filename(fdir, "PSFBW", psffile, NULL);
+            g_free(psffile);
 
             /* Shell quoted version of the file names, allows files to contain
                single quotes in their names and avoids "accidental" mixing file
                names with commands :)
             */
-            char * outdir = g_malloc0(strlen(fdir) + 100);
-            sprintf(outdir, "%s/PSFBW/", fdir);
+            gchar * outdir = g_build_filename(fdir, "PSFBW", NULL);
+
             gchar * q_outdir = g_shell_quote(outdir);
             gchar * q_psfname = g_shell_quote(psf);
             gchar * q_filename = g_shell_quote(files[kk]->name);
