@@ -54,7 +54,7 @@ gboolean has_dw()
 #if 0
     printf("dw path: %s\n", dw_path);
 
-    g_char * cmd - 
+    g_char * cmd -
 
     gchar * c_stdout = NULL;
     gchar * c_stderr = NULL;
@@ -64,7 +64,7 @@ gboolean has_dw()
             "dw",
             &c_stdout,
             &c_stderr,
-            NULL, // wait_status 
+            NULL, // wait_status
             &error
         );
     printf("stdout: %s\n", c_stdout);
@@ -1130,23 +1130,30 @@ void save_cmd_to_file(  GObject* source_object,
 */
 gboolean save_dw_cb(GtkWidget * widget, gpointer user_data)
 {
+    /* TODO: Crashes on windows before shown
+      https://discourse.gnome.org/t/gtk4-c-windows-cannot-save-using-gtk-file-dialog-save/13072/21
+      The “context” is:
 
-    gboolean saved = FALSE;
+       the file selection dialog has settings, which require
+       installing the GTK schemas alongside your application’s own
+       settings
 
-    GtkFileDialog *chooser;
+       If you don’t install the org.gtk.Settings.* XML schemas
+       alongside your application’s settings schemas, and you don’t
+       compile all of them with glib-compile-schemas, then GTK won’t
+       find the schemas, and assume that the installation is
+       broken—which it is—and abort.
 
-    gint res;
-
+       https://manpages.ubuntu.com/manpages/trusty/en/man1/glib-compile-schemas.1.html
+    */
     // TODO: default folder based on some image in the list
     GtkFileDialog * dialog = gtk_file_dialog_new ();
     gtk_file_dialog_set_title(dialog, "Save File");
     gtk_file_dialog_set_modal(dialog, true);
     gtk_file_dialog_set_initial_name(dialog, "dw_script.sh");
 
-    chooser = GTK_FILE_DIALOG (dialog);
-
     GCancellable* canc = g_cancellable_new();
-    gtk_file_dialog_save(dialog,
+    gtk_file_dialog_save(GTK_FILE_DIALOG (dialog),
                          NULL,
                          canc,
                          save_cmd_to_file,
