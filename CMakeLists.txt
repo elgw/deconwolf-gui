@@ -56,7 +56,7 @@ set (CMAKE_C_STANDARD 11)
 if(UNIX)
   add_definitions(-DUNIX)
 elseif(WIN32)
-  add_definitions(-DWINDOWS)  
+  add_definitions(-DWINDOWS)
 endif()
 
 #
@@ -112,6 +112,13 @@ project(deconwolf-gui VERSION "${DW_GUI_VERSION_MAJOR}.${DW_GUI_VERSION_MINOR}.$
 if(WIN32)
   cmake_policy(SET CMP0091 NEW)
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
+
+#
+# define WINDOWS if running windows
+#
+if(WIN32)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DWINDOWS")
 endif()
 
 #

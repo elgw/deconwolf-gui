@@ -9,6 +9,9 @@
 
 #define titlestr "BiCroLab deconwolf GUI, 2021-2024"
 
+#define OUTSCRIPT_SH 0
+#define OUTSCRIPT_BAT 1
+
 // Global settings for this app
 typedef struct {
     GApplication *app;
@@ -35,6 +38,7 @@ typedef struct {
 
     GtkCheckButton* hw_cpu;
     GtkCheckButton* hw_gpu;
+    gint outscript; // sh or bat ?
 } GlobConf;
 
 GlobConf config;
@@ -44,19 +48,19 @@ gboolean has_dw()
     gchar* dw_path =
         g_find_program_in_path(
             "dw"
-        );
-        if (dw_path == NULL)
-        {
-            return false;
-        }
-        g_free(dw_path);
+            );
+    if (dw_path == NULL)
+    {
+        return false;
+    }
+    g_free(dw_path);
     return true;
 #if 0
     printf("dw path: %s\n", dw_path);
 
     g_char * cmd -
 
-    gchar * c_stdout = NULL;
+        gchar * c_stdout = NULL;
     gchar * c_stderr = NULL;
     GError * error = NULL;
     gboolean result =
@@ -66,7 +70,7 @@ gboolean has_dw()
             &c_stderr,
             NULL, // wait_status
             &error
-        );
+            );
     printf("stdout: %s\n", c_stdout);
     printf("stderr: %s\n", c_stderr);
     return result;
@@ -82,24 +86,84 @@ on_drop (GtkDropTarget *target,
          gpointer       data);
 
 
-char * get_configuration_file(char * name)
-/* Return the name for the configuration file */
-{
 
-    // Set up the configuration folder
-    char * cfile = g_malloc0(1024);
-    sprintf(cfile, "%s/%s/", g_get_user_config_dir(), "deconwolf");
-    if(g_mkdir_with_parents(cfile, 0755) == -1)
+/** Build the name of a configuration file
+ * Typical result: "channels" -> "/home/user/.config/deconwolf/dw_gui_channels"
+ * Will create the folder if missing (and possible) at the first time it is run.
+ */
+char * get_configuration_file(const char * name)
+{
+    gchar * outfolder = g_build_filename(g_get_user_config_dir(), "deconwolf", NULL);
+
+    if(g_mkdir_with_parents(outfolder, 0755) == -1)
     {
-        printf("Unable to access %s\n", cfile);
-        g_free(cfile);
+        printf("Unable to access %s\n", outfolder);
+        g_free(outfolder);
         return NULL;
     }
 
-    // Return the actual name for the configuration file
-    sprintf(cfile, "%s/deconwolf/dw_gui_%s", g_get_user_config_dir(), name);
+    gchar * cfile0 = g_strjoin(NULL, "dw_gui_", name, NULL);
+    gchar * cfile = g_build_filename(g_get_user_config_dir(), "deconwolf", cfile0, NULL);
+    g_free(cfile0);
     return cfile;
 }
+
+
+static char * load_setting_string(const char * file, const char * group, const char * name, const char * default_value)
+{
+    char * cfile = get_configuration_file(file);
+    GError * error = NULL;
+    GKeyFile * key_file = g_key_file_new ();
+
+    if (!g_key_file_load_from_file (key_file, cfile, G_KEY_FILE_NONE, &error))
+    {
+        if (!g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
+        {
+            g_warning ("Error loading key file: %s", error->message);
+        }
+        g_error_free(error);
+        g_key_file_free(key_file);
+        goto return_default;
+    }
+
+    char * value = g_key_file_get_string(key_file,
+                                           group, name, &error);
+    g_key_file_free(key_file);
+
+    if(error == NULL)
+    {
+        return value;
+    }
+
+    g_clear_error(&error);
+
+return_default: ;
+    return g_strdup(default_value);
+}
+
+void save_setting_string(const char * file, const char * group, const char * name, const char * value)
+{
+    char * cfile = get_configuration_file(file);
+    GError * error = NULL;
+    GKeyFile * key_file = g_key_file_new ();
+
+    g_key_file_set_string(key_file,
+                          group,
+                          name,
+                          value);
+
+    if (!g_key_file_save_to_file (key_file, cfile, &error))
+    {
+        g_warning ("Error saving key file: %s", error->message);
+        g_error_free(error);
+    }
+
+    g_key_file_free(key_file);
+
+    return;
+}
+
+
 
 DwConf * parse_dw_conf()
 {
@@ -169,7 +233,7 @@ GtkWidget * create_deconwolf_frame()
     g_free(cfile);
 
     GtkAdjustment * adjThreads =
-        gtk_adjustment_new (dwconf->nthreads, 1, 1024, 1, 1, 1);
+        gtk_adjustment_new (dwconf->nthreads, 0, 1024, 1, 1, 1);
     config.dwc_nthreads = adjThreads;
 
     GtkAdjustment * adjTile =
@@ -177,7 +241,9 @@ GtkWidget * create_deconwolf_frame()
     config.dwc_tilesize = adjTile;
 
     GtkWidget * lOverwrite = gtk_label_new("Overwrite existing files?");
+
     GtkWidget * lThreads = gtk_label_new("Number of threads to use:");
+    gtk_widget_set_tooltip_text(lThreads, "0 means automatic. There is no point in using more threads than the CPU has cores");
     GtkWidget * lTile = gtk_label_new("Max side length of a tile [pixels]");
 
     GtkWidget * vOverwrite = gtk_switch_new();
@@ -190,6 +256,7 @@ GtkWidget * create_deconwolf_frame()
     GtkWidget * vTile = gtk_spin_button_new(adjTile, 10, 0);
 
     GtkWidget * lFormat = gtk_label_new("Output format:");
+    gtk_widget_set_tooltip_text(lFormat, "Please note that the intensity of 16-bit images will be scaled");
     GtkWidget * out_uint16 = gtk_check_button_new_with_label("unsigned 16-bit");
     GtkWidget * out_float32 = gtk_check_button_new_with_label("32 bit floating point");
     gtk_check_button_set_group((GtkCheckButton*) out_float32, (GtkCheckButton*) out_uint16);
@@ -212,11 +279,11 @@ GtkWidget * create_deconwolf_frame()
     config.bq_bad = GTK_CHECK_BUTTON( bq_bad );
 
     gtk_check_button_set_group(
-                               (GtkCheckButton*) bq_best,
-                               (GtkCheckButton*) bq_good);
+        (GtkCheckButton*) bq_best,
+        (GtkCheckButton*) bq_good);
     gtk_check_button_set_group(
-                               (GtkCheckButton*) bq_bad,
-                               (GtkCheckButton*) bq_good);
+        (GtkCheckButton*) bq_bad,
+        (GtkCheckButton*) bq_good);
 
 
     switch(dwconf->border_quality)
@@ -241,8 +308,8 @@ GtkWidget * create_deconwolf_frame()
     config.hw_gpu =  GTK_CHECK_BUTTON(hw_gpu);
 
     gtk_check_button_set_group(
-                               (GtkCheckButton*) hw_cpu,
-                               (GtkCheckButton*) hw_gpu);
+        (GtkCheckButton*) hw_cpu,
+        (GtkCheckButton*) hw_gpu);
 
     if(dwconf->use_gpu)
     {
@@ -406,8 +473,8 @@ GtkWidget * create_file_frame()
 
     GtkWidget * file_tree_scroller = gtk_scrolled_window_new ();
     gtk_scrolled_window_set_child(
-                                  GTK_SCROLLED_WINDOW(file_tree_scroller),
-                                  file_tree);
+        GTK_SCROLLED_WINDOW(file_tree_scroller),
+        file_tree);
     gtk_widget_set_vexpand(file_tree_scroller, true);
     GtkWidget * boxV = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
 
@@ -924,7 +991,7 @@ void file_tree_append(const char * fname)
 
     g_free(cname);
 
- done:
+done:
     return;
 }
 
@@ -1044,10 +1111,10 @@ void runscript(const char * name_in)
         goto exit2;
     }
 
- exit2:
+exit2:
     g_object_unref (appinfo);
 
- exit1:
+exit1:
     g_free(name);
 }
 #endif
@@ -1055,16 +1122,16 @@ void runscript(const char * name_in)
 void save_cmd_to_file(  GObject* source_object,
                         GAsyncResult* res,
                         gpointer data
-                        )
+    )
 {
 
     GError * error = NULL;
     GFile * file =
         gtk_file_dialog_save_finish (
-                                     (GtkFileDialog*) source_object,
-                                     res,
-                                     &error
-                                     );
+            (GtkFileDialog*) source_object,
+            res,
+            &error
+            );
     if(error != NULL)
     {
         // We could use the domain/code/message ...
@@ -1104,16 +1171,16 @@ void save_cmd_to_file(  GObject* source_object,
         g_assert(chmod_ok == 0);
     }
 
- done: ;
+done: ;
 
     g_free(outname);
     return;
 
 #ifdef GTK3
-        // Run it
-        //printf("To run: %s\n", filename);
-        runscript(filename);
-        g_free(filename);
+    // Run it
+    //printf("To run: %s\n", filename);
+    runscript(filename);
+    g_free(filename);
 #endif
 }
 
@@ -1125,8 +1192,8 @@ void save_cmd_to_file(  GObject* source_object,
 gboolean save_dw_cb(GtkWidget * widget, gpointer user_data)
 {
     /* TODO: Crashes on windows before shown
-      https://discourse.gnome.org/t/gtk4-c-windows-cannot-save-using-gtk-file-dialog-save/13072/21
-      The “context” is:
+       https://discourse.gnome.org/t/gtk4-c-windows-cannot-save-using-gtk-file-dialog-save/13072/21
+       The “context” is:
 
        the file selection dialog has settings, which require
        installing the GTK schemas alongside your application’s own
@@ -1157,8 +1224,8 @@ gboolean save_dw_cb(GtkWidget * widget, gpointer user_data)
 
 
 /* Save and run afterwards
-* TODO: flag that it should be run ...
-*/
+ * TODO: flag that it should be run ...
+ */
 gboolean run_dw_cb(GtkWidget * widget, gpointer user_data)
 {
     save_dw_cb(widget, user_data);
@@ -1207,7 +1274,7 @@ GtkWidget * create_run_frame()
     gtk_box_append(GTK_BOX(A), Bar);
     gtk_box_append(GTK_BOX(A), frame);
 
-    gtk_widget_show (cmd);
+    gtk_widget_set_visible(cmd, true);
     return A;
 
 }
@@ -1241,14 +1308,30 @@ void update_cmd()
 
     if(scope == NULL)
     {
-        gtk_text_buffer_insert(buffer, &titer, "# Please select a microscope!", -1);
+        if(config.outscript == OUTSCRIPT_SH)
+        {
+            gtk_text_buffer_insert(buffer, &titer, "# Please select a microscope!", -1);
+        } else {
+            gtk_text_buffer_insert(buffer, &titer, "REM Please select a microscope!", -1);
+        }
         gtk_text_view_set_buffer(cmd, buffer);
         return;
     }
 
+    char comment[] = "REM";
+    if(config.outscript == OUTSCRIPT_SH)
+    {
+        sprintf(comment, "#");
+    }
+
     char * buff = g_malloc0(1024*1024);
-    sprintf(buff, "# Microscope: '%s'\n", scope->name);
+
+    sprintf(buff, "%s script generated by deconwolf-gui %s\n\n", comment, DW_GUI_VERSION);
     gtk_text_buffer_insert(buffer, &titer, buff, -1);
+
+    sprintf(buff, "%s Microscope name: '%s'\n", comment, scope->name);
+    gtk_text_buffer_insert(buffer, &titer, buff, -1);
+
     //sprintf(buff, "# %d channels available\n", nchan);
     //gtk_text_buffer_insert(buffer, &titer, buff, -1);
     //sprintf(buff, "# %d files available\n", nfiles);
@@ -1269,6 +1352,13 @@ void update_cmd()
     if(dwconf->outformat == DW_CONF_OUTFORMAT_FLOAT32)
     {
         sprintf(fstring, " --float");
+    }
+
+    char * tstring = g_malloc0(1024);
+    fstring[0] = '\0';
+    if(nthreads > 0)
+    {
+        sprintf(tstring, "--threads %d", nthreads);
     }
 
     switch(dwconf->border_quality)
@@ -1319,19 +1409,20 @@ void update_cmd()
 
             sprintf(buff, "mkdir %s\n", q_outdir);
             gtk_text_buffer_insert(buffer, &titer, buff, -1);
-            sprintf(buff, "dw_bw %s --lambda %f --NA %.3f --ni %.3f --threads %d"
-                    " --resxy %.1f --resz %.1f %s\n",
+            sprintf(buff, "dw_bw %s --lambda %f --NA %.3f --ni %.3f"
+                    " --resxy %.1f --resz %.1f %s %s\n",
                     ostring,
-                    ch->lambda, scope->NA, scope->ni, nthreads,
-                    scope->xy_nm, scope->z_nm,
-                    q_psfname);
+                    ch->lambda, scope->NA, scope->ni,
+                    scope->xy_nm, scope->z_nm, tstring, q_psfname);
+
+
 
             //        printf("%s", buff);
             gtk_text_buffer_insert(buffer, &titer, buff, -1);
-            sprintf(buff, "dw %s %s --tilesize %d --iter %d --threads %d %s %s\n",
+            sprintf(buff, "dw %s %s --tilesize %d --iter %d %s %s %s\n",
                     ostring,
                     fstring,
-                    tilesize, ch->niter, nthreads,
+                    tilesize, ch->niter, tstring,
                     q_filename, q_psfname);
             gtk_text_buffer_insert(buffer, &titer, buff, -1);
 
@@ -1343,19 +1434,20 @@ void update_cmd()
             g_free(fdir);
             g_free(psf);
         } else {
-            sprintf(buff, "# Missing channel for: %s\n", files[kk]->name);
+            sprintf(buff, "%s Missing channel for: %s\n", comment, files[kk]->name);
             gtk_text_buffer_insert(buffer, &titer, buff, -1);
         }
         kk++;
     }
 
- nofiles:
+nofiles:
     gtk_text_view_set_buffer (cmd,
                               buffer);
 
     g_free(buff);
     g_free(ostring);
     g_free(fstring);
+    g_free(tstring);
 
     dw_conf_free(dwconf);
     dw_files_free(files);
@@ -1563,17 +1655,17 @@ void
 got_files_from_dialog (  GObject* source_object,
                          GAsyncResult* res,
                          gpointer data
-                         )
+    )
 {
     UNUSED(data);
 
     GError * error = NULL;
     GListModel * files =
         gtk_file_dialog_open_multiple_finish (
-                                              (GtkFileDialog*) source_object,
-                                              res,
-                                              &error
-                                              );
+            (GtkFileDialog*) source_object,
+            res,
+            &error
+            );
     if(error != NULL)
     {
         // We could use the domain/code/message ...
@@ -1836,8 +1928,38 @@ about_activated(GSimpleAction *simple,
 
     //    gtk_about_dialog_set_authors((GtkAboutDialog*) about, &author);
     gtk_window_set_title((GtkWindow*) about, "About ...");
-    gtk_widget_show(about);
+    gtk_window_present( GTK_WINDOW(about));
 }
+
+typedef struct {
+    GtkWindow * window;
+    GtkWidget * eRegexp;
+    GtkWidget * eOutscript;
+} global_conf_t;
+
+static void
+cb_config_ok (GtkButton *button,
+              gpointer user_data)
+{
+    global_conf_t * conf = (global_conf_t *) user_data;
+    // TODO Validation etc ...
+    sprintf(config.regexp_channel, "%s",
+            gtk_editable_get_text( GTK_EDITABLE(conf->eRegexp)));
+    config.outscript = gtk_drop_down_get_selected(GTK_DROP_DOWN( conf->eOutscript ));
+
+    save_setting_string("general", "general", "channel_regexp", config.regexp_channel);
+
+    gtk_window_destroy(conf->window);
+}
+
+static void
+cb_config_cancel (GtkButton *button,
+                  gpointer user_data)
+{
+    global_conf_t * conf = (global_conf_t *) user_data;
+    gtk_window_destroy(conf->window);
+}
+
 
 void
 edit_global_config(void)
@@ -1845,9 +1967,10 @@ edit_global_config(void)
     GtkWindow * dialog = (GtkWindow *) gtk_window_new();
     gtk_window_set_modal(dialog, true);
     gtk_window_set_title(dialog, "Edit Global Settings");
+    gtk_window_set_resizable(dialog, false);
     gtk_window_set_destroy_with_parent(dialog, true);
 
-    GtkWidget * lRegexp = gtk_label_new("Regular expression");
+    GtkWidget * lRegexp = gtk_label_new("Channel regexp");
     GtkWidget * eRegexp = gtk_entry_new();
     gtk_editable_set_text( GTK_EDITABLE(eRegexp), config.regexp_channel);
 
@@ -1855,41 +1978,55 @@ edit_global_config(void)
     gtk_grid_set_row_spacing ((GtkGrid*) grid , 5);
     gtk_grid_set_column_spacing ((GtkGrid*) grid , 5);
 
+#if 0
     GtkWidget * lRegexp_extra =
         gtk_label_new(
-                      "Set the regular expression used to identify channel \n"
-                      "names from the file names. For example, if the \n"
-                      "channel name is at the end, \n"
-                      "try '[A-Z0-9]*\\_([A-Z0-9]*)\\.TIFF?'\n");
+            "Set the regular expression used to identify channel \n"
+            "names from the file names. For example, if the \n"
+            "channel name is at the end, \n"
+            "try '[A-Z0-9]*\\_([A-Z0-9]*)\\.TIFF?'\n");
 
     gtk_label_set_selectable((GtkLabel*) lRegexp_extra, TRUE);
 
     gtk_grid_attach((GtkGrid*) grid, lRegexp_extra, 1, 1, 3, 2);
+#endif
     gtk_grid_attach((GtkGrid*) grid, lRegexp, 1, 3, 1, 1);
     gtk_grid_attach((GtkGrid*) grid, eRegexp, 2, 3, 2, 1);
 
+    GtkWidget * lOutscript = gtk_label_new("Script format");
+    const char * options[] = {"sh (linux)", "bat (windows)", NULL};
+    GtkWidget * eOutscript = gtk_drop_down_new_from_strings(options);
+    gtk_drop_down_set_selected(GTK_DROP_DOWN(eOutscript), config.outscript);
+
+    gtk_grid_attach( GTK_GRID(grid), lOutscript, 1, 4, 1, 1);
+    gtk_grid_attach( GTK_GRID(grid), eOutscript, 2, 4, 1, 1);
+
     gtk_widget_set_halign((GtkWidget*) grid, GTK_ALIGN_CENTER);
     gtk_widget_set_valign((GtkWidget*) grid, GTK_ALIGN_CENTER);
-    gtk_window_set_child(dialog, grid);
 
-    gtk_widget_show(GTK_WIDGET(dialog));
-    return;
 
-    #ifdef GTK3
-    int result = -1;
-    // TODO: Need callback instead
-    switch (result)
-    {
-    case GTK_RESPONSE_ACCEPT:
-        sprintf(config.regexp_channel, "%s",
-                gtk_editable_get_text( GTK_EDITABLE(eRegexp)));
-        break;
-    default:
-        // do_nothing_since_dialog_was_cancelled ();
-        break;
-    }
+    GtkBox * vbox0 = (GtkBox *) gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
+    gtk_box_append(vbox0, grid);
+
+    global_conf_t * data = g_malloc0(sizeof(global_conf_t));
+    data->window = dialog;
+    data->eRegexp = eRegexp;
+    data->eOutscript = eOutscript;
+
+    // Ok and Cancel buttons in box_btn
+    GtkButton * btn_ok = (GtkButton *) gtk_button_new_with_label("Ok");
+    g_signal_connect(btn_ok, "clicked", G_CALLBACK(cb_config_ok), data);
+    GtkButton * btn_cancel = (GtkButton *) gtk_button_new_with_label("Cancel");
+    g_signal_connect(btn_cancel, "clicked", G_CALLBACK(cb_config_cancel), data);
+    GtkBox * box_btn = (GtkBox *) gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
+    gtk_box_append(box_btn, GTK_WIDGET(btn_cancel));
+    gtk_box_append(box_btn, GTK_WIDGET(btn_ok));
+    gtk_box_append(vbox0, GTK_WIDGET(box_btn));
+
+    gtk_window_set_child (GTK_WINDOW(dialog),  GTK_WIDGET(vbox0));
+
+    gtk_widget_set_visible(GTK_WIDGET(dialog), true);
     return;
-    #endif
 }
 
 
@@ -1909,11 +2046,12 @@ void warn_no_dw(GtkWindow * parent)
 {
     GtkAlertDialog * dialog =
         gtk_alert_dialog_new(
-                             "Could not locate deconwolf (i.e, the command 'dw'). "
-                             "You will not be able to run anything from this GUI!"
-                             );
+            "Could not locate deconwolf (i.e, the command 'dw'). "
+            "You will not be able to run anything from this GUI!"
+            );
     gtk_alert_dialog_show(dialog, parent);
 }
+
 
 DwAppWindow *
 dw_app_window_new (DwApp *app)
@@ -1924,8 +2062,12 @@ dw_app_window_new (DwApp *app)
     config.default_open_uri = NULL;
     config.savefolder = NULL;
     config.has_dw = has_dw();
-    config.regexp_channel = g_malloc0(1024);
-    sprintf(config.regexp_channel, "([A-Z0-9]*)\\_[0-9]*\\.TIFF?");
+
+    #ifdef WINDOWS
+    config.outscript = OUTSCRIPT_BAT;
+    #endif
+
+    config.regexp_channel = load_setting_string("general", "general", "channel_regexp", "([A-Z0-9]*)\\_[0-9]*\\.TIFF?");
 
     // Set up a fallback icon
     GError * error = NULL;
