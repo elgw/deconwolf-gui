@@ -416,11 +416,7 @@ GtkWidget * create_file_frame()
     config.file_tree = file_tree;
 
     GtkCellRenderer * renderer = gtk_cell_renderer_text_new ();
-#if 0
-    g_object_set (G_OBJECT (renderer),
-                  "foreground", "black",
-                  NULL);
-#endif
+
     /* Create a column, associating the "text" attribute of the
      * cell_renderer to the first column of the model */
     GtkTreeViewColumn * column = gtk_tree_view_column_new_with_attributes ("File", renderer,
@@ -486,10 +482,10 @@ GtkWidget * create_file_frame()
     GtkWidget * file_frame = gtk_frame_new(NULL);
     gtk_frame_set_child (GTK_FRAME(file_frame), boxV);
 
-#ifdef GTK3
+
     g_signal_connect (G_OBJECT (file_tree), "key_press_event",
                       G_CALLBACK (file_tree_keypress), NULL);
-#endif
+
 
     /* Set up Drag and Drop */
 

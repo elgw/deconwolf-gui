@@ -26,17 +26,18 @@ Here is the intended workflow:
    or create a new configuration using the basic optical parameters
    that is asked for. Don't forget to save.
 
-5. Go to the **Deconwolf** tab to see if you want to use some other settings than the default ones. 
+5. Go to the **Deconwolf** tab to see if you want to use some other settings than the  
+   default ones. 
 
 6. Go to **Run** tab. Inspect the commands that will be started and hit
-   the _"play"_ button to save this as a script and run.
+   the _"play"_ button to save this as a script or simply copy and paste into a terminal.
 
 ## Build and Install
 
-At the moment there are pre-compiled binaries for Ubuntu and Windows under
+There are pre-compiled binaries for Ubuntu and Windows under
 [releases](https://github.com/elgw/deconwolf-gui/release). If your
 platform is missing, please create a new
-[issue](https://github.com/elgw/deconwolf-gui/issues). Since none of the developers use windows, that version is not super duper tested.
+[issue](https://github.com/elgw/deconwolf-gui/issues). 
 
 If you prefer to build by yourself or use some other platform, see [INSTALL.md](INSTALL.md).
 
@@ -47,7 +48,7 @@ Please open a [new ticket](https://github.com/elgw/deconwolf/issues) if you
 have any issues with the program.
 
 - Some changes are planned for the future, see the [TODO.md](TODO.md)
-  and also [issue](https://github.com/elgw/deconwolf-gui/issues).
+  and also [open issues](https://github.com/elgw/deconwolf-gui/issues).
 
 - This gui plays well with
 [nd2tool](https://www.github.com/elgw/nd2tool) which converts `.nd2`
