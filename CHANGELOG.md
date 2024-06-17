@@ -1,18 +1,21 @@
 # CHANGELOG
 
 ## v0.0.7, 2024-06-17
-- Transitioned from GTK3 to GTK4.
 
-  It still remains to replace the depreciated `TreeView` widget by a
-  `GtkColumnView` widget. Until that is done it is not possible to
-  directly open channels/microscopes by double clicking in the lists,
-  it is not possible to multi select files either.
+Improvements:
 
 - Builds under windows (see [INSTALL.md]).
-
-- Will generate `.bat` scripts on windows.
-
+- Can generate `.bat` scripts on windows.
 - Threads can be set to 0, i.e. automatic.
+- Transitioned from GTK3 to GTK4. However, it still remains to replace the depreciated `TreeView` widget by a
+  `GtkColumnView` widget. 
+  
+  Regressions:
+  
+  - It is currently not possible to
+  directly open channels/microscopes by double clicking in the lists,
+  it is not possible to multi select files either. This will be fixed when the transition to gtk4 is fully done.
+  - The "run" button is also missing, i.e. you have to run the script by yourself.
 
 ## v0.0.6, 2023-11-28
  - Cleaned up to not have any compilation warnings.
