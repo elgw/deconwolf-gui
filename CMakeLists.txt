@@ -81,7 +81,8 @@ add_executable(dw_gui
   src/dw_scope.c
   src/dw_conf.c
   src/dw_file.c
-  src/dw_colors.c)
+  src/dw_colors.c
+  src/common.c)
 
 
 #

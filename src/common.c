@@ -1,5 +1,16 @@
 #include "common.h"
 
+char * shell_quote(const char* name)
+{
+#ifdef WINDOWS
+    char* out = g_malloc0(strlen(name) + 2);
+    sprintf(out, "\"%s\"", name);
+    return out;
+#else
+    return g_shell_quote(name);
+#endif
+}
+
 void print_g_object_name(gpointer test)
 {
     printf("G_VALUE_TYPE_NAME: %s\n", G_VALUE_TYPE_NAME(test));

@@ -6,6 +6,7 @@
 
 #include "dw_app.h"
 #include "dw_app_window.h"
+#include "common.h"
 
 #define titlestr "BiCroLab deconwolf GUI, 2021-2024"
 
@@ -1402,9 +1403,9 @@ void update_cmd()
             */
             gchar * outdir = g_build_filename(fdir, "PSFBW", NULL);
 
-            gchar * q_outdir = g_shell_quote(outdir);
-            gchar * q_psfname = g_shell_quote(psf);
-            gchar * q_filename = g_shell_quote(files[kk]->name);
+            gchar * q_outdir = shell_quote(outdir);
+            gchar * q_psfname = shell_quote(psf);
+            gchar * q_filename = shell_quote(files[kk]->name);
 
 
             sprintf(buff, "mkdir %s\n", q_outdir);
