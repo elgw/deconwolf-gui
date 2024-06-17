@@ -12,9 +12,8 @@ Improvements:
   
   Regressions:
   
-  - It is currently not possible to
-  directly open channels/microscopes by double clicking in the lists,
-  it is not possible to multi select files either. This will be fixed when the transition to gtk4 is fully done.
+  - To directly open channels/microscopes by double clicking in the lists,
+  it is not possible. Neither is multi selecting files in the list. This will be fixed when the transition to gtk4 is fully done.
   - The "run" button is also missing, i.e. you have to run the script by yourself.
 
 ## v0.0.6, 2023-11-28

@@ -14,6 +14,10 @@ mkdir build ; cd build ; cmake .. ; make
 cpack -G DEB # To create a debian .deb file
 ```
 
+Once it is installed, the gui can be launched by `dw_gui`. At least under
+Gnome you will find it when you press the __Super__ key and start
+typing deconwolf...
+
 ## OSX
 To get the dependencies, either follow [the recommended
 way](https://wiki.gnome.org/action/show/Projects/GTK/OSX/Building?action=show&redirect=Projects%2FGTK%2B%2FOSX%2FBuilding)
@@ -53,4 +57,3 @@ cmake .. -T ClangCL -A x64
 The program will only start when the files gtk are placed int the same folder.
 
 To create an installer, first set up the file structure according to [https://www.datatable.online/en/blog/002-how-to-deploy-gtk-app-on-windows.html#background]. Then copy `src/create_dwgui_installer.nsis` into that folder and compile the script with NSIS.
-
