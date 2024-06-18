@@ -1,8 +1,7 @@
 # TODO
 
 ## Planned
-- [ ] Get it running on Windows.
-- [ ] Create installers.
+- [ ] Create installer for MacOS
  [.dmg installer](https://mesonbuild.com/Creating-OSX-packages.html)
  file for OSX (or alternatively a [HomeBrew Formula](https://medium.com/@tharun208/creating-a-homebrew-formula-f76da25b79e4)) etc...
 
@@ -13,6 +12,7 @@
 - [ ] Rescan the list of files to identify channel names again when
  the channel list is changed or the regexp is changed.
 - [ ] Allow to manually set the channel of multiple selected files.
+- [ ] Detect what deconwolf version is running and populate options accordingly.
 
 
 ## Future
