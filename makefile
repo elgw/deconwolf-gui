@@ -1,10 +1,10 @@
 cc=gcc
 
-cflags=-Wall -Wextra -std=c11
+cflags= -std=c11 -Wfatal-errors -Wno-deprecated -Wno-deprecated-declarations
 ldflags=-flto
 
 
-DEBUG?=0
+DEBUG?=1
 ifeq ($(DEBUG),1)
 cflags += -g3
 else
@@ -15,20 +15,25 @@ endif
 ldflags=-lm
 
 # GTK3.0
-cflags+=`pkg-config --cflags gtk+-3.0`
-ldflags+=`pkg-config --libs gtk+-3.0`
+#cflags+=`pkg-config --cflags gtk+-3.0`
+#ldflags+=`pkg-config --libs gtk+-3.0`
+
+# GTK 4
+cflags+=`pkg-config --cflags gtk4`
+ldflags+=`pkg-config --libs gtk4`
 
 
 dw_gui_files=src/dw_gui.c \
-src/dw_app.c \
-src/dw_app_runner.c \
-src/dw_app_window.c \
+dw_app.o \
+dw_app_window.o \
 resources.c \
 dw_channel.o \
 dw_scope.o \
 dw_conf.o \
 dw_file.o \
-dw_colors.o
+dw_colors.o \
+dw_app_runner.o \
+common.o
 
 dw_gui: $(dw_gui_files)
 	$(cc) $(cflags) $(dw_gui_files) $(ldflags) -o dw_gui

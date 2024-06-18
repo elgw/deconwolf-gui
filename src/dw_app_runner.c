@@ -73,42 +73,45 @@ dw_app_runner(GtkWindow *parent, char * commands)
  // Create the widgets
  flags = GTK_DIALOG_DESTROY_WITH_PARENT;
 
- dialog = gtk_dialog_new_with_buttons ("Running ...",
+ dialog = gtk_window_new();
+#ifdef GTK3
+ "Running ...",
                                        parent,
                                        flags,
                                        "Cancel",
                                        GTK_RESPONSE_ACCEPT,
                                        NULL);
- content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
+content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
+#endif
+content_area = dialog;
 
 
  GtkWidget * status = gtk_text_view_new();
  g_object_set(G_OBJECT(status), "editable", FALSE, NULL);
 
- GtkWidget * status_sb = gtk_scrolled_window_new(NULL, NULL);
- gtk_container_add(GTK_CONTAINER(status_sb), status);
+ GtkWidget * status_sb = gtk_scrolled_window_new();
+gtk_grid_attach((GtkGrid *) status_sb, status, 0,0,1, 1);
 
  GtkWidget * pb1 = gtk_progress_bar_new(); // Command number
  GtkWidget * pb2 = gtk_progress_bar_new(); // If deconwolf, update on the current iteration
 
  GtkWidget * box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+ #ifdef GTK3
  gtk_box_pack_start((GtkBox*) box, status_sb, TRUE, TRUE, 5);
  gtk_box_pack_end((GtkBox*) box, pb2, FALSE, FALSE, 5);
  gtk_box_pack_end((GtkBox*) box, pb1, FALSE, FALSE, 5);
+#endif
 
- gtk_container_add (GTK_CONTAINER (content_area), box);
- gtk_widget_show_all(content_area);
-
- // Start to run the commands from the list
-
- gtk_widget_show(pb1);
- gtk_widget_show(pb2);
- gtk_widget_show(dialog);
+gtk_grid_attach ((GtkGrid*) content_area, box, 0, 0, 1, 1);
 
  JobData * job_data = job_data_new(commands, (GtkProgressBar*) pb1, (GtkProgressBar*) pb2, (GtkTextView*) status);;
  GThread * runthread = g_thread_new("run-dw-thread", run_commands_th, job_data);
 
+ #ifdef GTK3
  int result = gtk_dialog_run (GTK_DIALOG (dialog));
+ #else
+ int result = 0;
+ #endif
  job_data->active = FALSE;
  switch (result)
  {
@@ -122,7 +125,10 @@ dw_app_runner(GtkWindow *parent, char * commands)
 g_thread_join(runthread);
 
 
+#ifdef GTK3
  gtk_widget_destroy (dialog);
+ #endif
+
  g_free(job_data); // Something with reference counting goes bananas with this.
 
 }

@@ -4,7 +4,7 @@ DwConf * dw_conf_new()
 {
     DwConf * conf = g_malloc0(sizeof(DwConf));
     conf->overwrite = FALSE;
-    conf->nthreads = 4;
+    conf->nthreads = 0;
     conf->tilesize = 3000;
     conf->outformat = DW_CONF_OUTFORMAT_UINT16;
     conf->border_quality = DW_CONF_BORDER_QUALITY_BEST;
@@ -59,7 +59,8 @@ DwConf * dw_conf_new_from_file(char * file)
     }
 
     gchar group[] = "deconwolf";
-    gint nthreads = g_key_file_get_integer(key_file, group, "nthreads", &error);
+    gint nthreads = g_key_file_get_integer(key_file, group,
+                                           "nthreads", &error);
     if( error != NULL )
     {
         g_clear_error(&error);
@@ -68,7 +69,8 @@ DwConf * dw_conf_new_from_file(char * file)
     {
         conf->nthreads = nthreads;
     }
-    gint tilesize = g_key_file_get_integer(key_file, group, "tilesize", &error);
+    gint tilesize = g_key_file_get_integer(key_file, group,
+                                           "tilesize", &error);
     if( error != NULL )
     {
         g_clear_error(&error);
@@ -77,7 +79,8 @@ DwConf * dw_conf_new_from_file(char * file)
     {
         conf->tilesize = tilesize;
     }
-    gboolean overwrite = g_key_file_get_boolean(key_file, group, "overwrite", &error);
+    gboolean overwrite = g_key_file_get_boolean(key_file, group,
+                                                "overwrite", &error);
     if( error != NULL )
     {
         g_clear_error(&error);
@@ -88,7 +91,8 @@ DwConf * dw_conf_new_from_file(char * file)
     }
 
     // Parse output format
-    gint outformat =  g_key_file_get_boolean(key_file, group, "outformat", &error);
+    gint outformat =  g_key_file_get_boolean(key_file, group,
+                                             "outformat", &error);
     if( error != NULL )
     {
         g_clear_error(&error);
@@ -99,7 +103,8 @@ DwConf * dw_conf_new_from_file(char * file)
     }
 
     // Parse border quality
-    gint bq =  g_key_file_get_boolean(key_file, group, "border_quality", &error);
+    gint bq =  g_key_file_get_boolean(key_file, group,
+                                      "border_quality", &error);
     if( error != NULL )
     {
         g_clear_error(&error);
@@ -121,7 +126,6 @@ DwConf * dw_conf_new_from_file(char * file)
     {
         conf->use_gpu = gpu;
     }
-
 
 
     // Free up

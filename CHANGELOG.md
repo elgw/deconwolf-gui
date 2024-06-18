@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## v0.0.7, 2024-06-17
+
+Improvements:
+
+- Builds under windows (see [INSTALL.md]).
+- Can generate `.bat` scripts on windows.
+- Threads can be set to 0, i.e. automatic.
+- Transitioned from GTK3 to GTK4. However, it still remains to replace the depreciated `TreeView` widget by a
+  `GtkColumnView` widget. 
+  
+  Regressions:
+  
+  - To directly open channels/microscopes by double clicking in the lists,
+  it is not possible. Neither is multi selecting files in the list. This will be fixed when the transition to gtk4 is fully done.
+  - The "run" button is also missing, i.e. you have to run the script by yourself.
+
 ## v0.0.6, 2023-11-28
  - Cleaned up to not have any compilation warnings.
  - Compiles without gnu extensions and with clang.

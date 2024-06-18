@@ -23,8 +23,7 @@ dw_app_activate (GApplication *app)
 
   win = dw_app_window_new (DW_APP (app));
   gtk_window_present (GTK_WINDOW (win));
-  // Add this to show the image
-  gtk_widget_show_all(GTK_WIDGET (win));
+
 }
 
 static void
@@ -39,13 +38,17 @@ dw_app_open (GApplication  *app,
   int i;
 
   windows = gtk_application_get_windows (GTK_APPLICATION (app));
-  if (windows)
+  if (windows) {
     win = DW_APP_WINDOW (windows->data);
-  else
+
+  } else {
     win = dw_app_window_new (DW_APP (app));
+  }
 
   for (i = 0; i < n_files; i++)
+  {
     dw_app_window_open (win, files[i]);
+  }
 
   gtk_window_present (GTK_WINDOW (win));
 }

@@ -36,6 +36,24 @@ DwChannel ** dw_channels_get_from_gtk_tree_view(GtkTreeView *);
 DwChannel ** dw_channels_from_disk(char * fname);
 void dw_chan_to_key_file(DwChannel * , GKeyFile *);
 
-/* Open a dialog box that blocks parent and get/edit a dw_channel */
-DwChannel *
-dw_channel_edit_dlg(GtkWindow *parent, DwChannel * old_channel);
+/* GUI
+ * - A single modal window that exist during the whole
+ *   lifespan of the app.
+ * - When it disappears it is only hidden.
+ */
+
+// Initialize
+void
+dw_channel_edit_init();
+
+// Make visible
+void dw_channel_edit_show();
+
+// Set values in the window from a DwChannel
+void dw_channel_edit_set(DwChannel *);
+
+// Reset values in window to defaults
+void dw_channel_edit_reset();
+
+// Function to call when the user hit "ok"
+void dw_channel_edit_set_callback( void (*callback) (DwChannel*));

@@ -81,7 +81,8 @@ add_executable(dw_gui
   src/dw_scope.c
   src/dw_conf.c
   src/dw_file.c
-  src/dw_colors.c)
+  src/dw_colors.c
+  src/common.c)
 
 
 #
@@ -112,6 +113,13 @@ project(deconwolf-gui VERSION "${DW_GUI_VERSION_MAJOR}.${DW_GUI_VERSION_MINOR}.$
 if(WIN32)
   cmake_policy(SET CMP0091 NEW)
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
+
+#
+# define WINDOWS if running windows
+#
+if(WIN32)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DWINDOWS")
 endif()
 
 #
@@ -159,11 +167,19 @@ endif()
 # GTK3
 #
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
-target_link_libraries(dw_gui ${GTK3_LIBRARIES})
-target_include_directories(dw_gui PRIVATE ${GTK3_INCLUDE_DIRS})
-target_link_directories(dw_gui PRIVATE ${GTK3_LIBRARY_DIRS})
+pkg_check_modules(GTK4 REQUIRED gtk4)
+target_link_libraries(dw_gui ${GTK4_LIBRARIES})
+target_include_directories(dw_gui PRIVATE ${GTK4_INCLUDE_DIRS})
+target_link_directories(dw_gui PRIVATE ${GTK4_LIBRARY_DIRS})
 
+
+#
+# Prevent terminal from popping up on windows
+#
+if(WIN32)
+# TODO: It would be good to disable the terminal only for release builds
+target_link_options(dw_gui PRIVATE "/SUBSYSTEM:WINDOWS" "/ENTRY:mainCRTStartup")
+endif()
 
 
 #
@@ -198,14 +214,6 @@ set_source_files_properties(
   )
 
 add_dependencies(dw_gui dummy-resource)
-
-# Enable -flto (GCC) and similar if available, see
-# https://cmake.org/cmake/help/latest/policy/CMP0069.html
-check_ipo_supported(RESULT result)
-if(result)
-  message("Enabling IPO")
-  set_property(DIRECTORY PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
-endif()
 
 include(GNUInstallDirs)
 message("LIBEXECDIR= ${CMAKE_INSTALL_LIBEXECDIR}")
