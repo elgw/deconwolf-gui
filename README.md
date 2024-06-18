@@ -1,4 +1,4 @@
-# Deconwolf GUI v0.0.6
+# Deconwolf GUI v0.0.7
 
 <img src="resources/screenshot_20210217.png">
 
