@@ -1213,7 +1213,11 @@ gboolean save_dw_cb(GtkWidget * widget, gpointer user_data)
     gtk_file_dialog_set_title(dialog, "Save File");
     gtk_file_dialog_set_modal(dialog, true);
 
+#ifdef WINDOWS
+    gtk_file_dialog_set_initial_name(dialog, "dw_script.ps1");
+#else
     gtk_file_dialog_set_initial_name(dialog, "dw_script.sh");
+#endif
 
     GCancellable* canc = g_cancellable_new();
     gtk_file_dialog_save(GTK_FILE_DIALOG (dialog),
@@ -1998,7 +2002,7 @@ edit_global_config(void)
     gtk_grid_attach((GtkGrid*) grid, eRegexp, 2, 3, 2, 1);
 
     GtkWidget * lOutscript = gtk_label_new("Script format");
-    const char * options[] = {"sh (linux)", "bat (windows)", NULL};
+    const char * options[] = {"sh/powershell", "bat (legacy windows)", NULL};
     GtkWidget * eOutscript = gtk_drop_down_new_from_strings(options);
     gtk_drop_down_set_selected(GTK_DROP_DOWN(eOutscript), config.outscript);
 
@@ -2066,10 +2070,6 @@ dw_app_window_new (DwApp *app)
     config.default_open_uri = NULL;
     config.savefolder = NULL;
     config.has_dw = has_dw();
-
-#ifdef WINDOWS
-    config.outscript = OUTSCRIPT_BAT;
-#endif
 
     config.regexp_channel =
         load_setting_string("general", "general",

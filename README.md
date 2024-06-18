@@ -29,8 +29,9 @@ Here is the intended workflow:
 5. Go to the **Deconwolf** tab to see if you want to use some other settings than the  
    default ones. 
 
-6. Go to **Run** tab. Inspect the commands that will be started and hit
-   the _"play"_ button to save this as a script or simply copy and paste into a terminal.
+6. Go to **Run** tab. Inspect the commands that will run and finally copy and paste into a terminal 
+   (use powershell on windows). The script can also be saved to disk with the "save" button. Save as a 
+   `.ps1` file under windows or as a `.sh` file under Linux/mac.
 
 ## Build and Install
 
