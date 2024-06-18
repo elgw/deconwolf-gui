@@ -16,7 +16,7 @@ G_DECLARE_FINAL_TYPE (DwAppWindow, dw_app_window, DW, APP_WINDOW, GtkApplication
 
 #define UNUSED(x) (void)(x)
 
-DwAppWindow *dw_app_window_new (DwApp *app);
+    DwAppWindow *dw_app_window_new (DwApp *app);
 void dw_app_window_open (DwAppWindow *win, GFile *file);
 
 
@@ -26,7 +26,12 @@ GtkWidget * create_deconwolf_tab();
 
 void edit_selected_channel();
 
-gboolean file_tree_keypress (GtkWidget *tree_view, GdkEvent *event, gpointer data);
+gboolean file_tree_keypress (GtkEventController  *key,
+                                guint                keyval,
+                                guint                keycode,
+                                GdkModifierType      state,
+                                gpointer user_data);
+
 void del_selected_file();
 
 // Clean upp DND formatting, then add to file tree

@@ -48,8 +48,8 @@ gboolean has_dw()
 {
     gchar* dw_path =
         g_find_program_in_path(
-            "dw"
-            );
+                               "dw"
+                               );
     if (dw_path == NULL)
     {
         return false;
@@ -66,12 +66,12 @@ gboolean has_dw()
     GError * error = NULL;
     gboolean result =
         g_spawn_command_line_sync(
-            "dw",
-            &c_stdout,
-            &c_stderr,
-            NULL, // wait_status
-            &error
-            );
+                                  "dw",
+                                  &c_stdout,
+                                  &c_stderr,
+                                  NULL, // wait_status
+                                  &error
+                                  );
     printf("stdout: %s\n", c_stdout);
     printf("stderr: %s\n", c_stderr);
     return result;
@@ -128,7 +128,7 @@ static char * load_setting_string(const char * file, const char * group, const c
     }
 
     char * value = g_key_file_get_string(key_file,
-                                           group, name, &error);
+                                         group, name, &error);
     g_key_file_free(key_file);
 
     if(error == NULL)
@@ -138,7 +138,7 @@ static char * load_setting_string(const char * file, const char * group, const c
 
     g_clear_error(&error);
 
-return_default: ;
+ return_default: ;
     return g_strdup(default_value);
 }
 
@@ -280,11 +280,11 @@ GtkWidget * create_deconwolf_frame()
     config.bq_bad = GTK_CHECK_BUTTON( bq_bad );
 
     gtk_check_button_set_group(
-        (GtkCheckButton*) bq_best,
-        (GtkCheckButton*) bq_good);
+                               (GtkCheckButton*) bq_best,
+                               (GtkCheckButton*) bq_good);
     gtk_check_button_set_group(
-        (GtkCheckButton*) bq_bad,
-        (GtkCheckButton*) bq_good);
+                               (GtkCheckButton*) bq_bad,
+                               (GtkCheckButton*) bq_good);
 
 
     switch(dwconf->border_quality)
@@ -309,8 +309,8 @@ GtkWidget * create_deconwolf_frame()
     config.hw_gpu =  GTK_CHECK_BUTTON(hw_gpu);
 
     gtk_check_button_set_group(
-        (GtkCheckButton*) hw_cpu,
-        (GtkCheckButton*) hw_gpu);
+                               (GtkCheckButton*) hw_cpu,
+                               (GtkCheckButton*) hw_gpu);
 
     if(dwconf->use_gpu)
     {
@@ -470,8 +470,8 @@ GtkWidget * create_file_frame()
 
     GtkWidget * file_tree_scroller = gtk_scrolled_window_new ();
     gtk_scrolled_window_set_child(
-        GTK_SCROLLED_WINDOW(file_tree_scroller),
-        file_tree);
+                                  GTK_SCROLLED_WINDOW(file_tree_scroller),
+                                  file_tree);
     gtk_widget_set_vexpand(file_tree_scroller, true);
     GtkWidget * boxV = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
 
@@ -483,8 +483,12 @@ GtkWidget * create_file_frame()
     gtk_frame_set_child (GTK_FRAME(file_frame), boxV);
 
 
-    g_signal_connect (G_OBJECT (file_tree), "key_press_event",
-                      G_CALLBACK (file_tree_keypress), NULL);
+    GtkEventController * ctrl = gtk_event_controller_key_new();
+    g_signal_connect_object (ctrl, "key-pressed",
+                             G_CALLBACK (file_tree_keypress),
+                             file_tree, G_CONNECT_SWAPPED);
+    gtk_widget_add_controller(GTK_WIDGET(file_tree), GTK_EVENT_CONTROLLER(ctrl));
+
 
 
     /* Set up Drag and Drop */
@@ -988,7 +992,7 @@ void file_tree_append(const char * fname)
 
     g_free(cname);
 
-done:
+ done:
     return;
 }
 
@@ -1108,10 +1112,10 @@ void runscript(const char * name_in)
         goto exit2;
     }
 
-exit2:
+ exit2:
     g_object_unref (appinfo);
 
-exit1:
+ exit1:
     g_free(name);
 }
 #endif
@@ -1119,16 +1123,16 @@ exit1:
 void save_cmd_to_file(  GObject* source_object,
                         GAsyncResult* res,
                         gpointer data
-    )
+                        )
 {
 
     GError * error = NULL;
     GFile * file =
         gtk_file_dialog_save_finish (
-            (GtkFileDialog*) source_object,
-            res,
-            &error
-            );
+                                     (GtkFileDialog*) source_object,
+                                     res,
+                                     &error
+                                     );
     if(error != NULL)
     {
         // We could use the domain/code/message ...
@@ -1168,7 +1172,7 @@ void save_cmd_to_file(  GObject* source_object,
         g_assert(chmod_ok == 0);
     }
 
-done: ;
+ done: ;
 
     g_free(outname);
     return;
@@ -1437,7 +1441,7 @@ void update_cmd()
         kk++;
     }
 
-nofiles:
+ nofiles:
     gtk_text_view_set_buffer (cmd,
                               buffer);
 
@@ -1652,17 +1656,17 @@ void
 got_files_from_dialog (  GObject* source_object,
                          GAsyncResult* res,
                          gpointer data
-    )
+                         )
 {
     UNUSED(data);
 
     GError * error = NULL;
     GListModel * files =
         gtk_file_dialog_open_multiple_finish (
-            (GtkFileDialog*) source_object,
-            res,
-            &error
-            );
+                                              (GtkFileDialog*) source_object,
+                                              res,
+                                              &error
+                                              );
     if(error != NULL)
     {
         // We could use the domain/code/message ...
@@ -1745,75 +1749,78 @@ gboolean del_scope_cb(GtkWidget * w, gpointer p)
     return TRUE;
 }
 
-gboolean file_tree_keypress (GtkWidget *tree_view, GdkEvent *event, gpointer p)
+gboolean
+file_tree_keypress (GtkEventController  *key,
+                    guint                keyval,
+                    guint                keycode,
+                    GdkModifierType      state,
+                    gpointer user_data)
 {
-    UNUSED(tree_view);
-    UNUSED(p);
-    if (gdk_key_event_get_keyval(event) == GDK_KEY_Delete){
+    if (keyval == GDK_KEY_Delete){
         del_selected_file();
     }
     return FALSE;
 }
 
-gboolean channel_tree_keypress (GtkWidget *tree_view, GdkEvent *event, gpointer p)
+gboolean channel_tree_keypress (GtkEventController  *key,
+                                guint                keyval,
+                                guint                keycode,
+                                GdkModifierType      state,
+                                gpointer user_data)
 {
-    UNUSED(tree_view);
-    UNUSED(p);
-    if (gdk_key_event_get_keyval(event) == GDK_KEY_Delete){
+    if (keyval == GDK_KEY_Delete){
         del_selected_channel();
     }
-    if (gdk_key_event_get_keyval(event) == GDK_KEY_Return){
+    if (keyval == GDK_KEY_Return){
         edit_selected_channel();
     }
     return FALSE;
 }
 
-gboolean microscope_tree_keypress (GtkWidget *tree_view, GdkEvent *event, gpointer p)
+gboolean microscope_tree_keypress (GtkEventController  *key,
+                                   guint                keyval,
+                                   guint                keycode,
+                                   GdkModifierType      state,
+                                   gpointer user_data)
 {
-    UNUSED(tree_view);
-    UNUSED(p);
-    if (gdk_key_event_get_keyval(event) == GDK_KEY_Delete){
+    if (keyval == GDK_KEY_Delete){
         del_selected_scope();
     }
-    if (gdk_key_event_get_keyval(event) == GDK_KEY_Return){
+    if (keyval == GDK_KEY_Return){
         edit_selected_scope();
     }
     return FALSE;
 }
 
-#ifdef GTK3
-gboolean channel_tree_buttonpress(GtkWidget *tree_view,
-                                  GdkEventButton * event,
-                                  gpointer p)
+// GtkGestureClick::released
+void channel_tree_buttonpress(GtkGestureClick* self,
+                                  gint n_press,
+                                  gdouble x,
+                                  gdouble y,
+                                  gpointer user_data)
 {
-    UNUSED(tree_view);
-    UNUSED(p);
-
-    if(event->type == GDK_DOUBLE_BUTTON_PRESS)
-    {
+    // TODO: Hard to generate a double click
+    if(n_press >= 2) {
         edit_selected_channel();
     }
 
-    return FALSE;
+    return;
 }
-#endif
 
-#ifdef GTK3
-gboolean microscope_tree_buttonpress(GtkWidget *tree_view,
-                                     GdkEventButton * event,
-                                     gpointer p)
+
+void microscope_tree_buttonpress(GtkGestureClick* self,
+                                  gint n_press,
+                                  gdouble x,
+                                  gdouble y,
+                                  gpointer user_data)
 {
-    UNUSED(tree_view);
-    UNUSED(p);
-
-    if(event->type == GDK_DOUBLE_BUTTON_PRESS)
-    {
+    if(n_press >= 2) {
         edit_selected_scope();
     }
 
-    return FALSE;
+    return;
 }
-#endif
+
 
 void populate_channels()
 {
@@ -1978,10 +1985,10 @@ edit_global_config(void)
 #if 0
     GtkWidget * lRegexp_extra =
         gtk_label_new(
-            "Set the regular expression used to identify channel \n"
-            "names from the file names. For example, if the \n"
-            "channel name is at the end, \n"
-            "try '[A-Z0-9]*\\_([A-Z0-9]*)\\.TIFF?'\n");
+                      "Set the regular expression used to identify channel \n"
+                      "names from the file names. For example, if the \n"
+                      "channel name is at the end, \n"
+                      "try '[A-Z0-9]*\\_([A-Z0-9]*)\\.TIFF?'\n");
 
     gtk_label_set_selectable((GtkLabel*) lRegexp_extra, TRUE);
 
@@ -2043,9 +2050,9 @@ void warn_no_dw(GtkWindow * parent)
 {
     GtkAlertDialog * dialog =
         gtk_alert_dialog_new(
-            "Could not locate deconwolf (i.e, the command 'dw'). "
-            "You will not be able to run anything from this GUI!"
-            );
+                             "Could not locate deconwolf (i.e, the command 'dw'). "
+                             "You will not be able to run anything from this GUI!"
+                             );
     gtk_alert_dialog_show(dialog, parent);
 }
 
@@ -2060,11 +2067,13 @@ dw_app_window_new (DwApp *app)
     config.savefolder = NULL;
     config.has_dw = has_dw();
 
-    #ifdef WINDOWS
+#ifdef WINDOWS
     config.outscript = OUTSCRIPT_BAT;
-    #endif
+#endif
 
-    config.regexp_channel = load_setting_string("general", "general", "channel_regexp", "([A-Z0-9]*)\\_[0-9]*\\.TIFF?");
+    config.regexp_channel =
+        load_setting_string("general", "general",
+                            "channel_regexp", "([A-Z0-9]*)\\_[0-9]*\\.TIFF?");
 
     // Set up a fallback icon
     GError * error = NULL;
@@ -2106,22 +2115,36 @@ dw_app_window_new (DwApp *app)
                      G_CALLBACK(tab_change_cb), NULL);
 
     GtkWidget * channel_tree = create_channel_tree(); /* The box containing it */
-#ifdef GTK3
-    g_signal_connect (G_OBJECT (config.channel_tree), "key_press_event",
-                      G_CALLBACK (channel_tree_keypress), NULL);
 
-    g_signal_connect (G_OBJECT (config.channel_tree), "button_press_event",
-                      G_CALLBACK (channel_tree_buttonpress), NULL);
-#endif
-    // gtk_widget_add_controller ... or similar
+    GtkEventController * key = gtk_event_controller_key_new();
+    g_signal_connect_object (key, "key-pressed",
+                             G_CALLBACK (channel_tree_keypress),
+                             config.channel_tree, G_CONNECT_SWAPPED);
+    gtk_widget_add_controller(GTK_WIDGET(config.channel_tree), GTK_EVENT_CONTROLLER(key));
+
+    GtkGesture * gesture = gtk_gesture_click_new();
+    g_signal_connect_object (gesture, "released",
+                             G_CALLBACK (channel_tree_buttonpress),
+                             config.channel_tree, G_CONNECT_SWAPPED);
+    gtk_widget_add_controller(GTK_WIDGET(config.channel_tree), GTK_EVENT_CONTROLLER(gesture));
+
 
     GtkWidget * scope_tab = create_microscope_tab();
-#ifdef GTK3
-    g_signal_connect (G_OBJECT (config.scope_tree), "key_press_event",
-                      G_CALLBACK (microscope_tree_keypress), NULL);
-    g_signal_connect (G_OBJECT (config.scope_tree), "button_press_event",
-                      G_CALLBACK (microscope_tree_buttonpress), NULL);
-#endif
+
+
+    GtkEventController * key2 = gtk_event_controller_key_new();
+    g_signal_connect_object (key2, "key-pressed",
+                             G_CALLBACK (microscope_tree_keypress),
+                             config.scope_tree, G_CONNECT_SWAPPED);
+    gtk_widget_add_controller(GTK_WIDGET(config.scope_tree), GTK_EVENT_CONTROLLER(key2));
+
+
+    GtkGesture * gesture2 = gtk_gesture_click_new();
+    g_signal_connect_object (gesture2, "released",
+                             G_CALLBACK (microscope_tree_buttonpress),
+                             gesture2, G_CONNECT_SWAPPED);
+    gtk_widget_add_controller(GTK_WIDGET(config.scope_tree), GTK_EVENT_CONTROLLER(gesture2));
+
 
     /* Create the window */
     DwAppWindow * window = g_object_new (DW_APP_WINDOW_TYPE, "application", app, NULL);
