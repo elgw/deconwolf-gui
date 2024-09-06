@@ -36,7 +36,7 @@ Here is the intended workflow:
 ## Build and Install
 
 There are pre-compiled binaries for Ubuntu and Windows under
-[releases](https://github.com/elgw/deconwolf-gui/release). If your
+[releases](https://github.com/elgw/deconwolf-gui/releases). If your
 platform is missing, please create a new
 [issue](https://github.com/elgw/deconwolf-gui/issues). 
 
