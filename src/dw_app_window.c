@@ -1127,12 +1127,19 @@ void save_cmd_to_file(  GObject* source_object,
 {
 
     GError * error = NULL;
+    #if GTK_MINOR_VERSION >= 10
     GFile * file =
         gtk_file_dialog_save_finish (
                                      (GtkFileDialog*) source_object,
                                      res,
                                      &error
                                      );
+    #else
+    #warning Some features are disabled with GTK Version < 4.10
+    printf("Feature not available with GTK Version < 4.10\n");
+    // Use FileChooserDialog instead
+    GFile * file = NULL;
+    #endif
     if(error != NULL)
     {
         // We could use the domain/code/message ...
@@ -1209,6 +1216,7 @@ gboolean save_dw_cb(GtkWidget * widget, gpointer user_data)
        https://manpages.ubuntu.com/manpages/trusty/en/man1/glib-compile-schemas.1.html
     */
     // TODO: default folder based on some image in the list
+#if GTK_MINOR_VERSION >= 10
     GtkFileDialog * dialog = gtk_file_dialog_new ();
     gtk_file_dialog_set_title(dialog, "Save File");
     gtk_file_dialog_set_modal(dialog, true);
@@ -1225,6 +1233,7 @@ gboolean save_dw_cb(GtkWidget * widget, gpointer user_data)
                          canc,
                          save_cmd_to_file,
                          NULL);
+    #endif
 }
 
 
@@ -1665,12 +1674,17 @@ got_files_from_dialog (  GObject* source_object,
     UNUSED(data);
 
     GError * error = NULL;
+#if GTK_MINOR_VERSION >= 10
     GListModel * files =
         gtk_file_dialog_open_multiple_finish (
                                               (GtkFileDialog*) source_object,
                                               res,
                                               &error
                                               );
+    #else
+    GListModel * files = NULL;
+    #endif
+
     if(error != NULL)
     {
         // We could use the domain/code/message ...
@@ -1700,6 +1714,7 @@ got_files_from_dialog (  GObject* source_object,
 
 gboolean add_files_cb(GtkWidget * w, gpointer p)
 {
+#if GTK_MINOR_VERSION >= 10
     UNUSED(p);
 
     GtkWidget * dialog = (GtkWidget*) gtk_file_dialog_new ();
@@ -1720,6 +1735,7 @@ gboolean add_files_cb(GtkWidget * w, gpointer p)
                                   canc, // cancellable
                                   got_files_from_dialog, // callback
                                   NULL); // user_data
+#endif
     return TRUE;
 }
 
@@ -2052,12 +2068,14 @@ configuration_activated(GSimpleAction *simple,
 
 void warn_no_dw(GtkWindow * parent)
 {
+#if GTK_MINOR_VERSION >= 10
     GtkAlertDialog * dialog =
         gtk_alert_dialog_new(
                              "Could not locate deconwolf (i.e, the command 'dw'). "
                              "You will not be able to run anything from this GUI!"
                              );
     gtk_alert_dialog_show(dialog, parent);
+    #endif
 }
 
 
