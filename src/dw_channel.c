@@ -33,6 +33,21 @@ void dw_channels_free(DwChannel ** channels)
     g_free(channels);
 }
 
+/* Convert string to upper case */
+static void
+str_to_upper(char * str)
+{
+    if(str == NULL)
+    {
+        return;
+    }
+    int n = strlen(str);
+    for(int kk = 0; kk < n; kk++)
+    {
+        str[kk] = toupper(str[kk]);
+    }
+    return;
+}
 
 DwChannel ** dw_channels_get_from_gtk_tree_view(GtkTreeView * tv)
 {
@@ -83,6 +98,7 @@ DwChannel ** dw_channels_get_from_gtk_tree_view(GtkTreeView * tv)
         clist[pos] = g_malloc0(sizeof(DwChannel));
         clist[pos]->name = g_strdup(name);
         clist[pos]->alias = g_strdup(alias);
+        str_to_upper(clist[pos]->alias);
         clist[pos]->lambda = atof(lambda);
         clist[pos]->niter = (int) niter;
         if(0){
@@ -105,9 +121,11 @@ DwChannel ** dw_channels_get_from_gtk_tree_view(GtkTreeView * tv)
 }
 
 
+/* alias: what was parsed from the input file, this is converted to upper */
 DwChannel * dw_channels_get_by_alias(DwChannel ** channels, char * alias)
 {
     int pos = 0;
+
     while(channels[pos] != NULL)
     {
         if(strcmp(alias, channels[pos]->alias) == 0)

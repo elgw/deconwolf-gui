@@ -68,6 +68,7 @@ char * get_configuration_file(char * name)
 
     // Return the actual name for the configuration file
     sprintf(cfile, "%s/deconwolf/dw_gui_%s", g_get_user_config_dir(), name);
+    //printf("Configuration file:%s\n", cfile);
     return cfile;
 }
 
@@ -1344,7 +1345,7 @@ void update_cmd()
 
     if(dwconf->use_gpu == 1)
     {
-        sprintf(fstring + strlen(fstring), " --method shbcl2");
+        sprintf(fstring + strlen(fstring), " --gpu");
     }
 
     /* Generate the list of commands to run */
@@ -1356,6 +1357,7 @@ void update_cmd()
     while(files[kk] != NULL)
     {
         DwChannel * ch = dw_channels_get_by_alias(channels, files[kk]->channel);
+
         if(ch != NULL)
         {
             gchar * fdir = g_path_get_dirname(files[kk]->name);
